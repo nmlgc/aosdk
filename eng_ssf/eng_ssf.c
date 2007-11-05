@@ -1,7 +1,7 @@
 /*
-	Audio Overload SDK - SSF engine
+	Audio Overload SDK - SSF file format engine
 
-	Copyright (c) 2007, R. Belmont and Richard Bannister.
+	Copyright (c) 2007 R. Belmont and Richard Bannister.
 
 	All rights reserved.
 
@@ -24,15 +24,53 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-//
-// eng_ssf.c
-//
+/*
+
+Sega driver commands:
+
+00 - NOP
+01 - SEQUENCE_START
+02 - SEQUENCE_STOP
+03 - SEQUENCE_PAUSE
+04 - SEQUENCE_CONTINUE
+05 - SEQUENCE_VOLUME
+06 - SEQUENCE_ALLSTOP
+07 - SEQUENCE_TEMPO
+08 - SEQUENCE_MAP
+09 - HOST_MIDI
+0A - VOLUME_ANALYZE_START
+0B - VOLUME_ANALYZE_STOP
+0C - DSP CLEAR
+0D - ALL OFF
+0E - SEQUENCE PAN
+0F - N/A
+10 - SOUND INITIALIZE
+11 - Yamaha 3D check (8C)
+12 - QSound check (8B)
+13 - Yamaha 3D init (8D)
+80 - CD level
+81 - CD pan
+82 - MASTER VOLUME
+83 - EFFECT_CHANGE
+84 - NOP
+85 - PCM stream play start
+86 - PCM stream play end
+87 - MIXER_CHANGE
+88 - Mixer parameter change
+89 - Hardware check
+8A - PCM parameter change
+8B - QSound check
+8C - Yamaha 3D check
+8D - Yamaha 3D init
+
+*/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include "ao.h"
+#include "eng_protos.h"
 #include "corlett.h"
 #include "sat_hw.h"
 #include "scsp.h"
@@ -42,12 +80,16 @@
 static corlett_t	*c = NULL;
 static char 		psfby[256];
 
+void *scsp_start(const void *config);
+void SCSP_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
+
 int32 ssf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
 	uint32 offset, plength;
 	uint64 file_len, lib_len, lib_raw_length;
 	corlett_t *lib;
+	char *libfile;
 	int i;
 
 	// clear Saturn work RAM before we start scribbling in it
@@ -64,34 +106,38 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	#endif
 
 	// Get the library file, if any
-	if (c->lib[0] != 0)
+	for (i=0; i<9; i++) 
 	{
-		uint64 tmp_length;
+		libfile = i ? c->libaux[i-1] : c->lib;
+		if (libfile[0] != 0)
+		{
+			uint64 tmp_length;
 	
-		#if DEBUG_LOADER	
-		printf("Loading library: %s\n", c->lib);
-		#endif
-		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
-		{
-			return AO_FAIL;
-		}
-		lib_raw_length = tmp_length;
+			#if DEBUG_LOADER	
+			printf("Loading library: %s\n", c->lib);
+			#endif
+			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
+			{
+				return AO_FAIL;
+			}
+			lib_raw_length = tmp_length;
 		
-		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
-		{
-			free(lib_raw_file);
-			return AO_FAIL;
-		}
+			if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
+			{
+				free(lib_raw_file);
+				return AO_FAIL;
+			}
 				
-		// Free up raw file
-		free(lib_raw_file);
+			// Free up raw file
+			free(lib_raw_file);
 
-		// patch the file into ram
-		offset = lib_decoded[0] | lib_decoded[1]<<8 | lib_decoded[2]<<16 | lib_decoded[3]<<24;
-		memcpy(&sat_ram[offset], lib_decoded+4, lib_len-4);
+			// patch the file into ram
+			offset = lib_decoded[0] | lib_decoded[1]<<8 | lib_decoded[2]<<16 | lib_decoded[3]<<24;
+			memcpy(&sat_ram[offset], lib_decoded+4, lib_len-4);
 
-		// Dispose the corlett structure for the lib - we don't use it
-		free(lib);
+			// Dispose the corlett structure for the lib - we don't use it
+			free(lib);
+		}
 	}
 
 	// now patch the file into RAM over the libraries
@@ -104,7 +150,6 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	strcpy(psfby, "n/a");
 	if (c)
 	{
-		int i;
 		for (i = 0; i < MAX_UNKNOWN_TAGS; i++)
 		{
 			if (!strcasecmp(c->tag_name[i], "psfby"))
@@ -151,7 +196,7 @@ int32 ssf_gen(int16 *buffer, uint32 samples)
 		m68k_execute((11300000/60)/735);
 		stereo[0] = &output[opos];
 		stereo[1] = &output2[opos];
-		SCSP_Update(0, NULL, stereo, 1);
+		SCSP_Update(NULL, NULL, stereo, 1);
 		opos++;		
 	}
 

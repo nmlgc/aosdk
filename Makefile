@@ -59,6 +59,15 @@ OBJS += eng_ssf/scsp.o eng_ssf/scspdsp.o eng_ssf/sat_hw.o eng_ssf/eng_ssf.o
 # QSF engine
 OBJS += eng_qsf/eng_qsf.o eng_qsf/kabuki.o eng_qsf/qsound.o eng_qsf/z80.o eng_qsf/z80dasm.o
 
+# PSF engine
+OBJS += eng_psf/eng_psf.o eng_psf/psx.o eng_psf/psx_hw.o eng_psf/peops/spu.o 
+
+# PSF2 extentions
+OBJS += eng_psf/eng_psf2.o eng_psf/peops2/spu.o eng_psf/peops2/dma.o eng_psf/peops2/registers.o
+
+# SPU engine (requires PSF engine)
+OBJS += eng_psf/eng_spu.o
+
 # zlib (included for max portability)
 OBJS += zlib/adler32.o zlib/compress.o zlib/crc32.o zlib/gzio.o zlib/uncompr.o zlib/deflate.o zlib/trees.o
 OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.o

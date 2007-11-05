@@ -398,10 +398,12 @@ static void Compute_LFO(struct _SLOT *slot)
 
 static void SCSP_StartSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 {
+	UINT32 start_offset;
 	slot->active=1;
 	slot->Backwards=0;
-	slot->base=SCSP->SCSPRAM+SA(slot);
 	slot->cur_addr=0;
+	start_offset = PCM8B(slot) ? SA(slot) : SA(slot) & 0x7FFFE;
+	slot->base=SCSP->SCSPRAM + start_offset;
 	slot->step=SCSP_Step(slot);
 	Compute_EG(SCSP,slot);
 	slot->EG.state=ATTACK;

@@ -1,4 +1,4 @@
-Audio Overload SDK - Release 1.0.  October 27, 2007
+Audio Overload SDK - Release 1.1   November 6, 2007
 
 Copyright (c) 2007 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -16,6 +16,11 @@ Configurables in the makefile:
 systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
+
+New in Release 1.1
+- PSF, PSF2, and SPU format engines are included
+- Known working example songs are included
+- Two fixes for the SSF are included from kingshriek
 
 
 Entry points of an AO engine are as follows:

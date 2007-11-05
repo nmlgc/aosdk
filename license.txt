@@ -48,6 +48,18 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 =====================================================================================
 
+GPL license:
+
+Too long to include here.
+
+See eng_psf/peops/License.txt or eng_psf/peops2/License.txt for the complete text.
+
+While legally combining GPL with BSD and MAME licensed software is unclear, Pete Bernert 
+will probably be OK with anything you do as long as you distribute the source for your
+AOSDK based creations.
+										  
+=====================================================================================
+
 ZLIB license:
 
 /* zlib.h -- interface of the 'zlib' general purpose compression library
@@ -126,6 +138,55 @@ scspdsp.c		MAME
 scspdsp.h		MAME
 scsp.h			MAME
 scsplfo.c		MAME
+
+eng_psf:
+
+eng_psf2.c		BSD
+eng_psf.c		BSD
+eng_spu.c		BSD
+psx_hw.c		BSD
+psx.c			MAME
+psx.h			MAME
+cpuintrf.h		MAME
+mamemem.h		MAME
+
+eng_psf/peops:
+
+adsr.c			GPL
+adsr.h			GPL
+dma.c			GPL
+dma.h			GPL
+externals.h		GPL
+gauss_i.h		GPL
+registers.c		GPL
+registers.h		GPL
+regs.h			GPL
+reverb.c		GPL
+spu.c			GPL
+spu.h			GPL
+stdafx.h		GPL
+
+
+eng_psf/peops2:
+
+adsr.c			GPL
+adsr.h			GPL
+dma.c			GPL
+dma.h			GPL
+externals.h		GPL
+gauss_i.h		GPL
+psemuxa.h		GPL
+registers.c		GPL
+registers.h		GPL
+regs.h			GPL
+reverb.c		GPL
+reverb.h		GPL
+spu.c			GPL
+spu.h			GPL
+stdafx.h		GPL
+xa.c			GPL
+
+
 
 zlib:
 

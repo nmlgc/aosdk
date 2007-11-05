@@ -143,6 +143,8 @@ INT16 m1sdr_Init(int sample_rate)
 
 	hw_present = 0;
 
+	nDSoundSegLen = sample_rate / 60;
+
 	memset(samples, 0, 44100*4);	// zero out samples
 
 	m1sdr_Callback = NULL;
