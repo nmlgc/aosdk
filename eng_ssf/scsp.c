@@ -35,7 +35,7 @@
 #define FIX(v)	((UINT32) ((float) (1<<SHIFT)*(v)))
 
 
-#define EG_SHIFT	8
+#define EG_SHIFT	16
 
 // include the LFO handling code
 #include "scsplfo.c"
@@ -105,6 +105,7 @@ static const double DRTimes[64]={100000/*infinity*/,100000/*infinity*/,118200.0,
 					920.0,790.0,690.0,550.0,460.0,390.0,340.0,270.0,230.0,200.0,170.0,140.0,110.0,98.0,85.0,68.0,57.0,49.0,43.0,34.0,
 					28.0,25.0,22.0,18.0,14.0,12.0,11.0,8.5,7.1,6.1,5.4,4.3,3.6,3.1};
 static UINT32 FNS_Table[0x400];
+static INT32 EG_TABLE[0x400];
 
 typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
 struct _EG
@@ -316,9 +317,9 @@ static void Compute_EG(struct _SCSP *SCSP,struct _SLOT *slot)
 	if(KRS(slot)!=0xf)
 		rate=2*(octave+KRS(slot))+((FNS(slot)>>9)&1);
 	else
-		rate=((FNS(slot)>>9)&1);
+		rate=0; //rate=((FNS(slot)>>9)&1);
 
-	slot->EG.volume=0;
+	slot->EG.volume=0x17F<<EG_SHIFT;
 	slot->EG.AR=Get_AR(SCSP,rate,AR(slot));
 	slot->EG.D1R=Get_DR(SCSP,rate,D1R(slot));
 	slot->EG.D2R=Get_DR(SCSP,rate,D2R(slot));
@@ -337,9 +338,12 @@ static int EG_Update(struct _SLOT *slot)
 			slot->EG.volume+=slot->EG.AR;
 			if(slot->EG.volume>=(0x3ff<<EG_SHIFT))
 			{
-				slot->EG.state=DECAY1;
-				if(slot->EG.D1R>=(1024<<EG_SHIFT)) //Skip DECAY1, go directly to DECAY2
-					slot->EG.state=DECAY2;
+				if (!LPSLNK(slot)) 
+				{
+					slot->EG.state=DECAY1;
+					if(slot->EG.D1R>=(1024<<EG_SHIFT)) //Skip DECAY1, go directly to DECAY2
+						slot->EG.state=DECAY2;
+				}
 				slot->EG.volume=0x3ff<<EG_SHIFT;
 			}
 			if(slot->EG.EGHOLD)
@@ -347,7 +351,7 @@ static int EG_Update(struct _SLOT *slot)
 			break;
 		case DECAY1:
 			slot->EG.volume-=slot->EG.D1R;
-			if(slot->EG.volume>>(EG_SHIFT+5)>=slot->EG.DL)
+			if(slot->EG.volume>>(EG_SHIFT+5)<slot->EG.DL)
 				slot->EG.state=DECAY2;
 			break;
 		case DECAY2:
@@ -363,7 +367,7 @@ static int EG_Update(struct _SLOT *slot)
 			if(slot->EG.volume<=0)
 			{
 				SCSP_StopSlot(slot,0);
-				slot->EG.volume=0;
+				slot->EG.volume=0x17F<<EG_SHIFT;
 				slot->EG.state=ATTACK;
 			}
 			break;
@@ -407,11 +411,12 @@ static void SCSP_StartSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	slot->step=SCSP_Step(slot);
 	Compute_EG(SCSP,slot);
 	slot->EG.state=ATTACK;
-	slot->EG.volume=0;
+	slot->EG.volume=0x17F<<EG_SHIFT;
 	slot->Prev=0;
 	Compute_LFO(slot);
 
 //	printf("StartSlot: SA %x PCM8B %x LPCTL %x ALFOS %x STWINH %x TL %x EFSDL %x\n", SA(slot), PCM8B(slot), LPCTL(slot), ALFOS(slot), STWINH(slot), TL(slot), EFSDL(slot));
+//	printf("           AR %x D1R %x D2R %x RR %x DL %x KRS %x EGHOLD %x LPSLNK %x\n", AR(slot), D1R(slot), D2R(slot), RR(slot), DL(slot), KRS(slot), EGHOLD(slot), LPSLNK(slot));
 }
 
 static void SCSP_StopSlot(struct _SLOT *slot,int keyoff)
@@ -469,6 +474,13 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 		fcent=(double) 44100.0*pow(2.0,fcent/1200.0);
 		FNS_Table[i]=(float) (1<<SHIFT) *fcent;
 	}
+	
+	for(i=0;i<0x400;++i)
+	{
+		float envDB=((float)(3*(i-0x3ff)))/32.0;
+		float scale=(float)(1<<SHIFT);
+		EG_TABLE[i]=(INT32)(pow(10.0,envDB/20.0)*scale);
+	}
 
 	for(i=0;i<0x10000;++i)
 	{
@@ -498,7 +510,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 		if(iPAN&0x4) SegaDB-=12;
 		if(iPAN&0x8) SegaDB-=24;
 
-		if(iPAN==0xf) PAN=0.0;
+		if(iPAN&0xf==0xf) PAN=0.0;
 		else PAN=pow(10.0,SegaDB/20.0);
 
 		if(iPAN<0x10)
@@ -1104,6 +1116,12 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 			addr&=0x7ffff;
 	}
 
+	if(addr==LSA(slot))
+	{
+		if(LPSLNK(slot) && slot->EG.state==ATTACK)
+			slot->EG.state = DECAY1;
+	}
+
 	if(PCM8B(slot))	//8 bit signed
 	{
 		INT8 *p=(signed char *) (slot->base+(addr));
@@ -1114,6 +1132,11 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		INT16 *p=(signed short *) (slot->base+addr);
 		sample=LE16(p[0]);
 	}
+
+	if(SBCTL(slot)&0x1)
+		sample ^= 0x7FFF;
+	if(SBCTL(slot)&0x2)
+		sample = (INT16)(sample^0x8000);
 
 	if(slot->Backwards)
 		slot->cur_addr-=step;
@@ -1165,7 +1188,7 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	if(!STWINH(slot))
 		*RBUFDST=sample;
 
-	sample=(sample*EG_Update(slot))>>SHIFT;
+	sample=(sample*EG_TABLE[EG_Update(slot)>>(SHIFT-10)])>>SHIFT;
 
 	return sample;
 }
