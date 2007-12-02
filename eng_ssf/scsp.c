@@ -306,7 +306,7 @@ static int Get_RR(struct _SCSP *SCSP,int base,int R)
 	int Rate=base+(R<<1);
 	if(Rate>63)	Rate=63;
 	if(Rate<0) Rate=0;
-	return SCSP->ARTABLE[63-Rate];
+	return SCSP->DRTABLE[Rate];
 }
 
 static void Compute_EG(struct _SCSP *SCSP,struct _SLOT *slot)
@@ -366,9 +366,10 @@ static int EG_Update(struct _SLOT *slot)
 			slot->EG.volume-=slot->EG.RR;
 			if(slot->EG.volume<=0)
 			{
+				slot->EG.volume=0;
 				SCSP_StopSlot(slot,0);
-				slot->EG.volume=0x17F<<EG_SHIFT;
-				slot->EG.state=ATTACK;
+				//slot->EG.volume=0x17F<<EG_SHIFT;
+				//slot->EG.state=ATTACK;
 			}
 			break;
 		default:
@@ -421,7 +422,7 @@ static void SCSP_StartSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 
 static void SCSP_StopSlot(struct _SLOT *slot,int keyoff)
 {
-	if(keyoff && slot->EG.state!=RELEASE)
+	if(keyoff /*&& slot->EG.state!=RELEASE*/)
 	{
 		slot->EG.state=RELEASE;
 	}
@@ -429,7 +430,6 @@ static void SCSP_StopSlot(struct _SLOT *slot,int keyoff)
 	{
 		slot->active=0;
 	}
-
 	slot->udata.data[0]&=~0x800;
 }
 
@@ -559,7 +559,6 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 	{
 		SCSP->Slots[i].slot=i;
 		SCSP->Slots[i].active=0;
-		SCSP->Slots[i].active=0;
 		SCSP->Slots[i].base=NULL;
 	}
 
@@ -591,11 +590,11 @@ static void SCSP_UpdateSlotReg(struct _SCSP *SCSP,int s,int r)
 				{
 					struct _SLOT *s2=SCSP->Slots+sl;
 					{
-						if(KEYONB(s2) && !s2->active)
+						if(KEYONB(s2) && s2->EG.state==RELEASE/*&& !s2->active*/)
 						{
 							SCSP_StartSlot(SCSP, s2);
 						}
-						if(!KEYONB(s2) && s2->active)
+						if(!KEYONB(s2) /*&& s2->active*/)
 						{
 							SCSP_StopSlot(s2,1);
 						}
@@ -1188,7 +1187,10 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	if(!STWINH(slot))
 		*RBUFDST=sample;
 
-	sample=(sample*EG_TABLE[EG_Update(slot)>>(SHIFT-10)])>>SHIFT;
+	if(slot->EG.state==ATTACK)
+		sample=(sample*EG_Update(slot))>>SHIFT;
+	else
+		sample=(sample*EG_TABLE[EG_Update(slot)>>(SHIFT-10)])>>SHIFT;
 
 	return sample;
 }
