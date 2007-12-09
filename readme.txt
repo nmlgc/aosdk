@@ -1,8 +1,8 @@
-Audio Overload SDK - Release 1.1.2  December 2, 2007
+Audio Overload SDK - Release 1.1.3  December 9, 2007
 
-Copyright (c) 2007 R. Belmont and Richard Bannister.
+Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
-====================================================
+=========================================================
 
 Please refer to license.txt for the specific licensing details of this software.
 
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.1.2
-- More SSF & SCSP fixes from kingshriek
+New in Release 1.1.3
+- Even more SSF & SCSP fixes from kingshriek
 
 
 Entry points of an AO engine are as follows:

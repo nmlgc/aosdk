@@ -47,7 +47,7 @@ void LFO_Init(void)
 		if(i<128)
 			p=i;
 		else
-			p=255-i;    
+			p=i-256;    
 		ALFO_SAW[i]=a;
 		PLFO_SAW[i]=p;
 	

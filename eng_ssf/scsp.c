@@ -351,6 +351,8 @@ static int EG_Update(struct _SLOT *slot)
 			break;
 		case DECAY1:
 			slot->EG.volume-=slot->EG.D1R;
+			if(slot->EG.volume<=0)
+				slot->EG.volume=0;
 			if(slot->EG.volume>>(EG_SHIFT+5)<slot->EG.DL)
 				slot->EG.state=DECAY2;
 			break;
@@ -1222,12 +1224,13 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 				++SCSP->BUFPTR;
 				SCSP->BUFPTR&=63;
 #ifdef USEDSP
-				SCSPDSP_SetSample(&SCSP->DSP,sample>>SHIFT,ISEL(slot),IMXL(slot));
+				Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
+				SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>SHIFT,ISEL(slot),IMXL(slot));
 #endif
 				Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 				{
-					smpl+=(sample*SCSP->LPANTABLE[Enc])>>(SHIFT-1);
-					smpr+=(sample*SCSP->RPANTABLE[Enc])>>(SHIFT-1);
+					smpl+=(sample*SCSP->LPANTABLE[Enc])>>SHIFT;
+					smpr+=(sample*SCSP->RPANTABLE[Enc])>>SHIFT;
 				}
 			}
 
@@ -1240,14 +1243,14 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 			struct _SLOT *slot=SCSP->Slots+i;
 			if(EFSDL(slot))
 			{
-				unsigned short Enc=(TL(slot))|((EFPAN(slot))<<0x8)|((EFSDL(slot))<<0xd);
-				smpl+=(SCSP->DSP.EFREG[i]*SCSP->LPANTABLE[Enc])>>(SHIFT-4);
-				smpr+=(SCSP->DSP.EFREG[i]*SCSP->RPANTABLE[Enc])>>(SHIFT-4);
+				unsigned short Enc=((EFPAN(slot))<<0x8)|((EFSDL(slot))<<0xd);
+				smpl+=(SCSP->DSP.EFREG[i]*SCSP->LPANTABLE[Enc])>>SHIFT;
+				smpr+=(SCSP->DSP.EFREG[i]*SCSP->RPANTABLE[Enc])>>SHIFT;
 			}
 		}
 
-		*bufl++ = ICLIP16(smpl>>3);
-		*bufr++ = ICLIP16(smpr>>3);
+		*bufl++ = ICLIP16(smpl>>2);
+		*bufr++ = ICLIP16(smpr>>2);
 
 		SCSP_TimersAddTicks(SCSP, 1);
 		CheckPendingIRQ(SCSP);
