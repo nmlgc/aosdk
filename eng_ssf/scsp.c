@@ -1147,18 +1147,18 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	switch(LPCTL(slot))
 	{
 	case 0:	//no loop
-		if(addr>LEA(slot))
+		if(addr>=LEA(slot))
 		{
 			//slot->active=0;
 			SCSP_StopSlot(slot,0);
 		}
 		break;
 	case 1: //normal loop
-		if(addr>LEA(slot))
+		if(addr>=LEA(slot))
 			slot->cur_addr=LSA(slot)<<SHIFT;
 		break;
 	case 2:	//reverse loop
-		if(addr>LEA(slot))
+		if(addr>=LEA(slot))
 		{
 			slot->cur_addr=LEA(slot)<<SHIFT;
 			slot->Backwards=1;
@@ -1167,7 +1167,7 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 			slot->cur_addr=LEA(slot)<<SHIFT;
 		break;
 	case 3: //ping-pong
-		if(addr>LEA(slot)) //reached end, reverse till start
+		if(addr>=LEA(slot)) //reached end, reverse till start
 		{
 			slot->cur_addr=LEA(slot)<<SHIFT;
 			slot->Backwards=1;
