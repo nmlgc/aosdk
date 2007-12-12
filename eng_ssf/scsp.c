@@ -512,7 +512,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 		if(iPAN&0x4) SegaDB-=12;
 		if(iPAN&0x8) SegaDB-=24;
 
-		if(iPAN&0xf==0xf) PAN=0.0;
+		if((iPAN&0xf)==0xf) PAN=0.0;
 		else PAN=pow(10.0,SegaDB/20.0);
 
 		if(iPAN<0x10)
@@ -1125,13 +1125,23 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 
 	if(PCM8B(slot))	//8 bit signed
 	{
-		INT8 *p=(signed char *) (slot->base+(addr));
-		sample=(p[0])<<8;
+		INT8 *p=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr)^1));
+		//sample=(p[0])<<8;
+		INT32 s;
+		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
+		s=(int) (p[0]<<8)*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;
+		sample=(s>>SHIFT);
+		slot->Prev=p[0]<<8;
 	}
 	else	//16 bit signed (endianness?)
 	{
 		INT16 *p=(signed short *) (slot->base+addr);
-		sample=LE16(p[0]);
+		//sample=LE16(p[0]);
+		INT32 s;
+		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
+		s=(int) LE16(p[0])*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;
+		sample=(s>>SHIFT);
+		slot->Prev=LE16(p[0]);
 	}
 
 	if(SBCTL(slot)&0x1)
