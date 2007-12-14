@@ -134,6 +134,7 @@ struct _SLOT
 	UINT8 active;	//this slot is currently playing
 	UINT8 *base;		//samples base address
 	UINT32 cur_addr;	//current play address (24.8)
+	UINT32 nxt_addr;	//next play address
 	UINT32 step;		//pitch step (24.8)
 	UINT8 Backwards;	//the wave is playing backwards
 	struct _EG EG;			//Envelope
@@ -315,7 +316,7 @@ static void Compute_EG(struct _SCSP *SCSP,struct _SLOT *slot)
 	int rate;
 	if(octave&8) octave=octave-16;
 	if(KRS(slot)!=0xf)
-		rate=2*(octave+KRS(slot))+((FNS(slot)>>9)&1);
+		rate=octave+2*KRS(slot)+((FNS(slot)>>9)&1);
 	else
 		rate=0; //rate=((FNS(slot)>>9)&1);
 
@@ -383,7 +384,7 @@ static int EG_Update(struct _SLOT *slot)
 static UINT32 SCSP_Step(struct _SLOT *slot)
 {
 	int octave=OCT(slot);
-	int Fn;
+	UINT32 Fn;
 
 	Fn=(FNS_Table[FNS(slot)]);	//24.8
 	if(octave&8)
@@ -408,7 +409,7 @@ static void SCSP_StartSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	UINT32 start_offset;
 	slot->active=1;
 	slot->Backwards=0;
-	slot->cur_addr=0;
+	slot->cur_addr=0; slot->nxt_addr=1<<SHIFT;
 	start_offset = PCM8B(slot) ? SA(slot) : SA(slot) & 0x7FFFE;
 	slot->base=SCSP->SCSPRAM + start_offset;
 	slot->step=SCSP_Step(slot);
@@ -1089,7 +1090,9 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 {
 	INT32 sample;
 	int step=slot->step;
-	UINT32 addr;
+	UINT32 addr1,addr2,addr_select;                                   // current and next sample addresses
+	UINT32 *addr[2]      = {&addr1, &addr2};                          // used for linear interpolation
+	UINT32 *slot_addr[2] = {&(slot->cur_addr), &(slot->nxt_addr)};    //
 
 	if(SSCTL(slot)!=0)	//no FM or noise yet
 		return 0;
@@ -1101,23 +1104,33 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	}
 
 	if(PCM8B(slot))
-		addr=slot->cur_addr>>SHIFT;
+	{
+		addr1=slot->cur_addr>>SHIFT;
+		addr2=slot->nxt_addr>>SHIFT;
+	}
 	else
-		addr=(slot->cur_addr>>(SHIFT-1))&0x7fffe;
+	{
+		addr1=(slot->cur_addr>>(SHIFT-1))&0x7fffe;
+		addr2=(slot->nxt_addr>>(SHIFT-1))&0x7fffe;
+	}
 
 	if(MDL(slot)!=0 || MDXSL(slot)!=0 || MDYSL(slot)!=0)
 	{
 		INT32 smp=(SCSP->RINGBUF[(SCSP->BUFPTR+MDXSL(slot))&63]+SCSP->RINGBUF[(SCSP->BUFPTR+MDYSL(slot))&63])/2;
 
 		smp>>=11;
-		addr+=smp;
+		addr1+=smp; addr2+=smp;
 		if(!PCM8B(slot))
-			addr&=0x7fffe;
+		{
+			addr1&=0x7fffe; addr2&=0x7fffe;
+		}
 		else
-			addr&=0x7ffff;
+		{
+			addr1&=0x7ffff; addr2&=0x7ffff;
+		}
 	}
 
-	if(addr==LSA(slot))
+	if(addr1==LSA(slot))
 	{
 		if(LPSLNK(slot) && slot->EG.state==ATTACK)
 			slot->EG.state = DECAY1;
@@ -1125,23 +1138,23 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 
 	if(PCM8B(slot))	//8 bit signed
 	{
-		INT8 *p=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr)^1));
+		INT8 *p1=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr1)^1));
+		INT8 *p2=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr2)^1));
 		//sample=(p[0])<<8;
 		INT32 s;
 		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
-		s=(int) (p[0]<<8)*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;
+		s=(int) (p1[0]<<8)*((1<<SHIFT)-fpart)+(int) (p2[0]<<8)*fpart;
 		sample=(s>>SHIFT);
-		slot->Prev=p[0]<<8;
 	}
 	else	//16 bit signed (endianness?)
 	{
-		INT16 *p=(signed short *) (slot->base+addr);
+		INT16 *p1=(signed short *) (slot->base+addr1);
+		INT16 *p2=(signed short *) (slot->base+addr2);
 		//sample=LE16(p[0]);
 		INT32 s;
 		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
-		s=(int) LE16(p[0])*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;
+		s=(int) LE16(p1[0])*((1<<SHIFT)-fpart)+(int) LE16(p2[0])*fpart;
 		sample=(s>>SHIFT);
-		slot->Prev=LE16(p[0]);
 	}
 
 	if(SBCTL(slot)&0x1)
@@ -1153,41 +1166,48 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		slot->cur_addr-=step;
 	else
 		slot->cur_addr+=step;
-	addr=slot->cur_addr>>SHIFT;
-	switch(LPCTL(slot))
+	slot->nxt_addr=slot->cur_addr+(1<<SHIFT);
+	
+	addr1=slot->cur_addr>>SHIFT;
+	addr2=slot->nxt_addr>>SHIFT;
+	
+	for (addr_select=0;addr_select<2;addr_select++)
 	{
-	case 0:	//no loop
-		if(addr>=LEA(slot))
+		switch(LPCTL(slot))
 		{
+		case 0:	//no loop
+			if(*addr[addr_select]>=LSA(slot) && *addr[addr_select]>=LEA(slot))
+			{
 			//slot->active=0;
 			SCSP_StopSlot(slot,0);
+			}
+			break;
+		case 1: //normal loop
+			if(*addr[addr_select]>=LEA(slot))
+				*slot_addr[addr_select]=LSA(slot)<<SHIFT;
+			break;
+		case 2:	//reverse loop
+			if((*addr[addr_select]>=LSA(slot)) && !(slot->Backwards))
+			{
+				*slot_addr[addr_select]=LEA(slot)<<SHIFT;
+				slot->Backwards=1;
+			}
+			if((*addr[addr_select]<=LSA(slot) || (*slot_addr[addr_select]&0x80000000)) && slot->Backwards)
+				*slot_addr[addr_select]=LEA(slot)<<SHIFT;
+			break;
+		case 3: //ping-pong
+			if(*addr[addr_select]>=LEA(slot)) //reached end, reverse till start
+			{
+				*slot_addr[addr_select]=LEA(slot)<<SHIFT;
+				slot->Backwards=1;
+			}
+			if((*addr[addr_select]<=LSA(slot) || (*slot_addr[addr_select]&0x80000000)) && slot->Backwards)//reached start or negative
+			{
+				*slot_addr[addr_select]=LSA(slot)<<SHIFT;
+				slot->Backwards=0;
+			}
+			break;
 		}
-		break;
-	case 1: //normal loop
-		if(addr>=LEA(slot))
-			slot->cur_addr=LSA(slot)<<SHIFT;
-		break;
-	case 2:	//reverse loop
-		if(addr>=LEA(slot))
-		{
-			slot->cur_addr=LEA(slot)<<SHIFT;
-			slot->Backwards=1;
-		}
-		if(addr<LSA(slot) || (addr&0x80000000))
-			slot->cur_addr=LEA(slot)<<SHIFT;
-		break;
-	case 3: //ping-pong
-		if(addr>=LEA(slot)) //reached end, reverse till start
-		{
-			slot->cur_addr=LEA(slot)<<SHIFT;
-			slot->Backwards=1;
-		}
-		if((addr<LSA(slot) || (addr&0x80000000)) && slot->Backwards)//reached start or negative
-		{
-			slot->cur_addr=LSA(slot)<<SHIFT;
-			slot->Backwards=0;
-		}
-		break;
 	}
 
 	if(ALFOS(slot)!=0)
