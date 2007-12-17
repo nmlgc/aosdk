@@ -127,7 +127,7 @@ int main(int argv, char *argc[])
 	uint8 *buffer;
 	uint32 size, filesig;
 
-	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.1.6]\nCopyright (c) 2007-2008 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
+	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.1.7]\nCopyright (c) 2007-2008 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
 
 	// check if an argument was given
 	if (argv < 2)

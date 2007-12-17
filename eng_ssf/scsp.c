@@ -73,7 +73,7 @@
 #define SDIR(slot)		((slot->udata.data[0x6]>>0x0)&0x0100)
 #define TL(slot)		((slot->udata.data[0x6]>>0x0)&0x00FF)
 
-#define MDL(slot)		((slot->udata.data[0x7]>>0xB)&0x0007)
+#define MDL(slot)		((slot->udata.data[0x7]>>0xC)&0x000F)
 #define MDXSL(slot)		((slot->udata.data[0x7]>>0x6)&0x003F)
 #define MDYSL(slot)		((slot->udata.data[0x7]>>0x0)&0x003F)
 
@@ -384,7 +384,7 @@ static int EG_Update(struct _SLOT *slot)
 static UINT32 SCSP_Step(struct _SLOT *slot)
 {
 	int octave=OCT(slot);
-	UINT32 Fn;
+	UINT64 Fn;
 
 	Fn=(FNS_Table[FNS(slot)]);	//24.8
 	if(octave&8)
@@ -1114,11 +1114,16 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		addr2=(slot->nxt_addr>>(SHIFT-1))&0x7fffe;
 	}
 
-	if(MDL(slot)!=0 || MDXSL(slot)!=0 || MDYSL(slot)!=0)
+	/*if(MDL(slot)!=0 || MDXSL(slot)!=0 || MDYSL(slot)!=0)
 	{
 		INT32 smp=(SCSP->RINGBUF[(SCSP->BUFPTR+MDXSL(slot))&63]+SCSP->RINGBUF[(SCSP->BUFPTR+MDYSL(slot))&63])/2;
+		INT32 cycle=LEA(slot)-LSA(slot); // cycle corresponds to 2 pi
 
-		smp>>=11;
+		smp*=cycle; // associate cycle with full 16-bit sample range
+		smp>>=0x1A-MDL(slot); // ex. for MDL=0xF, sample range corresponds to +/- 64 pi (32=2^5 cycles) so shift by 11 (16-5 == 0x1A-0xF)
+		while(smp<0) smp+=cycle; smp%=cycle; // keep modulation sampler within a single cycle
+		if(!PCM8B(slot)) smp<<=1;
+		
 		addr1+=smp; addr2+=smp;
 		if(!PCM8B(slot))
 		{
@@ -1128,13 +1133,7 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		{
 			addr1&=0x7ffff; addr2&=0x7ffff;
 		}
-	}
-
-	if(addr1==LSA(slot))
-	{
-		if(LPSLNK(slot) && slot->EG.state==ATTACK)
-			slot->EG.state = DECAY1;
-	}
+	}*/
 
 	if(PCM8B(slot))	//8 bit signed
 	{
@@ -1170,6 +1169,12 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	
 	addr1=slot->cur_addr>>SHIFT;
 	addr2=slot->nxt_addr>>SHIFT;
+	
+	if(addr1>=LSA(slot) && !(slot->Backwards))
+	{
+		if(LPSLNK(slot) && slot->EG.state==ATTACK)
+			slot->EG.state = DECAY1;
+	}
 	
 	for (addr_select=0;addr_select<2;addr_select++)
 	{
@@ -1216,14 +1221,14 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		sample>>=SHIFT;
 	}
 
-	if(!STWINH(slot))
-		*RBUFDST=sample;
-
 	if(slot->EG.state==ATTACK)
 		sample=(sample*EG_Update(slot))>>SHIFT;
 	else
 		sample=(sample*EG_TABLE[EG_Update(slot)>>(SHIFT-10)])>>SHIFT;
 
+	if(!STWINH(slot))
+		*RBUFDST=sample;
+		
 	return sample;
 }
 
@@ -1243,19 +1248,18 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 
 		for(sl=0;sl<32;++sl)
 		{
+			RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
 			if(SCSP->Slots[sl].active)
 			{
 				struct _SLOT *slot=SCSP->Slots+sl;
 				unsigned short Enc;
 				signed int sample;
 
-				RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
 				sample=SCSP_UpdateSlot(SCSP, slot);
-				++SCSP->BUFPTR;
-				SCSP->BUFPTR&=63;
+
 #ifdef USEDSP
 				Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
-				SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>SHIFT,ISEL(slot),IMXL(slot));
+				SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
 #endif
 				Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 				{
@@ -1263,7 +1267,8 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 					smpr+=(sample*SCSP->RPANTABLE[Enc])>>SHIFT;
 				}
 			}
-
+			--SCSP->BUFPTR;
+			SCSP->BUFPTR&=63;
 		}
 
 		SCSPDSP_Step(&SCSP->DSP);
