@@ -124,7 +124,7 @@ int             iUseTimer=2;
 int             iSPUIRQWait=1;
 int             iDebugMode=0;
 int             iRecordMode=0;
-int             iUseReverb=0;
+int             iUseReverb=1;
 int             iUseInterpolation=2;
                              
 // MAIN infos struct for each channel

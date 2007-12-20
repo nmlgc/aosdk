@@ -25,10 +25,17 @@
 */
 
 //
+// Audio Overload
+// Emulated music player
+//
+// (C) 2000-2005 Richard F. Bannister
+//
+
+//
 // eng_psf2.c
 //
 // References:
-// psf_format.txt v1.5 by Neill Corlett (filesystem and decompression info)
+// psf_format.txt v1.6 by Neill Corlett (filesystem and decompression info)
 // Intel ELF format specs ELF.PS (general ELF parsing info)
 // http://ps2dev.org/kb.x?T=457 (IRX relocation and inter-module call info)
 // http://ps2dev.org/ (the whole site - lots of IOP info)
@@ -195,7 +202,8 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 			case 9:			// REL: short relocation data
 		  		for (rec = 0; rec < (size/8); rec++)
 				{
-					uint32 offs, info, target, temp, hi16offs, hi16target, val, vallo;
+					uint32 offs, info, target, temp, val, vallo;
+					static uint32 hi16offs = 0, hi16target = 0;
 
 					offs = start[offset+(rec*8)] | start[offset+1+(rec*8)]<<8 | start[offset+2+(rec*8)]<<16 | start[offset+3+(rec*8)]<<24;
 					info = start[offset+4+(rec*8)] | start[offset+5+(rec*8)]<<8 | start[offset+6+(rec*8)]<<16 | start[offset+7+(rec*8)]<<24;
@@ -207,7 +215,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 					{
 						case 2:	      	// R_MIPS_32
 							target += loadAddr;
-							target |= 0x80000000;
+//							target |= 0x80000000;
 							break;
 
 						case 4:		// R_MIPS_26
@@ -227,7 +235,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 
 							val = ((hi16target & 0xffff) << 16) +	vallo;
 							val += loadAddr;
-							val |= 0x80000000;
+//							val |= 0x80000000;
 
 							/* Account for the sign extension that will happen in the low bits.  */
 							val = ((val >> 16) + ((val & 0x8000) != 0)) & 0xffff;
@@ -275,7 +283,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 	return entry;
 }
 
-static load_file(int fs, char *file, uint8 *buf, uint32 buflen)
+static uint32 load_file_ex(uint8 *top, uint8 *start, uint32 len, char *file, uint8 *buf, uint32 buflen)
 {
 	int32 numfiles, i, j;
 	uint8 *cptr;
@@ -283,12 +291,18 @@ static load_file(int fs, char *file, uint8 *buf, uint32 buflen)
 	uint32 X;
 	uLongf dlength;
 	int uerr;
-	uint8 *start;
-	uint32 len;
-	
-	start = filesys[fs];
-	len = fssize[fs];
+	char matchname[512], *remainder;
 
+	// strip out to only the directory name
+	i = 0;
+	while ((file[i] != '/') && (file[i] != '\\') && (file[i] != '\0'))
+	{
+		matchname[i] = file[i];
+		i++;
+	}
+	matchname[i] = '\0';
+	remainder = &file[i+1];
+	
 	cptr = start + 4; 
 
 	numfiles = start[0] | start[1]<<8 | start[2]<<16 | start[3]<<24;
@@ -299,23 +313,33 @@ static load_file(int fs, char *file, uint8 *buf, uint32 buflen)
 		uncomp = cptr[40] | cptr[41]<<8 | cptr[42]<<16 | cptr[43]<<24;
 		bsize = cptr[44] | cptr[45]<<8 | cptr[46]<<16 | cptr[47]<<24;
 
-		//printf("[%s vs %s]: ofs %08x uncomp %08x bsize %08x\n", cptr, file, offs, uncomp, bsize);
+		#if DEBUG_LOADER
+		printf("[%s vs %s]: ofs %08x uncomp %08x bsize %08x\n", cptr, matchname, offs, uncomp, bsize);
+		#endif
 		
-		if (!strcasecmp((char *)cptr, file))
+		if (!strcasecmp((char *)cptr, matchname))
 		{
-			X = (uncomp + bsize - 1) / bsize;
+			if ((uncomp == 0) && (bsize == 0))
+			{
+				#if DEBUG_LOADER
+				printf("Drilling into subdirectory [%s] with [%s] at offset %x\n", matchname, remainder, offs);
+				#endif
+				return load_file_ex(top, &top[offs], len-offs, remainder, buf, buflen);
+			}
 
+			X = (uncomp + bsize - 1) / bsize;
+			
 			cofs = offs + (X*4);
 			uofs = 0;
 			for (j = 0; j < X; j++)
 			{
 				uint32 usize;
 
-				usize = start[offs+(j*4)] | start[offs+1+(j*4)]<<8 | start[offs+2+(j*4)]<<16 | start[offs+3+(j*4)]<<24;
+				usize = top[offs+(j*4)] | top[offs+1+(j*4)]<<8 | top[offs+2+(j*4)]<<16 | top[offs+3+(j*4)]<<24;
 
 				dlength = buflen - uofs;
 		
-				uerr = uncompress(&buf[uofs], &dlength, &start[cofs], usize);
+				uerr = uncompress(&buf[uofs], &dlength, &top[cofs], usize);
 				if (uerr != Z_OK)
 				{
 					printf("Decompress fail: %x %d!\n", dlength, uerr);
@@ -335,6 +359,11 @@ static load_file(int fs, char *file, uint8 *buf, uint32 buflen)
 	}
 
 	return 0xffffffff;
+}
+
+static uint32 load_file(int fs, char *file, uint8 *buf, uint32 buflen)
+{
+	return load_file_ex(filesys[fs], filesys[fs], fssize[fs], file, buf, buflen);
 }
 
 #if 0
@@ -437,7 +466,8 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	union cpuinfo mipsinfo;
 	corlett_t *lib;
 
-	loadAddr = 0x10000;	// start after 64k
+	loadAddr = 0x23f00;	// this value makes allocations work out similarly to how they would 
+				// in Highly Experimental (as per Shadow Hearts' hard-coded assumptions)
 
 	// clear IOP work RAM before we start scribbling in it
 	memset(psx_ram, 0, 2*1024*1024);

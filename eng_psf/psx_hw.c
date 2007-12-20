@@ -32,7 +32,8 @@
 	       VBL IRQ
 	       Root counters 2 and 3 including completion events and IRQs
 	       Some BIOS services including exception handling (via HLE)
-	       SPU, SPURAM (via PEOpS)
+	       HLE emulation of IOP operating system, including multithreading
+	       SPU(2), SPU(2)RAM (via PEOpS)
 
 
 
@@ -49,8 +50,9 @@
 #include "ao.h"
 #include "cpuintrf.h"
 #include "psx.h"
-
+	
 #define DEBUG_HLE_BIOS	(0)		// debug PS1 HLE BIOS
+#define DEBUG_HLE_IOP	(0)		// debug PS2 IOP OS calls
 #define DEBUG_UNK_RW	(0)		// debug unknown reads/writes
 #define DEBUG_THREADING (0)		// debug PS2 IOP threading
 
@@ -71,6 +73,8 @@ void mips_set_icount(int count);
 
 extern int psf_refresh;
 
+static int skipyet = 0;
+
 // SPU2
 extern void SPU2write(unsigned long reg, unsigned short val);
 extern unsigned short SPU2read(unsigned long reg);
@@ -81,10 +85,12 @@ extern void SPU2writeDMA7Mem(uint32 usPSXMem,int iSize);
 extern void SPU2interruptDMA4(void);
 extern void SPU2interruptDMA7(void);
 
+#define MAX_FILE_SLOTS	(32)
+
 static volatile int softcall_target = 0;
-static int filestat[8];
-static uint8 *filedata[8];
-static uint32 filesize[8], filepos[8];
+static int filestat[MAX_FILE_SLOTS];
+static uint8 *filedata[MAX_FILE_SLOTS];
+static uint32 filesize[MAX_FILE_SLOTS], filepos[MAX_FILE_SLOTS];
 uint32 psf2_get_loadaddr(void);
 void psf2_set_loadaddr(uint32 new);
 static void call_irq_routine(uint32 routine, uint32 parameter);
@@ -113,6 +119,22 @@ typedef struct
 static int32 iNumFlags;
 static EventFlag evflags[32];
 
+typedef struct
+{
+	uint32 attr;
+	uint32 option;
+	int32 init;
+	int32 current;
+	int32 max;
+	int32 threadsWaiting;
+	int32 inuse;
+} Semaphore;
+
+#define SEMA_MAX	(64)
+
+static int32 iNumSema;
+static Semaphore semaphores[SEMA_MAX];
+
 // thread states
 enum
 {
@@ -139,7 +161,7 @@ typedef struct
 
 	uint32 waitparm;	// what we're waiting on if in one the TS_WAIT* states
 	
-	uint32 save_regs[35];	// CPU registers belonging to this thread
+	uint32 save_regs[37];	// CPU registers belonging to this thread
 } Thread;
 
 static int32 iNumThreads, iCurThread;
@@ -148,6 +170,7 @@ static Thread threads[32];
 #if DEBUG_THREADING
 static char *_ThreadStateNames[TS_MAXSTATE] = { "RUNNING", "READY", "WAITEVFLAG", "WAITSEMA", "WAITDELAY", "SLEEPING", "CREATED" };
 #endif
+
 #if DEBUG_HLE_IOP
 static char *seek_types[3] = { "SEEK_SET", "SEEK_CUR", "SEEK_END" };
 #endif
@@ -216,9 +239,10 @@ uint32 initial_ram[(2*1024*1024)/4];
 uint32 initial_scratch[0x400];
 
 static uint32 spu_delay, dma_icr, irq_data, irq_mask, dma_timer, WAI;
-static uint32 dma4_madr, dma4_bcr, dma4_chcr;
-static uint32 dma7_madr, dma7_bcr, dma7_chcr;
+static uint32 dma4_madr, dma4_bcr, dma4_chcr, dma4_delay;
+static uint32 dma7_madr, dma7_bcr, dma7_chcr, dma7_delay;
 static uint32 dma4_cb, dma7_cb, dma4_fval, dma4_flag, dma7_fval, dma7_flag;
+static uint32 irq9_cb, irq9_fval, irq9_flag;
 
 // take a snapshot of the CPU state for a thread
 static void FreezeThread(int32 iThread, int flag)
@@ -227,7 +251,7 @@ static void FreezeThread(int32 iThread, int flag)
 	union cpuinfo mipsinfo;
 
 	#if DEBUG_THREADING
-	printf("IOP: FreezeThread(%d)\n", iThread);
+//	printf("IOP: FreezeThread(%d)\n", iThread);
 	#endif
 
 	for (i = 0; i < 32; i++)
@@ -239,19 +263,33 @@ static void FreezeThread(int32 iThread, int flag)
 	threads[iThread].save_regs[32] = mipsinfo.i;
 	mips_get_info(CPUINFO_INT_REGISTER + MIPS_LO, &mipsinfo);
 	threads[iThread].save_regs[33] = mipsinfo.i;
+	mips_get_info(CPUINFO_INT_REGISTER + MIPS_DELAYV, &mipsinfo);
+	threads[iThread].save_regs[35] = mipsinfo.i;
+	mips_get_info(CPUINFO_INT_REGISTER + MIPS_DELAYR, &mipsinfo);
+	threads[iThread].save_regs[36] = mipsinfo.i;
+
 
 	// if a thread is freezing itself due to a IOP syscall, we must save the RA as the PC
 	// to come back to or else the syscall will recurse	
 	if (flag)
 	{
 		mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
-		mipsinfo.i -= 4;	// compensate for delay slot
 	}
 	else
 	{
 		mips_get_info(CPUINFO_INT_PC, &mipsinfo);
 	}
 	threads[iThread].save_regs[34] = mipsinfo.i;
+
+	#if DEBUG_THREADING
+	{
+		char buffer[256];
+
+		DasmMIPS(buffer, mipsinfo.i, &psx_ram[(mipsinfo.i & 0x7fffffff)/4]);
+
+		printf("IOP: FreezeThread(%d) => %08x  [%s]\n", iThread, threads[iThread].save_regs[34], buffer);
+	}
+	#endif
 
 	// if thread was running, now it's ready
 	if (threads[iThread].iState == TS_RUNNING)
@@ -276,13 +314,22 @@ static void ThawThread(int32 iThread)
 		threads[iThread].save_regs[29] = (threads[iThread].stackloc + threads[iThread].stacksize) - 16;
 		threads[iThread].save_regs[29] |= 0x80000000;
 
+		threads[iThread].save_regs[35] = threads[iThread].save_regs[36] = 0;
+
 		#if DEBUG_THREADING
 //		printf("IOP: Initial setup for thread %d => PC %x SP %x\n", iThread, threads[iThread].save_regs[34]+4, threads[iThread].save_regs[29]);
 		#endif
 	}
 											     
 	#if DEBUG_THREADING
-	printf("IOP: ThawThread(%d) => %08x\n", iThread, threads[iThread].save_regs[34]);
+	{
+		char buffer[256];
+
+		mips_get_info(CPUINFO_INT_PC, &mipsinfo);
+		DasmMIPS(buffer, mipsinfo.i, &psx_ram[(mipsinfo.i & 0x7fffffff)/4]);
+
+		printf("IOP: ThawThread(%d) => %08x  [%s] (wake %d)\n", iThread, threads[iThread].save_regs[34], buffer, wakecount);
+	}
 	#endif
 
 	for (i = 0; i < 32; i++)
@@ -297,6 +344,10 @@ static void ThawThread(int32 iThread)
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_LO, &mipsinfo);
 	mipsinfo.i = threads[iThread].save_regs[34];
 	mips_set_info(CPUINFO_INT_PC, &mipsinfo);
+	mipsinfo.i = threads[iThread].save_regs[35];
+	mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYV, &mipsinfo);
+	mipsinfo.i = threads[iThread].save_regs[36];
+	mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYR, &mipsinfo);
 
 	threads[iThread].iState = TS_RUNNING;
 }
@@ -357,8 +408,6 @@ static void ps2_reschedule(void)
 		{
 			printf("Thread %02d: %s\n", i, _ThreadStateNames[threads[i].iState]);
 		}
-
-		printf("IOP: reschedule switching to thread %d\n", iNextThread);
 		#endif
 
 		if (iCurThread != -1)
@@ -582,12 +631,7 @@ static void ps2_dma4(uint32 madr, uint32 bcr, uint32 chcr)
 		SPU2readDMA4Mem(madr&0x1fffff, bcr);
 	}
 
-	SPU2interruptDMA4();
-
-	if (dma4_cb)
-	{
-		call_irq_routine(dma4_cb, dma4_flag);
-	}
+	dma4_delay = 80;
 }
 
 static void ps2_dma7(uint32 madr, uint32 bcr, uint32 chcr)
@@ -606,23 +650,23 @@ static void ps2_dma7(uint32 madr, uint32 bcr, uint32 chcr)
 		printf("DMA7: SPU2 to RAM %08x\n", madr);
 		#endif
 		bcr = (bcr>>16) * (bcr & 0xffff) * 4;
-		SPU2readDMA7Mem(madr&0x1fffff, bcr);
+//		SPU2readDMA7Mem(madr&0x1fffff, bcr);
 	}
 
-	SPU2interruptDMA7();
-
-	if (dma7_cb)
-	{
-		call_irq_routine(dma7_cb, dma7_flag);
-	}
+	dma7_delay = 80;
 }
 
 void psx_hw_write(offs_t offset, uint32 data, uint32 mem_mask)
 {
+	union cpuinfo mipsinfo;
+
 	if (offset >= 0x00000000 && offset <= 0x007fffff)
 	{
 		offset &= 0x1fffff;
 //		if (offset < 0x10000) printf("Write %x to kernel @ %x\n", data, offset);
+
+		mips_get_info(CPUINFO_INT_PC, &mipsinfo);
+
 		psx_ram[offset>>2] &= LE32(mem_mask);
 		psx_ram[offset>>2] |= LE32(data);
 		return;
@@ -632,6 +676,7 @@ void psx_hw_write(offs_t offset, uint32 data, uint32 mem_mask)
 	{
 		offset &= 0x1fffff;
 //		if (offset < 0x10000) printf("Write %x to kernel @ %x\n", data, offset);
+		mips_get_info(CPUINFO_INT_PC, &mipsinfo);
 		psx_ram[offset>>2] &= LE32(mem_mask);
 		psx_ram[offset>>2] |= LE32(data);
 		return;
@@ -830,7 +875,7 @@ void psx_hw_slice(void)
 
 void ps2_hw_slice(void)
 {
-	int i;
+	int i = 0;
 
 	timerexp = 0;
 	psx_hw_runcounters();
@@ -900,12 +945,24 @@ extern uint32 mips_get_status(void);
 extern void mips_set_status(uint32 status);
 extern uint32 mips_get_ePC(void);
 
-static uint32 irq_regs[35];
+static uint32 irq_regs[37];
+
+static int irq_mutex = 0;
 
 static void call_irq_routine(uint32 routine, uint32 parameter)
 {
 	int j, oldICount;
 	union cpuinfo mipsinfo;
+
+	if (!irq_mutex)
+	{
+		irq_mutex = 1;
+	}
+	else
+	{
+		printf("IOP: ERROR!  IRQ reentry!\n");
+		return;
+	}
 
 	// save regs for IRQ
 	for (j = 0; j < 32; j++)
@@ -919,6 +976,10 @@ static void call_irq_routine(uint32 routine, uint32 parameter)
 	irq_regs[33] = mipsinfo.i;
 	mips_get_info(CPUINFO_INT_PC, &mipsinfo);
 	irq_regs[34] = mipsinfo.i;
+	mips_get_info(CPUINFO_INT_REGISTER + MIPS_DELAYV, &mipsinfo);
+	irq_regs[35] = mipsinfo.i;
+	mips_get_info(CPUINFO_INT_REGISTER + MIPS_DELAYR, &mipsinfo);
+	irq_regs[36] = mipsinfo.i;
 
 	// PC = timer handler routine
 	mipsinfo.i = routine; 
@@ -956,6 +1017,12 @@ static void call_irq_routine(uint32 routine, uint32 parameter)
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_LO, &mipsinfo);
 	mipsinfo.i = irq_regs[34];
 	mips_set_info(CPUINFO_INT_PC, &mipsinfo);
+	mipsinfo.i = irq_regs[35];
+	mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYV, &mipsinfo);
+	mipsinfo.i = irq_regs[36];
+	mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYR, &mipsinfo);
+
+	irq_mutex = 0;
 }
 
 void psx_bios_exception(uint32 pc)
@@ -1218,6 +1285,9 @@ void psx_hw_init(void)
 	memset(threads, 0, sizeof(threads));
 	iNumThreads = 1;	// we always have at least one thread
 
+	memset(semaphores, 0, sizeof(semaphores));
+	iNumSema = 0;
+
 	// set the initial thread to "RUNNING"
 	threads[0].iState = TS_RUNNING;
 	iCurThread = 0;
@@ -1265,6 +1335,7 @@ void psx_bios_hle(uint32 pc)
 		#if DEBUG_HLE_IOP
 		printf("IOP 'null' state\n");
 		#endif
+//		ao_song_done = 1;
 		return;
 	}
 
@@ -1486,7 +1557,7 @@ void psx_bios_hle(uint32 pc)
 
 						psx_ram[(chunk+BLK_STAT)/4] = LE32(1);
 						psx_ram[(chunk+BLK_SIZE)/4] = LE32(a0);
-						psx_ram[(chunk+BLK_FD)/4] = fd;
+						psx_ram[(chunk+BLK_FD)/4] = LE32(fd);
 
 						mipsinfo.i = chunk + 16;
 						mipsinfo.i |= 0x80000000;
@@ -1779,44 +1850,78 @@ void psx_hw_runcounters(void)
 	int i, j;
 	union cpuinfo mipsinfo;
 
-	for (i = 0; i < iNumThreads; i++)
+	// don't process any IRQ sources when interrupts are suspended
+	if (!intr_susp)
 	{
-		if (threads[i].iState == TS_WAITDELAY)
+		if (dma4_delay)
 		{
-			if (threads[i].waitparm > CLOCK_DIV)
-			{
-				threads[i].waitparm -= CLOCK_DIV;
-			}
-			else	// time's up
-			{
-				threads[i].waitparm = 0;
-				threads[i].iState = TS_READY;
+			dma4_delay--;
 
-				timerexp = 1;
+			if (dma4_delay == 0)
+			{
+				SPU2interruptDMA4();
 
-				ps2_reschedule();
+				if (dma4_cb)
+				{
+					call_irq_routine(dma4_cb, dma4_flag);
+				}
 			}
 		}
-	}
 
-	sys_time += 836;
-
-	if (iNumTimers > 0)
-	{
-		for (i = 0; i < iNumTimers; i++)
+		if (dma7_delay)
 		{
-			if (iop_timers[i].iActive > 0)
-			{
-				iop_timers[i].count += 836;
-				if (iop_timers[i].count >= iop_timers[i].target)
-				{
-					iop_timers[i].count -= iop_timers[i].target;
+			dma7_delay--;
 
-//					printf("Timer %d: handler = %08x, param = %08x\n", i, iop_timers[i].handler, iop_timers[i].hparam);
-					call_irq_routine(iop_timers[i].handler, iop_timers[i].hparam);
+			if (dma7_delay == 0)
+			{
+				SPU2interruptDMA7();
+
+				if (dma7_cb)
+				{
+					call_irq_routine(dma7_cb, dma7_flag);
+				}
+			}
+		}
+
+		for (i = 0; i < iNumThreads; i++)
+		{
+			if (threads[i].iState == TS_WAITDELAY)
+			{
+				if (threads[i].waitparm > CLOCK_DIV)
+				{
+					threads[i].waitparm -= CLOCK_DIV;
+				}
+				else	// time's up
+				{
+					threads[i].waitparm = 0;
+					threads[i].iState = TS_READY;
 
 					timerexp = 1;
-				} 
+
+					ps2_reschedule();
+				}
+			}
+		}
+
+		sys_time += 836;
+
+		if (iNumTimers > 0)
+		{
+			for (i = 0; i < iNumTimers; i++)
+			{
+				if (iop_timers[i].iActive > 0)
+				{
+					iop_timers[i].count += 836;
+					if (iop_timers[i].count >= iop_timers[i].target)
+					{
+						iop_timers[i].count -= iop_timers[i].target;
+
+	//					printf("Timer %d: handler = %08x, param = %08x\n", i, iop_timers[i].handler, iop_timers[i].hparam);
+						call_irq_routine(iop_timers[i].handler, iop_timers[i].hparam);
+
+						timerexp = 1;
+					} 
+				}
 			}
 		}
 	}
@@ -1964,7 +2069,7 @@ static iop_sprintf(char *out, char *fmt, uint32 pstart)
 
 			tfmt[0] = '%';
 			fp = 1;
-			while ((*cf >= '0') && (*cf <= '9'))
+			while (((*cf >= '0') && (*cf <= '9')) || (*cf == '.'))
 			{
 				tfmt[fp] = *cf;
 				fp++;
@@ -1989,13 +2094,14 @@ static iop_sprintf(char *out, char *fmt, uint32 pstart)
 					break;
 			}
 
-//			printf("]]] temp format: [%s]\n", tfmt);
+//			printf("]]] temp format: [%s] [%d]\n", tfmt, isnum);
 
 			if (isnum)
 			{
 				mips_get_info(curparm, &mipsinfo);
+//				printf("parameter %d = %x\n", curparm-pstart, mipsinfo.i);
 				curparm++;
-				sprintf(temp, tfmt, mipsinfo.i);
+				sprintf(temp, tfmt, (int32)mipsinfo.i);
 			}
 			else
 			{
@@ -2030,6 +2136,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 	char *mname, *str1, *str2, *str3, name[9], out[512];
 	uint32 a0, a1, a2, a3;
 	union cpuinfo mipsinfo;
+	int i;
 
 //	printf("IOP call @ %08x\n", pc);
 
@@ -2068,6 +2175,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 			case 4:	// printf
 				mname = (char *)psx_ram;
 				mname += a0 & 0x1fffff;
+				mname += (a0 & 3);
 
 				iop_sprintf(out, mname, CPUINFO_INT_REGISTER + MIPS_R5);	// a1 is first parm
 				
@@ -2215,8 +2323,11 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				printf("IOP: iWakeupThread(%d)\n", a0);
 				#endif
 
-				// set thread to "ready to go"
-				threads[a0].iState = TS_READY;	
+				// set thread to "ready to go" if it's not running
+				if (threads[a0].iState != TS_RUNNING)
+				{
+					threads[a0].iState = TS_READY;	
+				}
 				break;
 
 			case 33:// DelayThread
@@ -2301,7 +2412,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					a2 /= 4;
 
 					temp = LE32(psx_ram[a0]);
-					temp |= (uint64)LE32(psx_ram[a1])<<32;
+					temp |= (uint64)LE32(psx_ram[a0+1])<<32;
 
 					temp *= (uint64)1000000;
 					temp /= (uint64)36864000;
@@ -2332,7 +2443,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 				a0 &= 0x1fffff;
 				a0 /= 4;
-
+ 
 				evflags[iNumFlags].type = LE32(psx_ram[a0]);
 				evflags[iNumFlags].value = LE32(psx_ram[a0+1]);
 				evflags[iNumFlags].param = LE32(psx_ram[a0+2]);
@@ -2369,6 +2480,14 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 				mipsinfo.i = 0;
 				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+
+				for (i=0; i < iNumThreads; i++)
+				{
+					if ((threads[i].iState == TS_WAITEVFLAG) && (threads[i].waitparm == a0))
+					{
+						threads[i].iState = TS_READY;	
+					}
+				}
 				break;
 
 			case 8:	// ClearEventFlag
@@ -2427,38 +2546,138 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 	}
 	else if (!strcmp(name, "thsemap"))
 	{
+		int foundthread;
+
 		switch (callnum)
 		{
 			case 4:	// CreateSema
 				#if DEBUG_HLE_IOP
 				printf("IOP: CreateSema(%08x)\n", a0);
 				#endif
-				mipsinfo.i = 1;
+
+				mipsinfo.i = -1;
+				for (i = 0; i < SEMA_MAX; i++)
+				{
+					if (!semaphores[i].inuse)
+					{
+						mipsinfo.i = i;
+						break;
+					}
+				}
+
+				if (mipsinfo.i == -1)
+				{
+					printf("IOP: out of semaphores!\n");
+				}
+
+				a0 &= 0x7fffffff;
+				a0 /= 4;
+
+//				printf("Sema %d Parms: %08x %08x %08x %08x\n", mipsinfo.i, psx_ram[a0], psx_ram[a0+1], psx_ram[a0+2], psx_ram[a0+3]);
+	
+				if (mipsinfo.i != -1)
+				{
+					semaphores[mipsinfo.i].attr = LE32(psx_ram[a0]);
+					semaphores[mipsinfo.i].option = LE32(psx_ram[a0+1]);
+					semaphores[mipsinfo.i].init = LE32(psx_ram[a0+2]);
+					semaphores[mipsinfo.i].max = LE32(psx_ram[a0+3]);
+
+					semaphores[mipsinfo.i].current = semaphores[mipsinfo.i].init;
+
+					semaphores[mipsinfo.i].inuse = 1;
+				}
+
 				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
 			case 6: // SignalSema
 				#if DEBUG_HLE_IOP
-				printf("IOP: SignalSema(%d)\n", a0);
+				printf("IOP: SignalSema(%d) (current %d)\n", a0, semaphores[a0].current);
 				#endif
+
+				foundthread = 0;
+				for (i=0; i < iNumThreads; i++)
+				{
+					if ((threads[i].iState == TS_WAITSEMA) && (threads[i].waitparm == a0))
+					{
+						threads[i].iState = TS_READY;	
+						semaphores[a0].threadsWaiting--;
+						foundthread = 1;
+						break;
+					}
+				}
+
+				mipsinfo.i = 0;
+
+				if (!foundthread)
+				{
+					if (semaphores[a0].current < semaphores[a0].max)
+					{
+						semaphores[a0].current++;
+					}
+					else
+					{
+						mipsinfo.i = -420;	// semaphore overflow
+					}
+				}
+
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
 			case 7: // iSignalSema
 				#if DEBUG_HLE_IOP
-				printf("IOP: SignalSema(%d)\n", a0);
+				printf("IOP: iSignalSema(%d)\n", a0);
 				#endif
+
+				foundthread = 0;
+				for (i=0; i < iNumThreads; i++)
+				{
+					if ((threads[i].iState == TS_WAITSEMA) && (threads[i].waitparm == a0))
+					{
+						threads[i].iState = TS_READY;	
+						semaphores[a0].threadsWaiting--;
+						foundthread = 1;
+						break;
+					}
+				}
+
+				mipsinfo.i = 0;
+
+				if (!foundthread)
+				{
+					if (semaphores[a0].current < semaphores[a0].max)
+					{
+						semaphores[a0].current++;
+					}
+					else
+					{
+						mipsinfo.i = -420;	// semaphore overflow
+					}
+				}
+
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
 			case 8: // WaitSema
 				#if DEBUG_HLE_IOP
 				mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
-				printf("IOP: WaitSema(%d) (PC=%x)\n", a0, mipsinfo.i);
+				printf("IOP: WaitSema(%d) (cnt %d) (th %d) (PC=%x)\n", a0, iCurThread, semaphores[a0].current, mipsinfo.i);
 				#endif
 		
-//				if (mipsinfo.i == 0x800164f4) { printf("skipping\n"); return; }
-				FreezeThread(iCurThread, 1);
-				threads[iCurThread].iState = TS_WAITSEMA;
-				ps2_reschedule();
+				if (semaphores[a0].current > 0)
+				{
+					semaphores[a0].current--;
+				}
+				else
+				{
+					FreezeThread(iCurThread, 1);
+					threads[iCurThread].iState = TS_WAITSEMA;
+					threads[iCurThread].waitparm = a0;
+					ps2_reschedule();
+				}
+
+				mipsinfo.i = 0;
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
 			default:
@@ -2570,13 +2789,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: memcpy(%08x, %08x, %d)\n", a0, a1, a2);
 					#endif
 
-					#if LSB_FIRST
-						dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
-						src = (uint8 *)&psx_ram[(a1&0x1fffff)/4];
-					#else
-						dst = (uint8 *)&psx_ram[((a0&0x1fffff)/4)^3];
-						src = (uint8 *)&psx_ram[((a1&0x1fffff)/4)^3];
-					#endif
+					dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
+					src = (uint8 *)&psx_ram[(a1&0x1fffff)/4];
 					// get exact byte alignment
 					dst += a0 % 4;
 					src += a1 % 4;
@@ -2595,6 +2809,37 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				}
 				break;
 
+			case 13:	// memmove
+				{
+					uint8 *dst, *src;
+
+					#if DEBUG_HLE_IOP
+					printf("IOP: memmove(%08x, %08x, %d)\n", a0, a1, a2);
+					#endif
+
+					dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
+					src = (uint8 *)&psx_ram[(a1&0x1fffff)/4];
+					// get exact byte alignment
+					dst += a0 % 4;
+					src += a1 % 4;
+
+					dst += a2 - 1;
+					src += a2 - 1;
+
+					while (a2)
+					{
+						*dst = *src;
+						dst--;
+						src--;
+						a2--;
+					}
+
+					// v0 = a0
+					mipsinfo.i = a0;
+					mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+				}
+				break;
+
 			case 14:	// memset
 				{
 					uint8 *dst;
@@ -2604,11 +2849,9 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: memset(%08x, %02x, %d) [PC=%x]\n", a0, a1, a2, mipsinfo.i);
 					#endif
 
-					#if LSB_FIRST
 					dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
-					#else
-					dst = (uint8 *)&psx_ram[((a0&0x1fffff)/4)^3];
-					#endif
+					dst += (a0 & 3);
+
 					memset(dst, a1, a2);
 				}
 				break;
@@ -2621,11 +2864,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: bzero(%08x, %08x)\n", a0, a1);
 					#endif
 
-					#if LSB_FIRST
 					dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
-					#else
-					dst = (uint8 *)&psx_ram[((a0&0x1fffff)/4)^3];
-					#endif
+					dst += (a0 & 3);
 					memset(dst, 0, a1);
 				}
 				break;
@@ -2635,10 +2875,11 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				str1 = (char *)psx_ram;
 				mname += a0 & 0x1fffff;
 				str1 += a1 & 0x1fffff;
-				
+
 				#if DEBUG_HLE_IOP
 				mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
-				printf("IOP: sprintf(%08x, %s, ...) [PC=%08x]\n", a0, str1, mipsinfo.i);
+				printf("IOP: sprintf(%08x, %s, ...) [PC=%08x]\n", a0, str1, (uint32)mipsinfo.i);
+				printf("%x %x %x %x\n", a0, a1, a2, a3);
 				#endif
 
 				iop_sprintf(mname, str1, CPUINFO_INT_REGISTER + MIPS_R6);	// a2 is first parameter
@@ -2646,8 +2887,6 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				#if DEBUG_HLE_IOP
 				printf("     = [%s]\n", mname);
 				#endif
-
-				psxcpu_verbose = 64;
 				break;
 
 			case 23:	// strcpy
@@ -2658,13 +2897,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: strcpy(%08x, %08x)\n", a0, a1);
 					#endif
 
-					#if LSB_FIRST
-						dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
-						src = (uint8 *)&psx_ram[(a1&0x1fffff)/4];
-					#else
-						dst = (uint8 *)&psx_ram[((a0&0x1fffff)/4)^3];
-						src = (uint8 *)&psx_ram[((a1&0x1fffff)/4)^3];
-					#endif
+					dst = (uint8 *)&psx_ram[(a0&0x1fffff)/4];
+					src = (uint8 *)&psx_ram[(a1&0x1fffff)/4];
 					// get exact byte alignment
 					dst += a0 % 4;
 					src += a1 % 4;
@@ -2692,11 +2926,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: strlen(%08x) [PC=%x]\n", a0, mipsinfo.i);
 					#endif
 
-					#if LSB_FIRST
 					dst = (char *)&psx_ram[(a0&0x1fffff)/4];
-					#else
-					dst = (char *)&psx_ram[((a0&0x1fffff)/4)^3];
-					#endif
+					dst += (a0 & 3);
 					mipsinfo.i = strlen(dst);
 					mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				}
@@ -2710,13 +2941,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					printf("IOP: strncpy(%08x, %08x, %d)\n", a0, a1, a2);
 					#endif
 
-					#if LSB_FIRST
-						dst = (char *)&psx_ram[(a0&0x1fffff)/4];
-						src = (char *)&psx_ram[(a1&0x1fffff)/4];
-					#else
-						dst = (char *)&psx_ram[((a0&0x1fffff)/4)^3];
-						src = (char *)&psx_ram[((a1&0x1fffff)/4)^3];
-					#endif
+					dst = (char *)&psx_ram[(a0&0x1fffff)/4];
+					src = (char *)&psx_ram[(a1&0x1fffff)/4];
 					// get exact byte alignment
 					dst += a0 % 4;
 					src += a1 % 4;
@@ -2747,9 +2973,6 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				}
 
 				mipsinfo.i = strtol(mname, NULL, a2);
-				#if DEBUG_HLE_IOP
-				printf("IOP: strtol %08x %08x %d = %d\n", a0, a1, a2, mipsinfo.i);
-				#endif
 				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
@@ -2766,6 +2989,13 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				#if DEBUG_HLE_IOP
 				printf("IOP: RegisterIntrHandler(%d %08x %08x %08x)\n", a0, a1, a2, a3);
 				#endif
+
+				if (a0 == 9)
+				{
+					irq9_fval = a1;
+					irq9_cb = a2;
+					irq9_flag = a3;
+				}
 
 				// DMA4?
 				if (a0 == 36)
@@ -2922,6 +3152,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 				if (a1 == 1114112)	// HACK for crappy code in Shadow Hearts rip that assumes the buffer address
 				{
+					printf("SH Hack: was %x now %x\n", newAlloc, 0x60000);
 					newAlloc = 0x60000;
 				}
 
@@ -2931,7 +3162,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				printf("IOP: AllocMemory(%d, %d, %x) = %08x\n", a0, a1, a2, newAlloc|0x80000000);
 				#endif
 
-				mipsinfo.i = newAlloc | 0x80000000;
+				mipsinfo.i = newAlloc; // | 0x80000000;
 				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
@@ -2941,11 +3172,28 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				#endif
 				break;
 
+			case 7:	// QueryMaxFreeMemSize
+				#if DEBUG_HLE_IOP
+				printf("IOP: QueryMaxFreeMemSize\n");
+				#endif
+
+				mipsinfo.i = (2*1024*1024) - psf2_get_loadaddr();
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+				break;
+
+			case 8:	// QueryTotalFreeMemSize
+				#if DEBUG_HLE_IOP
+				printf("IOP: QueryTotalFreeMemSize\n");
+				#endif
+
+				mipsinfo.i = (2*1024*1024) - psf2_get_loadaddr();
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+				break;
+
 			case 14: // Kprintf
 				mname = (char *)psx_ram;
 				mname += a0 & 0x1fffff;
-
-				printf("KTTY: a0 %x a1 %x a2 %x a3 %x\n", a0, a1, a2, a3);
+				mname += (a0 & 3);
 
 				iop_sprintf(out, mname, CPUINFO_INT_REGISTER + MIPS_R5);	// a1 is first parm
 				
@@ -3053,7 +3301,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 						for (i = 0; i < numargs; i++) 
 						{
 							#if DEBUG_HLE_IOP
-							printf("Arg %d: %08x [%s]\n", i, args[i], &argbase[args[i]-a2]); 
+//							printf("Arg %d: %08x [%s]\n", i, args[i], &argbase[args[i]-a2]); 
 							#endif
 							psx_ram[(newAlloc/4)+i] = LE32(args[i]);
 						}
@@ -3088,7 +3336,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					int i, slot2use;
 
 					slot2use = -1;
-					for (i = 0; i < 8; i++)
+					for (i = 0; i < MAX_FILE_SLOTS; i++)
 					{
 						if (filestat[i] == 0)
 						{
@@ -3107,7 +3355,20 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 					mname = (char *)psx_ram;
 					mname += (a0 & 0x1fffff);
-					mname += 8;
+
+					if (!strncmp(mname, "aofile:", 7))
+					{
+						mname += 8;
+					}
+					else if (!strncmp(mname, "hefile:", 7))
+					{
+						mname += 8;
+					}
+					else if (!strncmp(mname, "host0:", 6)) 
+					{
+						mname += 7;
+					}
+
 					mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
 					#if DEBUG_HLE_IOP
 					printf("IOP: open(\"%s\") (PC=%08x)\n", mname, mipsinfo.i);
@@ -3132,7 +3393,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 			case 5:	// close
 				#if DEBUG_HLE_IOP
-				printf("IOP: close(%d)\n", a0);
+				mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
+				printf("IOP: close(%d) (PC=%08x)\n", a0, mipsinfo.i);
 				#endif
 				free(filedata[a0]);
 				filedata[a0] = (uint8 *)NULL;
@@ -3171,7 +3433,8 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 
 			case 8:	// lseek
 				#if DEBUG_HLE_IOP
-				printf("IOP: lseek(%d, %d, %s)\n", a0, a1, seek_types[a2]);
+				mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
+				printf("IOP: lseek(%d, %d, %s) (PC=%08x)\n", a0, a1, seek_types[a2], mipsinfo.i);
 				#endif
 
 				switch (a2)
@@ -3197,10 +3460,27 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
 				break;
 
+			case 20:	// AddDrv
+				#if DEBUG_HLE_IOP
+				printf("IOP: AddDrv(%x)\n", a0);
+				#endif
+
+				mipsinfo.i = 0;
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+				break;
+
+			case 21:	// DelDrv
+				#if DEBUG_HLE_IOP
+				printf("IOP: DelDrv(%x)\n", a0);
+				#endif
+
+				mipsinfo.i = 0;
+				mips_set_info(CPUINFO_INT_REGISTER + MIPS_R2, &mipsinfo);
+				break;
+
 			default:
 				printf("IOP: Unhandled service %d for module %s\n", callnum, name);
-				break;
-		}
+		}		      
 	}		
 	else
 	{
@@ -3212,14 +3492,28 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 			{
 				if (!strcmp(name, reglibs[lib].name))
 				{
+					#if DEBUG_HLE_IOP
+					uint32 PC;
+
+					mips_get_info(CPUINFO_INT_REGISTER + MIPS_R31, &mipsinfo);
+					PC = mipsinfo.i;
+					#endif
+
+					// zap the delay slot handling
+					mipsinfo.i = 0;
+					mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYV, &mipsinfo);
+					mips_set_info(CPUINFO_INT_REGISTER + MIPS_DELAYR, &mipsinfo);
+
 					mipsinfo.i = LE32(psx_ram[(reglibs[lib].dispatch/4) + callnum]);
+
 					// (NOTE: we get called in the delay slot!)
 					#if DEBUG_HLE_IOP
-					printf("IOP: Calling %s service %d => %08x (parms %08x %08x %08x %08x)\n",
+					printf("IOP: Calling %s (%d) service %d => %08x (parms %08x %08x %08x %08x) (PC=%x)\n",
 							 reglibs[lib].name, 
+							 lib,
 							 callnum, 
-							 mipsinfo.i, 
-							 a0, a1, a2, a3);
+							 (uint32)mipsinfo.i, 
+							 a0, a1, a2, a3, PC);
 					#endif
 
 					#if 0
