@@ -36,6 +36,7 @@
 
 
 #define EG_SHIFT	16
+#define FM_DELAY    4    // delay in number of slots processed before samples are written to the FM ring buffer
 
 // include the LFO handling code
 #include "scsplfo.c"
@@ -181,6 +182,10 @@ struct _SCSP
 	struct _SLOT Slots[32];
 	signed short RINGBUF[64];
 	unsigned char BUFPTR;
+#if FM_DELAY
+	signed short DELAYBUF[FM_DELAY];
+	unsigned char DELAYPTR;
+#endif
 	unsigned char *SCSPRAM;
 	UINT32 SCSPRAM_LENGTH;
 	char Master;
@@ -209,9 +214,7 @@ struct _SCSP
 
 	int ARTABLE[64], DRTABLE[64];
 
-#ifdef USEDSP
 	struct _SCSPDSP DSP;
-#endif
 };
 
 static struct _SCSP *AllocedSCSP;
@@ -463,10 +466,8 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 		{
 			SCSP->SCSPRAM = &sat_ram[0]; //(unsigned char *)intf->region;
 			SCSP->SCSPRAM_LENGTH = 512*1024;
-#ifdef USEDSP
 			SCSP->DSP.SCSPRAM = (UINT16 *)SCSP->SCSPRAM;
 			SCSP->DSP.SCSPRAM_LENGTH =  (512*1024)/2;
-#endif
 //			SCSP->SCSPRAM += intf->roffset;
 		}
 	}
@@ -629,7 +630,6 @@ static void SCSP_UpdateReg(struct _SCSP *SCSP, int reg)
 		case 0x2:
 		case 0x3:
 			{
-#ifdef USEDSP
 				unsigned int v=RBL(SCSP);
 				SCSP->DSP.RBP=RBP(SCSP);
 				if(v==0)
@@ -640,7 +640,6 @@ static void SCSP_UpdateReg(struct _SCSP *SCSP, int reg)
 					SCSP->DSP.RBL=32*1024;
 				if(v==3)
 					SCSP->DSP.RBL=64*1024;
-#endif
 			}
 			break;
 		case 0x6:
@@ -776,7 +775,6 @@ static void SCSP_w16(struct _SCSP *SCSP,unsigned int addr,unsigned short val)
 		SCSP->RINGBUF[(addr-0x600)/2]=val;
 	else
 	{
-#ifdef USEDSP
 		//DSP
 		if(addr<0x780)	//COEF
 			*((unsigned short *) (SCSP->DSP.COEF+(addr-0x700)/2))=val;
@@ -790,7 +788,6 @@ static void SCSP_w16(struct _SCSP *SCSP,unsigned int addr,unsigned short val)
 //			printf("DSP start\n");
 			SCSPDSP_Start(&SCSP->DSP);
 		}
-#endif
 	}
 }
 
@@ -860,232 +857,6 @@ void SCSP_TimersAddTicks(struct _SCSP *SCSP, int ticks)
 	}
 }
 
-#ifndef USEDSP
-static signed int *bufl1,*bufr1;
-#define SCSPNAME(_8bit,lfo,alfo,loop) \
-static void SCSP_Update##_8bit##lfo##alfo##loop(struct _SCSP *SCSP, struct _SLOT *slot,unsigned int Enc,unsigned int nsamples)
-
-#define SCSPTMPL(_8bit,lfo,alfo,loop) \
-SCSPNAME(_8bit,lfo,alfo,loop)\
-{\
-	INT32 sample;\
-	UINT32 addr;\
-	unsigned int s;\
-	for(s=0;s<nsamples;++s)\
-	{\
-		int step=slot->step;\
-		if(!slot->active)\
-			return;\
-		if(lfo) \
-		{\
-			step=step*PLFO_Step(&(slot->PLFO));\
-			step>>=SHIFT; \
-		}\
-		if(_8bit)\
-		{\
-			signed char *p=(signed char *) (slot->base+(slot->cur_addr>>SHIFT));\
-			int s;\
-			signed int fpart=slot->cur_addr&((1<<SHIFT)-1);\
-			s=(int) p[0]*((1<<SHIFT)-fpart)+(int) slot->Prev*fpart;\
-			sample=(s>>SHIFT)<<8;\
-			slot->Prev=p[0];\
-		}\
-		else\
-		{\
-			signed short *p=(signed short *) (slot->base+((slot->cur_addr>>(SHIFT-1))&(~1)));\
-			sample=(p[0]);\
-		}\
-		if(slot->Backwards)\
-			slot->cur_addr-=step;\
-		else\
-			slot->cur_addr+=step;\
-		addr=slot->cur_addr>>SHIFT;\
-		if(loop==0)\
-		{\
-			if(addr>LEA(slot))\
-			{\
-				SCSP_StopSlot(slot,0);\
-			}\
-		}\
-		if(loop==1)\
-		{\
-			if(addr>=LEA(slot))\
-				slot->cur_addr=LSA(slot)<<SHIFT;\
-		}\
-		if(loop==2)\
-		{\
-			if(addr>=LEA(slot))\
-			{\
-				slot->cur_addr=LEA(slot)<<SHIFT;\
-				slot->Backwards=1;\
-			}\
-			if(addr<LSA(slot) || (addr&0x80000000))\
-				slot->cur_addr=LEA(slot)<<SHIFT;\
-		}\
-		if(loop==3)\
-		{\
-			if(addr>=LEA(slot)) /*reached end, reverse till start*/ \
-			{\
-				slot->cur_addr=LEA(slot)<<SHIFT;\
-				slot->Backwards=1;\
-			}\
-			if((addr<=LSA(slot) || (addr&0x80000000)) && slot->Backwards) /*reached start or negative*/\
-			{\
-				slot->cur_addr=LSA(slot)<<SHIFT;\
-				slot->Backwards=0;\
-			}\
-		}\
-		if(alfo)\
-		{\
-			sample=sample*ALFO_Step(&(slot->ALFO));\
-			sample>>=SHIFT;\
-		}\
-		*RBUFDST=sample;\
-		\
-		sample=(sample*EG_Update(slot))>>SHIFT;\
-	\
-		*bufl1=*bufl1 + ((sample*SCSP->LPANTABLE[Enc])>>SHIFT);\
-		*bufr1=*bufr1 + ((sample*SCSP->RPANTABLE[Enc])>>SHIFT);\
-		++bufl1;\
-		++bufr1;\
-	}\
-}
-
-SCSPTMPL(0,0,0,0)
-SCSPTMPL(0,0,0,1)
-SCSPTMPL(0,0,0,2)
-SCSPTMPL(0,0,0,3)
-SCSPTMPL(0,0,1,0)
-SCSPTMPL(0,0,1,1)
-SCSPTMPL(0,0,1,2)
-SCSPTMPL(0,0,1,3)
-SCSPTMPL(0,1,0,0)
-SCSPTMPL(0,1,0,1)
-SCSPTMPL(0,1,0,2)
-SCSPTMPL(0,1,0,3)
-SCSPTMPL(0,1,1,0)
-SCSPTMPL(0,1,1,1)
-SCSPTMPL(0,1,1,2)
-SCSPTMPL(0,1,1,3)
-SCSPTMPL(1,0,0,0)
-SCSPTMPL(1,0,0,1)
-SCSPTMPL(1,0,0,2)
-SCSPTMPL(1,0,0,3)
-SCSPTMPL(1,0,1,0)
-SCSPTMPL(1,0,1,1)
-SCSPTMPL(1,0,1,2)
-SCSPTMPL(1,0,1,3)
-SCSPTMPL(1,1,0,0)
-SCSPTMPL(1,1,0,1)
-SCSPTMPL(1,1,0,2)
-SCSPTMPL(1,1,0,3)
-SCSPTMPL(1,1,1,0)
-SCSPTMPL(1,1,1,1)
-SCSPTMPL(1,1,1,2)
-SCSPTMPL(1,1,1,3)
-
-#undef SCSPTMPL
-#define SCSPTMPL(_8bit,lfo,alfo,loop) \
- SCSP_Update##_8bit##lfo##alfo##loop ,
-
-
-typedef void (*_SCSPUpdateModes)(struct _SCSP *,struct _SLOT *,unsigned int,unsigned int);
-
-_SCSPUpdateModes SCSPUpdateModes[]=
-{
-	SCSPTMPL(0,0,0,0)
-	SCSPTMPL(0,0,0,1)
-	SCSPTMPL(0,0,0,2)
-	SCSPTMPL(0,0,0,3)
-	SCSPTMPL(0,0,1,0)
-	SCSPTMPL(0,0,1,1)
-	SCSPTMPL(0,0,1,2)
-	SCSPTMPL(0,0,1,3)
-	SCSPTMPL(0,1,0,0)
-	SCSPTMPL(0,1,0,1)
-	SCSPTMPL(0,1,0,2)
-	SCSPTMPL(0,1,0,3)
-	SCSPTMPL(0,1,1,0)
-	SCSPTMPL(0,1,1,1)
-	SCSPTMPL(0,1,1,2)
-	SCSPTMPL(0,1,1,3)
-	SCSPTMPL(1,0,0,0)
-	SCSPTMPL(1,0,0,1)
-	SCSPTMPL(1,0,0,2)
-	SCSPTMPL(1,0,0,3)
-	SCSPTMPL(1,0,1,0)
-	SCSPTMPL(1,0,1,1)
-	SCSPTMPL(1,0,1,2)
-	SCSPTMPL(1,0,1,3)
-	SCSPTMPL(1,1,0,0)
-	SCSPTMPL(1,1,0,1)
-	SCSPTMPL(1,1,0,2)
-	SCSPTMPL(1,1,0,3)
-	SCSPTMPL(1,1,1,0)
-	SCSPTMPL(1,1,1,1)
-	SCSPTMPL(1,1,1,2)
-	SCSPTMPL(1,1,1,3)
-};
-
-
-static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
-{
-	signed short *bufr,*bufl;
-	int sl, s;
-
-	for(sl=0;sl<32;++sl)
-	{
-		bufr1=SCSP->buffertmpr;
-		bufl1=SCSP->buffertmpl;
-
-		if(SCSP->Slots[sl].active)
-		{
-			struct _SLOT *slot=SCSP->Slots+sl;
-			unsigned short Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
-			unsigned int mode=LPCTL(slot);
-
-			RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
-			if(PLFOS(slot))
-				mode|=8;
-			if(ALFOS(slot))
-				mode|=4;
-			if(PCM8B(slot))
-				mode|=0x10;
-
-			SCSPUpdateModes[mode](SCSP,slot,Enc,nsamples);
-
-			++SCSP->BUFPTR;
-			SCSP->BUFPTR&=63;
-		}
-	}
-
-	bufr=bufferr;
-	bufl=bufferl;
-	bufr1=SCSP->buffertmpr;
-	bufl1=SCSP->buffertmpl;
-	for(s=0;s<nsamples;++s)
-	{
-		signed int smpl=*bufl1>>2;
-		signed int smpr=*bufr1>>2;
-
-//      if (!chip)
-		{
-			SCSP_TimersAddTicks(SCSP, 1);
-			CheckPendingIRQ(SCSP);
-		}
-
-		*bufl=ICLIP16(smpl);
-		*bufr=ICLIP16(smpr);
-		*bufl1=0;
-		*bufr1=0;
-		++bufl;
-		++bufr;
-		++bufl1;
-		++bufr1;
-
-	}
-}
-#else
 INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 {
 	INT32 sample;
@@ -1114,31 +885,23 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 		addr2=(slot->nxt_addr>>(SHIFT-1))&0x7fffe;
 	}
 
-	/*if(MDL(slot)!=0 || MDXSL(slot)!=0 || MDYSL(slot)!=0)
+	if(MDL(slot)!=0 || MDXSL(slot)!=0 || MDYSL(slot)!=0)
 	{
 		INT32 smp=(SCSP->RINGBUF[(SCSP->BUFPTR+MDXSL(slot))&63]+SCSP->RINGBUF[(SCSP->BUFPTR+MDYSL(slot))&63])/2;
 		INT32 cycle=LEA(slot)-LSA(slot); // cycle corresponds to 2 pi
 
-		smp*=cycle; // associate cycle with full 16-bit sample range
+		smp<<=0xA; // associate cycle with 1024
 		smp>>=0x1A-MDL(slot); // ex. for MDL=0xF, sample range corresponds to +/- 64 pi (32=2^5 cycles) so shift by 11 (16-5 == 0x1A-0xF)
 		while(smp<0) smp+=cycle; smp%=cycle; // keep modulation sampler within a single cycle
 		if(!PCM8B(slot)) smp<<=1;
 		
 		addr1+=smp; addr2+=smp;
-		if(!PCM8B(slot))
-		{
-			addr1&=0x7fffe; addr2&=0x7fffe;
-		}
-		else
-		{
-			addr1&=0x7ffff; addr2&=0x7ffff;
-		}
-	}*/
+	}
 
 	if(PCM8B(slot))	//8 bit signed
 	{
-		INT8 *p1=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr1)^1));
-		INT8 *p2=(signed char *) (SCSP->SCSPRAM+((SA(slot)+addr2)^1));
+		INT8 *p1=(signed char *) (SCSP->SCSPRAM+(((SA(slot)+addr1)^1)&0x7FFFF));
+		INT8 *p2=(signed char *) (SCSP->SCSPRAM+(((SA(slot)+addr2)^1)&0x7FFFF));
 		//sample=(p[0])<<8;
 		INT32 s;
 		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
@@ -1147,8 +910,8 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	}
 	else	//16 bit signed (endianness?)
 	{
-		INT16 *p1=(signed short *) (slot->base+addr1);
-		INT16 *p2=(signed short *) (slot->base+addr2);
+		INT16 *p1=(signed short *) (SCSP->SCSPRAM+((SA(slot)+addr1)&0x7FFFE));
+		INT16 *p2=(signed short *) (SCSP->SCSPRAM+((SA(slot)+addr2)&0x7FFFE));
 		//sample=LE16(p[0]);
 		INT32 s;
 		INT32 fpart=slot->cur_addr&((1<<SHIFT)-1);
@@ -1248,7 +1011,11 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 
 		for(sl=0;sl<32;++sl)
 		{
+#if FM_DELAY
+			RBUFDST=SCSP->DELAYBUF+SCSP->DELAYPTR;
+#else
 			RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
+#endif
 			if(SCSP->Slots[sl].active)
 			{
 				struct _SLOT *slot=SCSP->Slots+sl;
@@ -1257,18 +1024,24 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 
 				sample=SCSP_UpdateSlot(SCSP, slot);
 
-#ifdef USEDSP
 				Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
 				SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
-#endif
 				Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 				{
 					smpl+=(sample*SCSP->LPANTABLE[Enc])>>SHIFT;
 					smpr+=(sample*SCSP->RPANTABLE[Enc])>>SHIFT;
 				}
 			}
-			--SCSP->BUFPTR;
+			
+#if FM_DELAY
+			SCSP->RINGBUF[(SCSP->BUFPTR+64-(FM_DELAY-1))&63] = SCSP->DELAYBUF[(SCSP->DELAYPTR+FM_DELAY-(FM_DELAY-1))%FM_DELAY];
+#endif
+			++SCSP->BUFPTR;
 			SCSP->BUFPTR&=63;
+#if FM_DELAY
+			++SCSP->DELAYPTR;
+			if(SCSP->DELAYPTR>FM_DELAY-1) SCSP->DELAYPTR=0;
+#endif
 		}
 
 		SCSPDSP_Step(&SCSP->DSP);
@@ -1292,7 +1065,6 @@ static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
 	}
 
 }
-#endif
 
 static void dma_scsp(struct _SCSP *SCSP)
 {
@@ -1393,9 +1165,7 @@ void SCSP_set_ram_base(int which, void *base)
 	if (SCSP)
 	{
 		SCSP->SCSPRAM = base;
-#ifdef USEDSP
 		SCSP->DSP.SCSPRAM = base;
-#endif
 	}
 }
 
