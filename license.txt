@@ -9,7 +9,7 @@ derivative program.
 
 BSD license:
 
-Copyright (c) 2007, R. Belmont and Richard Bannister.
+Copyright (c) 2007-2008, R. Belmont and Richard Bannister.
 
 All rights reserved.
 
@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 MAME license:
 
-Copyright (c) 1997-2007, Nicola Salmoria and the MAME team
+Copyright (c) 1997-2008, Nicola Salmoria and the MAME team
 All rights reserved.
 
 Redistribution and use of this code or any derivative works are permitted provided that the following conditions are met:

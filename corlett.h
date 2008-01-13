@@ -2,7 +2,7 @@
 // Audio Overload
 // Emulated music player
 //
-// (C) 2000-2005 Richard F. Bannister
+// (C) 2000-2008 Richard F. Bannister
 //
 
 // corlett.h
@@ -31,3 +31,5 @@ typedef struct {
 } corlett_t;
 
 int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t **c);
+uint32 psfTimeToMS(char *str);
+

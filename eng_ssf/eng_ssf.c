@@ -79,6 +79,7 @@ Sega driver commands:
 
 static corlett_t	*c = NULL;
 static char 		psfby[256];
+static uint32		decaybegin, decayend, total_samples;
 
 void *scsp_start(const void *config);
 void SCSP_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
@@ -86,7 +87,7 @@ void SCSP_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
 int32 ssf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
-	uint32 offset, plength;
+	uint32 offset, plength, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length;
 	corlett_t *lib;
 	char *libfile;
@@ -179,6 +180,29 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 
 	sat_hw_init();
 
+	// now figure out the time in samples for the length/fade
+	lengthMS = psfTimeToMS(c->inf_length);
+	fadeMS = psfTimeToMS(c->inf_fade);
+	total_samples = 0;
+
+	if (lengthMS == 0)
+	{
+		lengthMS = ~0;
+	}
+
+	if (lengthMS == ~0)
+	{
+		decaybegin = lengthMS;
+	}
+	else
+	{
+		lengthMS = (lengthMS * 441) / 10;
+		fadeMS = (fadeMS * 441) / 10;
+
+		decaybegin = lengthMS;
+		decayend = lengthMS + fadeMS;
+	}
+
 	return AO_SUCCESS;
 }
 
@@ -202,6 +226,29 @@ int32 ssf_gen(int16 *buffer, uint32 samples)
 
 	for (i = 0; i < samples; i++)
 	{
+		// process the fade tags
+		if (total_samples >= decaybegin)
+		{
+			if (total_samples >= decayend)
+			{
+				// song is done here, call out as necessary to make your player stop
+				output[i] = 0;
+				output2[i] = 0;
+			}
+			else
+			{
+				int32 fader = 256 - (256*(total_samples - decaybegin)/(decayend-decaybegin));
+				output[i] = (output[i] * fader)>>8;
+				output2[i] = (output2[i] * fader)>>8;
+
+				total_samples++;
+			}
+		}
+		else
+		{
+			total_samples++;
+		}
+
 		*outp++ = output[i];
 		*outp++ = output2[i];
 	}
@@ -215,6 +262,7 @@ int32 ssf_stop(void)
 }
 
 int32 ssf_command(int32 command, int32 parameter)
+
 {
 	switch (command)
 	{

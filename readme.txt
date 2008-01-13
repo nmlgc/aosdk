@@ -1,4 +1,4 @@
-Audio Overload SDK - Release 1.2.1  January 5, 2008
+Audio Overload SDK - Release 1.3       January 13, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,8 +17,9 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.2.1
-- Working FM synthesis in the SCSP, so more SSF files sound good.
+New in Release 1.3
+- Fixed FM bug in SCSP for SSF files (kingshriek)
+- Added length and fade tag support to SSF (R. Belmont)
 
 
 Entry points of an AO engine are as follows:

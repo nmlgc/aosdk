@@ -2,7 +2,7 @@
 
 	Audio Overload SDK
 
-	Copyright (c) 2007, R. Belmont and Richard Bannister.
+	Copyright (c) 2007-2008, R. Belmont and Richard Bannister.
 
 	All rights reserved.
 
@@ -322,3 +322,55 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 	// Bingo
 	return AO_SUCCESS;
 }
+
+uint32 psfTimeToMS(char *str)
+{
+	int x, c=0;
+	uint32 acc=0;
+	char s[100];
+
+	strncpy(s,str,100);
+	s[99]=0;
+
+	for (x=strlen(s); x>=0; x--)
+	{
+		if (s[x]=='.' || s[x]==',')
+		{
+			acc=atoi(s+x+1);
+			s[x]=0;
+		}
+		else if (s[x]==':')
+		{
+			if(c==0) 
+			{
+				acc+=atoi(s+x+1)*10;
+			}
+			else if(c==1) 
+			{
+				acc+=atoi(s+x+(x?1:0))*10*60;
+			}
+
+			c++;
+			s[x]=0;
+		}
+		else if (x==0)
+		{
+			if(c==0)
+			{ 
+				acc+=atoi(s+x)*10;
+			}
+			else if(c==1) 
+			{
+				acc+=atoi(s+x)*10*60;
+			}
+			else if(c==2) 
+			{
+				acc+=atoi(s+x)*10*60*60;
+			}
+		}
+	}
+
+	acc*=100;
+	return(acc);
+}
+

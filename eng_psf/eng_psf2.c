@@ -1,7 +1,7 @@
 /*
 	Audio Overload SDK - PSF2 file format engine
 
-	Copyright (c) 2007 R. Belmont and Richard Bannister.
+	Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 
 	All rights reserved.
 
@@ -28,7 +28,7 @@
 // Audio Overload
 // Emulated music player
 //
-// (C) 2000-2005 Richard F. Bannister
+// (C) 2000-2008 Richard F. Bannister
 //
 
 //
@@ -90,7 +90,6 @@ extern void psx_hw_init(void);
 extern void ps2_hw_slice(void);
 extern void ps2_hw_frame(void);
 extern void setlength2(int32 stop, int32 fade);
-extern uint32 psfTimeToMS(char *str);
 
 static uint32 secname(uint8 *start, uint32 strndx, uint32 shoff, uint32 shentsize, uint32 name)
 {
