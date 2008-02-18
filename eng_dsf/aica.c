@@ -173,7 +173,7 @@ struct _AICA
 	signed short RINGBUF[64];
 	unsigned char BUFPTR;
 	unsigned char *AICARAM;
-	UINT32 AICARAM_LENGTH, RAM_MASK;
+	UINT32 AICARAM_LENGTH, RAM_MASK, RAM_MASK16;
 	char Master;
 	void (*IntARMCB)(int irq);
 
@@ -506,6 +506,7 @@ static void AICA_Init(struct _AICA *AICA, const struct AICAinterface *intf)
 			AICA->AICARAM = &dc_ram[0];
 			AICA->AICARAM_LENGTH = 2*1024*1024;
 			AICA->RAM_MASK = AICA->AICARAM_LENGTH-1;
+			AICA->RAM_MASK16 = AICA->RAM_MASK & 0x7ffffe;
 			AICA->DSP.AICARAM = (UINT16 *)AICA->AICARAM;
 			AICA->DSP.AICARAM_LENGTH =  (2*1024*1024)/2;
 		}
@@ -1237,6 +1238,7 @@ void AICA_set_ram_base(int which, void *base)
 	{
 		AICA->AICARAM = base;
 		AICA->RAM_MASK = AICA->AICARAM_LENGTH-1;
+		AICA->RAM_MASK16 = AICA->RAM_MASK & 0x7ffffe;
 		AICA->DSP.AICARAM = base;
 	}
 }
