@@ -1,4 +1,4 @@
-Audio Overload SDK - Release 1.3.1       January 19, 2008
+Audio Overload SDK - Development Release 1.40   March 7, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.3.1
-- Further FM and pitch improvements to SCSP (kingshriek)
+New in Release 1.4 final
+- More AICA fixes/improvements for DSF and some ARM7 cleanup.  This is considered good enough to call a non-alpha.
 
 
 Entry points of an AO engine are as follows:

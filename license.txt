@@ -105,6 +105,22 @@ osd_cpu.h		MAME
 oss.c			BSD 
 oss.h			BSD 
 
+eng_dsf:
+
+aica.c			MAME
+aica.h			MAME
+aicadsp.c		MAME
+aicadsp.h		MAME
+aicalfo.c		MAME
+arm7.c			MAME
+arm7.h			MAME
+arm7i.c			MAME
+arm7i.h			MAME
+arm7memil.c		MAME
+eng_dsf.c		BSD
+dc_hw.c			BSD
+dc_hw.h			BSD
+
 eng_qsf:
 
 eng_qsf.c		BSD

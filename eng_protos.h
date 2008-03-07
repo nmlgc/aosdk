@@ -44,3 +44,10 @@ uint8 qsf_memory_readop(uint16 addr);
 uint8 qsf_memory_readport(uint16 addr);
 void qsf_memory_write(uint16 addr, uint8 byte);
 void qsf_memory_writeport(uint16 addr, uint8 byte);
+
+int32 dsf_start(uint8 *, uint32 length);
+int32 dsf_gen(int16 *, uint32);
+int32 dsf_stop(void);
+int32 dsf_command(int32, int32);
+int32 dsf_fill_info(ao_display_info *);
+

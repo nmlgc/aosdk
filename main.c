@@ -50,6 +50,7 @@ static struct
 	{ 0x50534601, "Sony PlayStation (.psf)", psf_start, psf_gen, psf_stop, psf_command, 60, psf_fill_info },
 	{ 0x53505500, "Sony PlayStation (.spu)", spu_start, spu_gen, spu_stop, spu_command, 60, spu_fill_info },
 	{ 0x50534602, "Sony PlayStation 2 (.psf2)", psf2_start, psf2_gen, psf2_stop, psf2_command, 60, psf2_fill_info },
+	{ 0x50534612, "Sega Dreamcast (.dsf)", dsf_start, dsf_gen, dsf_stop, dsf_command, 60, dsf_fill_info },
 
 	{ 0xffffffff, "", NULL, NULL, NULL, NULL, 0, NULL }
 };
@@ -127,7 +128,7 @@ int main(int argv, char *argc[])
 	uint8 *buffer;
 	uint32 size, filesig;
 
-	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.3.1]\nCopyright (c) 2007-2008 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
+	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.4]\nCopyright (c) 2007-2008 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
 
 	// check if an argument was given
 	if (argv < 2)
@@ -213,3 +214,7 @@ int main(int argv, char *argc[])
 	return 1;
 }
 
+// stub for MAME stuff
+int change_pc(int foo)
+{
+}

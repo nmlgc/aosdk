@@ -30,7 +30,7 @@
 CC   = gcc
 LD   = gcc
 CPP  = g++
-CFLAGS = -c -O3 -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Izlib
+CFLAGS = -c -O3 -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
 # set for Linux 64-bit
 #CFLAGS += -DLONG_IS_64BIT=1
 # set for little-endian, make "0" for big-endian
@@ -51,6 +51,9 @@ else
 OBJS += dsnd.o
 LIBS += -ldsound -ldxguid
 endif
+
+# DSF engine
+OBJS += eng_dsf/eng_dsf.o eng_dsf/dc_hw.o eng_dsf/aica.o eng_dsf/aicadsp.o eng_dsf/arm7.o eng_dsf/arm7i.o
 
 # SSF engine
 OBJS += eng_ssf/m68kcpu.o eng_ssf/m68kopac.o eng_ssf/m68kopdm.o eng_ssf/m68kopnz.o eng_ssf/m68kops.o 
