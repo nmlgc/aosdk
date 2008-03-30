@@ -25,6 +25,7 @@ static UINT16 PACK(INT32 val)
 	else
 		val <<= 11;
 	val >>= 11;
+	val &= 0x7FF;
 	val |= sign << 15;
 	val |= exponent << 11;
 
@@ -41,7 +42,10 @@ static INT32 UNPACK(UINT16 val)
 	mantissa = val & 0x7FF;
 	uval = mantissa << 11;
 	if (exponent > 11)
+	{
 		exponent = 11;
+		uval |= sign << 22;
+	}
 	else
 		uval |= (sign ^ 1) << 22;
 	uval |= sign << 23;
