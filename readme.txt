@@ -1,4 +1,4 @@
-Audio Overload SDK - Development Release 1.41  April 23, 2008
+Audio Overload SDK - Development Release 1.42  July 28, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.1
-- SCSP fix for crash cymbal issue in Shining the Holy Ark.  Use with kingshriek's new re-rip for best results.
+New in Release 1.4.2
+- Many AICA fixes.  Sound quality is improved and DC offset is fixed.  [Deunan Knute, ajax16384]
 
 
 Entry points of an AO engine are as follows:

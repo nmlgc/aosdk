@@ -2,13 +2,11 @@
     Sega/Yamaha YMF292-F (SCSP = Saturn Custom Sound Processor) emulation
     By ElSemi
     MAME/M1 conversion and cleanup by R. Belmont
+    Additional code and bugfixes by kingshriek
 
     This chip has 32 voices.  Each voice can play a sample or be part of
     an FM construct.  Unlike traditional Yamaha FM chips, the base waveform
     for the FM still comes from the wavetable RAM.
-
-    Unsupported:
-        - FM mode (VF3 uses it, Hanagumi might late in the title song...)
 
     ChangeLog:
     * November 25, 2003 (ES) Fixed buggy timers and envelope overflows.
@@ -19,6 +17,8 @@
                              added ringbuffer support.
     * January 8, 2005   (RB) Added ability to specify region offset for RAM.
     * January 26, 2007  (ES) Added on-board DSP capability
+    * December 16, 2007 (kingshriek) Many EG bug fixes, implemented effects mixer,
+                             implemented FM.
 */
 
 #include <math.h>

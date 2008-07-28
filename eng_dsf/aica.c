@@ -710,16 +710,16 @@ static void AICA_UpdateReg(struct _AICA *AICA, int reg)
 				AICA->TimCnt[0]=(AICA->udata.data[0x90/2]&0xff)<<8;
 			}
 			break;
-		case 0x92:
-		case 0x93:
+		case 0x94:
+		case 0x95:
 			if(AICA->Master)
 			{
 				AICA->TimPris[1]=1<<((AICA->udata.data[0x92/2]>>8)&0x7);
 				AICA->TimCnt[1]=(AICA->udata.data[0x92/2]&0xff)<<8;
 			}
 			break;
-		case 0x94:
-		case 0x95:
+		case 0x98:
+		case 0x99:
 			if(AICA->Master)
 			{
 				AICA->TimPris[2]=1<<((AICA->udata.data[0x94/2]>>8)&0x7);
@@ -1134,7 +1134,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 		
 	if(slot->mslc) 
 	{
-		AICA->udata.data[0x12/2] = addr1;
+		AICA->udata.data[0x14/2] = addr1;
 		if (!(AFSEL(AICA)))
 		{
 			AICA->udata.data[0x10/2] |= slot->EG.state<<13;
