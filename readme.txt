@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.2
-- Many AICA fixes.  Sound quality is improved and DC offset is fixed.  [Deunan Knute, ajax16384]
+New in Release 1.4.3
+- More AICA fixes and cleanups [ajax16384]
 
 
 Entry points of an AO engine are as follows:
