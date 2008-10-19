@@ -74,7 +74,7 @@ uint8 dc_read8(int addr)
 
 uint16 dc_read16(int addr)
 {
-	if (addr < 0x200000)
+	if (addr < 0x800000)
 	{
 		return dc_ram[addr] | (dc_ram[addr+1]<<8);
 	}

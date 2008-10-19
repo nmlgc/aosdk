@@ -1,6 +1,6 @@
 Here is a list of the licenses each file in this package are under, and their text.
 
-The upshot is this: if you create anything from this PSFSDK and include any MAME licensed components
+The upshot is this: if you create anything from this SDK and include any MAME licensed components
 (which are an integral part of each engine supplied) you must distribute the source code to your
 derivative program.
 

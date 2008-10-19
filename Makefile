@@ -1,7 +1,7 @@
 #
 # Makefile for Audio Overload SDK
 #
-# Copyright (c) 2007, R. Belmont and Richard Bannister.
+# Copyright (c) 2007-2008, R. Belmont and Richard Bannister.
 #
 # All rights reserved.
 #

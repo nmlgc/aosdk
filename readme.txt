@@ -1,4 +1,4 @@
-Audio Overload SDK - Development Release 1.42  July 28, 2008
+Audio Overload SDK - Development Release 1.4.4  October 19, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.3
-- More AICA fixes and cleanups [ajax16384]
+New in Release 1.4.4
+- AICA/DSF fixes for Naomi rips using the full 8 MB of RAM [kingshriek]
 
 
 Entry points of an AO engine are as follows:
