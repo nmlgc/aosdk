@@ -455,6 +455,12 @@ static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 
 		slot->cur_lpstep = curstep;
 		slot->adlpbase = base;
+
+		// on real hardware this creates undefined behavior.
+		if (LSA(slot) > LEA(slot))
+		{
+			slot->udata.data[0xc/2] = 0xffff;
+		}
 	}
 }
 
@@ -469,6 +475,7 @@ static void AICA_StopSlot(struct _SLOT *slot,int keyoff)
 		slot->active=0;
 	}
 	slot->udata.data[0]&=~0x4000;
+	
 }
 
 #define log_base_2(n) (log((float) n)/log((float) 2))
@@ -712,16 +719,16 @@ static void AICA_UpdateReg(struct _AICA *AICA, int reg)
 		case 0x95:
 			if(AICA->Master)
 			{
-				AICA->TimPris[1]=1<<((AICA->udata.data[0x92/2]>>8)&0x7);
-				AICA->TimCnt[1]=(AICA->udata.data[0x92/2]&0xff)<<8;
+				AICA->TimPris[1]=1<<((AICA->udata.data[0x94/2]>>8)&0x7);
+				AICA->TimCnt[1]=(AICA->udata.data[0x94/2]&0xff)<<8;
 			}
 			break;
 		case 0x98:
 		case 0x99:
 			if(AICA->Master)
 			{
-				AICA->TimPris[2]=1<<((AICA->udata.data[0x94/2]>>8)&0x7);
-				AICA->TimCnt[2]=(AICA->udata.data[0x94/2]&0xff)<<8;
+				AICA->TimPris[2]=1<<((AICA->udata.data[0x98/2]>>8)&0x7);
+				AICA->TimCnt[2]=(AICA->udata.data[0x98/2]&0xff)<<8;
 			}
 			break;
 		case 0xa4:	//SCIRE
@@ -912,7 +919,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 {
 	if(AICA->TimCnt[0]<=0xff00)
 	{
- 		AICA->TimCnt[0] += ticks << (8-((AICA->udata.data[0x18/2]>>8)&0x7));
+ 		AICA->TimCnt[0] += ticks << (8-((AICA->udata.data[0x90/2]>>8)&0x7));
 		if (AICA->TimCnt[0] > 0xFF00)
 		{
 			AICA->TimCnt[0] = 0xFFFF;
@@ -924,7 +931,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 
 	if(AICA->TimCnt[1]<=0xff00)
 	{
-		AICA->TimCnt[1] += ticks << (8-((AICA->udata.data[0x1a/2]>>8)&0x7));
+		AICA->TimCnt[1] += ticks << (8-((AICA->udata.data[0x94/2]>>8)&0x7));
 		if (AICA->TimCnt[1] > 0xFF00)
 		{
 			AICA->TimCnt[1] = 0xFFFF;
@@ -936,7 +943,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 
 	if(AICA->TimCnt[2]<=0xff00)
 	{
-		AICA->TimCnt[2] += ticks << (8-((AICA->udata.data[0x1c/2]>>8)&0x7));
+		AICA->TimCnt[2] += ticks << (8-((AICA->udata.data[0x98/2]>>8)&0x7));
 		if (AICA->TimCnt[2] > 0xFF00)
 		{
 			AICA->TimCnt[2] = 0xFFFF;
@@ -1095,8 +1102,20 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 		AICA->udata.data[0x14/2] = addr1;
 		if (!(AFSEL(AICA)))
 		{
+			UINT16 res;
+
 			AICA->udata.data[0x10/2] |= slot->EG.state<<13;
-			AICA->udata.data[0x10/2] |= 0x3FF - (slot->EG.volume>>EG_SHIFT);
+
+			res = 0x3FF - (slot->EG.volume>>EG_SHIFT);
+
+			res *= 959;
+			res /= 1024;
+
+			if (res > 959) res = 959;
+
+			AICA->udata.data[0x10/2] = res;
+
+			//AICA->udata.data[0x10/2] |= 0x3FF - (slot->EG.volume>>EG_SHIFT);
 		}
 	}
 

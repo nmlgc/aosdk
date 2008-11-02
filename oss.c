@@ -153,8 +153,14 @@ INT16 m1sdr_Init(int sample_rate)
 	if (audiofd == -1)
 	{
 		perror("/dev/dsp");
-		printf("ERROR: unable to open soundcard.  Aborting.\n");
-		return(0);
+
+		audiofd = open("/dev/dsp1", O_WRONLY, 0);
+
+		if (audiofd == -1)
+		{
+			perror("/dev/dsp1");
+			return(0);
+		}
 	}
 
 	// reset things
