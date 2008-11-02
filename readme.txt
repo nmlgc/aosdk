@@ -1,4 +1,4 @@
-Audio Overload SDK - Development Release 1.4.5  November 2, 2008
+Audio Overload SDK - Development Release 1.4.6  November 2, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,9 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.5
-- AICA/DSF fixes for AEG readback, invalid loop parameters, and AICA Timer B operation.
-- On newer Linux distros with PulseAudio /dev/dsp is missing but /dev/dsp1 exists.  Try both.
+New in Release 1.4.6
+- More AICA/DSF fixes for games using the DTPK driver.
 
 
 Entry points of an AO engine are as follows:

@@ -98,11 +98,11 @@ uint32 dc_read32(int addr)
 	if ((addr >= 0x800000) && (addr <= 0x807fff))
 	{
 		addr &= 0x7fff;
-		return AICA_0_r(addr/2, 0) | AICA_0_r((addr/2)+1, 0)<<16;
+		return AICA_0_r(addr/2, 0) & 0xffff;
 	}
 
-	printf("R32 @ %x\n", addr);
-	return -1;
+//	printf("R32 @ %x\n", addr);
+	return 0;
 }
 
 void dc_write8(int addr, uint8 data)
