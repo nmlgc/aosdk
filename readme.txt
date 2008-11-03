@@ -1,4 +1,4 @@
-Audio Overload SDK - Development Release 1.4.6  November 2, 2008
+Audio Overload SDK - Development Release 1.4.7  November 3, 2008
 
 Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
 All rights reserved.
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.6
-- More AICA/DSF fixes for games using the DTPK driver.
+New in Release 1.4.7
+- Fixed slightly too slow tempo for DSFs (shown by Virtua Fighter 4 DSF rip)
 
 
 Entry points of an AO engine are as follows:

@@ -920,7 +920,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 	if(AICA->TimCnt[0]<=0xff00)
 	{
  		AICA->TimCnt[0] += ticks << (8-((AICA->udata.data[0x90/2]>>8)&0x7));
-		if (AICA->TimCnt[0] > 0xFF00)
+		if (AICA->TimCnt[0] >= 0xFF00)
 		{
 			AICA->TimCnt[0] = 0xFFFF;
 			AICA->udata.data[0xa0/2]|=0x40;
@@ -932,7 +932,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 	if(AICA->TimCnt[1]<=0xff00)
 	{
 		AICA->TimCnt[1] += ticks << (8-((AICA->udata.data[0x94/2]>>8)&0x7));
-		if (AICA->TimCnt[1] > 0xFF00)
+		if (AICA->TimCnt[1] >= 0xFF00)
 		{
 			AICA->TimCnt[1] = 0xFFFF;
 			AICA->udata.data[0xa0/2]|=0x80;
@@ -944,7 +944,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 	if(AICA->TimCnt[2]<=0xff00)
 	{
 		AICA->TimCnt[2] += ticks << (8-((AICA->udata.data[0x98/2]>>8)&0x7));
-		if (AICA->TimCnt[2] > 0xFF00)
+		if (AICA->TimCnt[2] >= 0xFF00)
 		{
 			AICA->TimCnt[2] = 0xFFFF;
 			AICA->udata.data[0xa0/2]|=0x100;
