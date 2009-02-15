@@ -121,7 +121,7 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 			free(decomp_dat);
 			return AO_FAIL;
 		}
-	   	
+
 		// Resize memory buffer to what we actually need
 		decomp_dat = realloc(decomp_dat, (size_t)decomp_length + 1);
 	}

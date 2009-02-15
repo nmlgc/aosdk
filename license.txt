@@ -9,7 +9,7 @@ derivative program.
 
 BSD license:
 
-Copyright (c) 2007-2008, R. Belmont and Richard Bannister.
+Copyright (c) 2007-2009, R. Belmont and Richard Bannister.
 
 All rights reserved.
 

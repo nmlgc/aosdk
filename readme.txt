@@ -1,6 +1,6 @@
-Audio Overload SDK - Development Release 1.4.7  November 3, 2008
+Audio Overload SDK - Development Release 1.4.8  February 15, 2009
 
-Copyright (c) 2007-2008 R. Belmont and Richard Bannister.
+Copyright (c) 2007-2009 R. Belmont and Richard Bannister.
 All rights reserved.
 =========================================================
 
@@ -17,8 +17,8 @@ systems using the AMD64 recommended ABI (not 64-bit Windows).
 
 - Change LSB_FIRST=1 to =0 for big-endian platforms.
 
-New in Release 1.4.7
-- Fixed slightly too slow tempo for DSFs (shown by Virtua Fighter 4 DSF rip)
+New in Release 1.4.8
+- Guard against invalid data sometimes created by makessf.py (fixes crashing Pebble Beach ST-V rips)
 
 
 Entry points of an AO engine are as follows:
