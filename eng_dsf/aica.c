@@ -890,15 +890,21 @@ static void AICA_w16(struct _AICA *AICA,unsigned int addr,unsigned short val)
 		else if (addr == 0x2d00)
 		{
 			AICA->IRQL = val;
+			logerror("AICA: write to IRQL?\n");
 		}
 		else if (addr == 0x2d04)
 		{
 			AICA->IRQR = val;
 
-			if (val)
+			if (val & 1)
 			{
 				AICA->IntARMCB(0);
 			}
+			if (val & 0x100)
+				logerror("AICA: SH-4 write protection enabled!\n");
+
+			if (val & 0xfefe)
+				logerror("AICA: IRQR %04x!\n",val);
 		}
 	}
 	else
@@ -917,6 +923,35 @@ static void AICA_w16(struct _AICA *AICA,unsigned int addr,unsigned short val)
 				AICADSP_Start(&AICA->DSP);
 			}
 		}
+		else if(addr<0x4000)
+		{
+			logerror("AICADSP write to undocumented reg %04x -> %04x",addr,val);
+		}
+		else if(addr<0x4400)
+		{
+			if(addr & 4)
+				AICA->DSP.TEMP[(addr >> 3) & 0x7f] = (AICA->DSP.TEMP[(addr >> 3) & 0x7f] & 0xffff0000) | (val & 0xffff);
+			else
+				AICA->DSP.TEMP[(addr >> 3) & 0x7f] = (AICA->DSP.TEMP[(addr >> 3) & 0x7f] & 0xffff) | (val << 16);
+		}
+		else if(addr<0x4500)
+		{
+			if(addr & 4)
+				AICA->DSP.MEMS[(addr >> 3) & 0x1f] = (AICA->DSP.MEMS[(addr >> 3) & 0x1f] & 0xffff0000) | (val & 0xffff);
+			else
+				AICA->DSP.MEMS[(addr >> 3) & 0x1f] = (AICA->DSP.MEMS[(addr >> 3) & 0x1f] & 0xffff) | (val << 16);
+		}
+		else if(addr<0x4580)
+		{
+			if(addr & 4)
+				AICA->DSP.MIXS[(addr >> 3) & 0xf] = (AICA->DSP.MIXS[(addr >> 3) & 0xf] & 0xffff0000) | (val & 0xffff);
+			else
+				AICA->DSP.MIXS[(addr >> 3) & 0xf] = (AICA->DSP.MIXS[(addr >> 3) & 0xf] & 0xffff) | (val << 16);
+		}
+		else if(addr<0x45c0)
+			*((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/2))=val;
+		else if(addr<0x45c8)
+			*((unsigned short *) (AICA->DSP.EXTS+(addr-0x45c0)/2))=val;
 	}
 }
 
@@ -960,6 +995,36 @@ static unsigned short AICA_r16(struct _AICA *AICA, unsigned int addr)
 			v= *((unsigned short *) (AICA->DSP.MADRS+(addr-0x3200)/2));
 		else if(addr<0x3c00)
 			v= *((unsigned short *) (AICA->DSP.MPRO+(addr-0x3400)/2));
+		else if(addr<0x4000)
+		{
+			v= 0xffff;
+			logerror("AICADSP read to undocumented reg %04x\n",addr);
+		}
+		else if(addr<0x4400)
+		{
+			if(addr & 4)
+				v= AICA->DSP.TEMP[(addr >> 3) & 0x7f] & 0xffff;
+			else
+				v= AICA->DSP.TEMP[(addr >> 3) & 0x7f] >> 16;
+		}
+		else if(addr<0x4500)
+		{
+			if(addr & 4)
+				v= AICA->DSP.MEMS[(addr >> 3) & 0x1f] & 0xffff;
+			else
+				v= AICA->DSP.MEMS[(addr >> 3) & 0x1f] >> 16;
+		}
+		else if(addr<0x4580)
+		{
+			if(addr & 4)
+				v= AICA->DSP.MIXS[(addr >> 3) & 0xf] & 0xffff;
+			else
+				v= AICA->DSP.MIXS[(addr >> 3) & 0xf] >> 16;
+		}
+		else if(addr<0x45c0)
+			v = *((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/2));
+		else if(addr<0x45c8)
+			v = *((unsigned short *) (AICA->DSP.EXTS+(addr-0x45c0)/2));
 	}
 //	else if (addr<0x700)
 //		v=AICA->RINGBUF[(addr-0x600)/2];
