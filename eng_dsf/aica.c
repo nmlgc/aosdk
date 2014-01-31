@@ -949,7 +949,7 @@ static void AICA_w16(struct _AICA *AICA,unsigned int addr,unsigned short val)
 				AICA->DSP.MIXS[(addr >> 3) & 0xf] = (AICA->DSP.MIXS[(addr >> 3) & 0xf] & 0xffff) | (val << 16);
 		}
 		else if(addr<0x45c0)
-			*((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/2))=val;
+			*((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/4))=val;
 		else if(addr<0x45c8)
 			*((unsigned short *) (AICA->DSP.EXTS+(addr-0x45c0)/2))=val;
 	}
@@ -1022,7 +1022,7 @@ static unsigned short AICA_r16(struct _AICA *AICA, unsigned int addr)
 				v= AICA->DSP.MIXS[(addr >> 3) & 0xf] >> 16;
 		}
 		else if(addr<0x45c0)
-			v = *((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/2));
+			v = *((unsigned short *) (AICA->DSP.EFREG+(addr-0x4580)/4));
 		else if(addr<0x45c8)
 			v = *((unsigned short *) (AICA->DSP.EXTS+(addr-0x45c0)/2));
 	}
