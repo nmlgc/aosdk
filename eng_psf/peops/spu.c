@@ -453,7 +453,7 @@ int SPUasync(u32 cycles)
    {
     if(sampcount>=decayend) 
     {
-//       	    ao_song_done = 1;
+	    ao_song_done = 1;
 	    return(0);
     }
     dmul=256-(256*(sampcount-decaybegin)/(decayend-decaybegin));

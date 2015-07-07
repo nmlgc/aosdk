@@ -1335,7 +1335,7 @@ void psx_bios_hle(uint32 pc)
 		#if DEBUG_HLE_IOP
 		printf("IOP 'null' state\n");
 		#endif
-//		ao_song_done = 1;
+		ao_song_done = 1;
 		return;
 	}
 

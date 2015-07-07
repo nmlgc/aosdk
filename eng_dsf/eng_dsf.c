@@ -182,7 +182,7 @@ int32 dsf_gen(int16 *buffer, uint32 samples)
 			if (total_samples >= decayend)
 			{
 				// song is done here, signal your player appropriately!
-//				ao_song_done = 1;
+				ao_song_done = 1;
 				output[i] = 0;
 				output2[i] = 0;
 			}

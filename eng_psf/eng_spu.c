@@ -205,7 +205,7 @@ static void spu_tick(void)
 		}
 		else
 		{
-//			ao_song_done = 1;
+			ao_song_done = 1;
 		}
 	}
 

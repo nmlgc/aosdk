@@ -741,7 +741,7 @@ ENDX:   ;
     	{
 		if(sampcount>=decayend) 
 		{
-//		       	ao_song_done = 1;
+		       	ao_song_done = 1;
 		        return(0);
 		}
 

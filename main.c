@@ -34,6 +34,8 @@
 /* file types */
 static uint32 type;
 
+ao_bool ao_song_done;
+
 static struct 
 { 
 	uint32 sig; 
@@ -204,7 +206,7 @@ int main(int argv, char *argc[])
 
 	printf("\n\nPlaying.  Press CTRL-C to stop.\n");
 
-	while (1)
+	while (!ao_song_done)
 	{
 		m1sdr_TimeCheck();
 	}		
