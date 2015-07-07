@@ -81,6 +81,7 @@ The following data is optional and may be omitted:
 
 #define DECOMP_MAX_SIZE		((32 * 1024 * 1024) + 12)
 
+uint32 total_samples;
 uint32 decaybegin;
 uint32 decayend;
 
@@ -328,6 +329,7 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 
 void corlett_length_set(uint32 length_ms, int32 fade_ms)
 {
+	total_samples = 0;
 	if (length_ms == 0)
 	{
 		decaybegin = ~0;
@@ -340,6 +342,27 @@ void corlett_length_set(uint32 length_ms, int32 fade_ms)
 		decaybegin = length_ms;
 		decayend = length_ms + fade_ms;
 	}
+}
+
+void corlett_sample_fade(int16 *l, int16 *r)
+{
+	if(total_samples >= decaybegin)
+	{
+		int32 fader;
+		if(total_samples >= decayend)
+		{
+			ao_song_done = 1;
+			*l = 0;
+			*r = 0;
+		}
+		else
+		{
+			fader = 256 - (256 * (total_samples - decaybegin) / (decayend - decaybegin));
+			*l = (*l * fader) >> 8;
+			*r = (*r * fader) >> 8;
+		}
+	}
+	total_samples++;
 }
 
 uint32 psfTimeToMS(char *str)

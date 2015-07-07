@@ -180,13 +180,9 @@ static INLINE void StartSound(int ch)
 // basically the whole sound processing is done in this fat func!
 ////////////////////////////////////////////////////////////////////////
 
-static u32 sampcount;
-
 #define CLIP(_x) {if(_x>32767) _x=32767; if(_x<-32767) _x=-32767;}
 int SPUasync(u32 cycles)
 {
- extern u32 decaybegin;
- extern u32 decayend;
  int volmul=iVolume;
  static s32 dosampies;
  s32 temp;
@@ -427,25 +423,7 @@ int SPUasync(u32 cycles)
   ///////////////////////////////////////////////////////
   // mix all channels (including reverb) into one buffer
   MixREVERBLeftRight(&sl,&sr,revLeft,revRight);
-//  printf("sampcount %d decaybegin %d decayend %d\n", sampcount, decaybegin, decayend);
-  if(sampcount>=decaybegin)
-  {
-   s32 dmul;
-   if(decaybegin!=~0) // Is anyone REALLY going to be playing a song
-		      // for 13 hours?
-   {
-    if(sampcount>=decayend) 
-    {
-	    ao_song_done = 1;
-	    return(0);
-    }
-    dmul=256-(256*(sampcount-decaybegin)/(decayend-decaybegin));
-    sl=(sl*dmul)>>8;
-    sr=(sr*dmul)>>8;
-   }
-  }
-
-  sampcount++;
+  corlett_sample_fade(&sl,&sr);
   sl=(sl*volmul)>>8;
   sr=(sr*volmul)>>8;
 
@@ -512,7 +490,7 @@ int SPUinit(void)
  memset(regArea,0,sizeof(regArea));
  memset(spuMem,0,sizeof(spuMem));
  InitADSR();
- sampcount=ttemp=0;
+ ttemp=0;
  #ifdef TIMEO
  begintime=gettime64();
  #endif

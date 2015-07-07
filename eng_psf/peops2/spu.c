@@ -328,8 +328,6 @@ INLINE void StartSound(int ch)
 // basically the whole sound processing is done in this fat func!
 ////////////////////////////////////////////////////////////////////////
 
-static u32 sampcount;
-
 // 5 ms waiting phase, if buffer is full and no new sound has to get started
 // .. can be made smaller (smallest val: 1 ms), but bigger waits give
 // better performance
@@ -343,8 +341,6 @@ int iSpuAsyncWait=0;
 
 static void *MAINThread(int samp2run)
 {
- extern u32 decaybegin;
- extern u32 decayend;
  int s_1,s_2,fa,voldiv=iVolume;
  unsigned char * start;unsigned int nSample;
  int ch,predict_nr,shift_factor,flags,d,d2,s;
@@ -717,25 +713,7 @@ ENDX:   ;
     if(d<-32767) d=-32767;if(d>32767) d=32767;
     if(d2<-32767) d2=-32767;if(d2>32767) d2=32767;
 
-    if(sampcount>=decaybegin)
-    {
-	s32 dmul;
-	if(decaybegin!=~0) // Is anyone REALLY going to be playing a song
-		      // for 13 hours?
-    	{
-		if(sampcount>=decayend) 
-		{
-		       	ao_song_done = 1;
-		        return(0);
-		}
-
-		dmul=256-(256*(sampcount-decaybegin)/(decayend-decaybegin));
-		d=(d*dmul)>>8;
-		d2=(d2*dmul)>>8;
-	}
-    }
-    sampcount++;
-
+    corlett_sample_fade(&d, &d2);
     *pS++=d;
     *pS++=d2;
 
@@ -793,8 +771,6 @@ EXPORT_GCC long CALLBACK SPU2init(void)
  spuMemC=(unsigned char *)spuMem;                      // just small setup
  memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
  memset(rvb,0,2*sizeof(REVERBInfo));
-
- sampcount = 0;
 
  InitADSR();
 
