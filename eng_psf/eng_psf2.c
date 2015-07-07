@@ -89,7 +89,6 @@ extern void mips_set_info(UINT32 state, union cpuinfo *info);
 extern void psx_hw_init(void);
 extern void ps2_hw_slice(void);
 extern void ps2_hw_frame(void);
-extern void setlength2(int32 stop, int32 fade);
 
 static uint32 secname(uint8 *start, uint32 strndx, uint32 shoff, uint32 shentsize, uint32 name)
 {
@@ -543,11 +542,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 
 	lengthMS = psfTimeToMS(c->inf_length);
 	fadeMS = psfTimeToMS(c->inf_fade);
-	if (lengthMS == 0)
-	{
-		lengthMS = ~0;
-	}
-	setlength2(lengthMS, fadeMS);
+	corlett_length_set(lengthMS, fadeMS);
 
 	mips_init();
 	mips_reset(NULL);
@@ -660,11 +655,7 @@ int32 psf2_command(int32 command, int32 parameter)
 
 			lengthMS = psfTimeToMS(c->inf_length);
 			fadeMS = psfTimeToMS(c->inf_fade);
-			if (lengthMS == 0)
-			{
-				lengthMS = ~0;
-			}
-			setlength2(lengthMS, fadeMS);
+			corlett_length_set(lengthMS, fadeMS);
 
 			return AO_SUCCESS;
 

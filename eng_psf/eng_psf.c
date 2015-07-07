@@ -64,7 +64,6 @@ extern void mips_set_info(UINT32 state, union cpuinfo *info);
 extern void psx_hw_init(void);
 extern void psx_hw_slice(void);
 extern void psx_hw_frame(void);
-extern void setlength(int32 stop, int32 fade);
 
 int32 psf_start(uint8 *buffer, uint32 length)
 {
@@ -317,12 +316,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	printf("length %d fade %d\n", lengthMS, fadeMS);
 	#endif
 
-	if (lengthMS == 0)
-	{
-		lengthMS = ~0;
-	}
-
-	setlength(lengthMS, fadeMS);
+	corlett_length_set(lengthMS, fadeMS);
 
 	// patch illegal Chocobo Dungeon 2 code - CaitSith2 put a jump in the delay slot from a BNE
 	// and rely on Highly Experimental's buggy-ass CPU to rescue them.  Verified on real hardware
@@ -407,11 +401,7 @@ int32 psf_command(int32 command, int32 parameter)
 			lengthMS = psfTimeToMS(c->inf_length);
 			fadeMS = psfTimeToMS(c->inf_fade);
 
-			if (lengthMS == 0)
-			{
-				lengthMS = ~0;
-			}
-			setlength(lengthMS, fadeMS);
+			corlett_length_set(lengthMS, fadeMS);
 
 			mipsinfo.i = initialPC;
 			mips_set_info(CPUINFO_INT_PC, &mipsinfo);

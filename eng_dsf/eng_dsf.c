@@ -30,7 +30,7 @@
 
 static corlett_t	*c = NULL;
 static char 		psfby[256];
-static uint32		decaybegin, decayend, total_samples;
+static uint32		total_samples;
 
 void *aica_start(const void *config);
 void AICA_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
@@ -132,24 +132,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	fadeMS = psfTimeToMS(c->inf_fade);
 	total_samples = 0;
 
-	if (lengthMS == 0)
-	{
-		lengthMS = ~0;
-	}
-
-	if (lengthMS == ~0)
-	{
-		decaybegin = lengthMS;
-	}
-	else
-	{
-		lengthMS = (lengthMS * 441) / 10;
-		fadeMS = (fadeMS * 441) / 10;
-
-		decaybegin = lengthMS;
-		decayend = lengthMS + fadeMS;
-	}
-
+	corlett_length_set(lengthMS, fadeMS);
 	return AO_SUCCESS;
 }
 

@@ -329,25 +329,7 @@ INLINE void StartSound(int ch)
 ////////////////////////////////////////////////////////////////////////
 
 static u32 sampcount;
-static u32 decaybegin;
-static u32 decayend;
 
-// Counting to 65536 results in full volume offage.
-void setlength2(s32 stop, s32 fade)
-{
- if(stop==~0)
- {
-  decaybegin=~0;
- }
- else
- {
-  stop=(stop*441)/10;
-  fade=(fade*441)/10;
-
-  decaybegin=stop;
-  decayend=stop+fade;
- }
-}
 // 5 ms waiting phase, if buffer is full and no new sound has to get started
 // .. can be made smaller (smallest val: 1 ms), but bigger waits give
 // better performance
@@ -361,6 +343,8 @@ int iSpuAsyncWait=0;
 
 static void *MAINThread(int samp2run)
 {
+ extern u32 decaybegin;
+ extern u32 decayend;
  int s_1,s_2,fa,voldiv=iVolume;
  unsigned char * start;unsigned int nSample;
  int ch,predict_nr,shift_factor,flags,d,d2,s;

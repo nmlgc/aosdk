@@ -64,7 +64,7 @@ int32 spu_start(uint8 *buffer, uint32 length)
 
 	SPUinit();
 	SPUopen();
-	setlength(~0, 0);
+	corlett_length_set(~0, 0);
 
 	// upload the SPU RAM image
 	SPUinjectRAMImage((unsigned short *)&buffer[0]);

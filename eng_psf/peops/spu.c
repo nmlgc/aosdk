@@ -181,29 +181,12 @@ static INLINE void StartSound(int ch)
 ////////////////////////////////////////////////////////////////////////
 
 static u32 sampcount;
-static u32 decaybegin;
-static u32 decayend;
-
-// Counting to 65536 results in full volume offage.
-void setlength(s32 stop, s32 fade)
-{
- if(stop==~0)
- {
-  decaybegin=~0;
- }
- else
- {
-  stop=(stop*441)/10;
-  fade=(fade*441)/10;
-
-  decaybegin=stop;
-  decayend=stop+fade;
- }
-}
 
 #define CLIP(_x) {if(_x>32767) _x=32767; if(_x<-32767) _x=-32767;}
 int SPUasync(u32 cycles)
 {
+ extern u32 decaybegin;
+ extern u32 decayend;
  int volmul=iVolume;
  static s32 dosampies;
  s32 temp;

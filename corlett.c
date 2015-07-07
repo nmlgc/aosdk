@@ -81,6 +81,9 @@ The following data is optional and may be omitted:
 
 #define DECOMP_MAX_SIZE		((32 * 1024 * 1024) + 12)
 
+uint32 decaybegin;
+uint32 decayend;
+
 int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t **c)
 {
 	uint32 *buf;
@@ -321,6 +324,22 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 
 	// Bingo
 	return AO_SUCCESS;
+}
+
+void corlett_length_set(uint32 length_ms, int32 fade_ms)
+{
+	if (length_ms == 0)
+	{
+		decaybegin = ~0;
+	}
+	else
+	{
+		length_ms = (length_ms * 441) / 10;
+		fade_ms = (fade_ms * 441) / 10;
+
+		decaybegin = length_ms;
+		decayend = length_ms + fade_ms;
+	}
 }
 
 uint32 psfTimeToMS(char *str)

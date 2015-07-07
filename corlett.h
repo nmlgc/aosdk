@@ -31,5 +31,9 @@ typedef struct
 	uint32 res_size;
 } corlett_t;
 
+extern uint32 decaybegin;
+extern uint32 decayend;
+
 int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t **c);
+void corlett_length_set(uint32 length_ms, int32 fade_ms);
 uint32 psfTimeToMS(char *str);
