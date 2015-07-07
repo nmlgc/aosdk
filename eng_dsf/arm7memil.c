@@ -20,19 +20,19 @@ static INLINE void arm7_write_8(UINT32 addr, UINT8 data)
 
 static INLINE UINT32 arm7_read_32(UINT32 addr)
 {
-    UINT32 result;
-    int k = (addr & 3) << 3;
+	UINT32 result;
+	int k = (addr & 3) << 3;
 
-    if (k)
-    {
-        result = dc_read32 (addr & ~3);
-        result = (result >> k) | (result << (32 - k));
-    }
-    else
-    {
-    	result = dc_read32(addr);
-    }
-    return result;
+	if (k)
+	{
+		result = dc_read32 (addr & ~3);
+		result = (result >> k) | (result << (32 - k));
+	}
+	else
+	{
+		result = dc_read32(addr);
+	}
+	return result;
 }
 
 static INLINE UINT16 arm7_read_16(UINT32 addr)
@@ -51,6 +51,6 @@ static INLINE UINT16 arm7_read_16(UINT32 addr)
 
 static INLINE UINT8 arm7_read_8(UINT32 addr)
 {
-    return dc_read8(addr);
+	return dc_read8(addr);
 }
 

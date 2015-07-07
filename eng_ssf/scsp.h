@@ -16,7 +16,7 @@ typedef int16 data16_t;
 typedef int32 data32_t;
 typedef int offs_t;
 
-struct SCSPinterface 
+struct SCSPinterface
 {
 	int num;
 	void *region[MAX_SCSP];

@@ -12,10 +12,10 @@
 
 struct _LFO
 {
-    unsigned short phase;
-    UINT32 phase_step;
-    int *table;
-    int *scale;
+	unsigned short phase;
+	UINT32 phase_step;
+	int *table;
+	int *scale;
 };
 
 #define LFIX(v)	((unsigned int) ((float) (1<<LFO_SHIFT)*(v)))
@@ -37,9 +37,9 @@ static int ASCALES[8][256];
 
 void LFO_Init(void)
 {
-    int i,s;
-    for(i=0;i<256;++i)
-    {
+	int i,s;
+	for(i=0; i<256; ++i)
+	{
 		int a,p;
 //		float TL;
 		//Saw
@@ -47,10 +47,10 @@ void LFO_Init(void)
 		if(i<128)
 			p=i;
 		else
-			p=i-256;    
+			p=i-256;
 		ALFO_SAW[i]=a;
 		PLFO_SAW[i]=p;
-	
+
 		//Square
 		if(i<128)
 		{
@@ -64,7 +64,7 @@ void LFO_Init(void)
 		}
 		ALFO_SQR[i]=a;
 		PLFO_SQR[i]=p;
-	
+
 		//Tri
 		if(i<128)
 			a=255-(i*2);
@@ -80,24 +80,24 @@ void LFO_Init(void)
 			p=i*2-511;
 		ALFO_TRI[i]=a;
 		PLFO_TRI[i]=p;
-	
+
 		//noise
 		//a=lfo_noise[i];
 		a=rand()&0xff;
 		p=128-a;
 		ALFO_NOI[i]=a;
 		PLFO_NOI[i]=p;
-    }
+	}
 
-	for(s=0;s<8;++s)
+	for(s=0; s<8; ++s)
 	{
 		float limit=PSCALE[s];
-		for(i=-128;i<128;++i)
+		for(i=-128; i<128; ++i)
 		{
 			PSCALES[s][i+128]=CENTS(((limit*(float) i)/128.0));
 		}
 		limit=-ASCALE[s];
-		for(i=0;i<256;++i)
+		for(i=0; i<256; ++i)
 		{
 			ASCALES[s][i]=DB(((limit*(float) i)/256.0));
 		}
@@ -107,11 +107,11 @@ void LFO_Init(void)
 signed int INLINE PLFO_Step(struct _LFO *LFO)
 {
 	int p;
-    LFO->phase+=LFO->phase_step;    
-#if LFO_SHIFT!=8    
-    LFO->phase&=(1<<(LFO_SHIFT+8))-1;
-#endif    
-    p=LFO->table[LFO->phase>>LFO_SHIFT];
+	LFO->phase+=LFO->phase_step;
+	#if LFO_SHIFT!=8
+	LFO->phase&=(1<<(LFO_SHIFT+8))-1;
+	#endif
+	p=LFO->table[LFO->phase>>LFO_SHIFT];
 	p=LFO->scale[p+128];
 	return p<<(SHIFT-LFO_SHIFT);
 }
@@ -119,27 +119,35 @@ signed int INLINE PLFO_Step(struct _LFO *LFO)
 signed int INLINE ALFO_Step(struct _LFO *LFO)
 {
 	int p;
-    LFO->phase+=LFO->phase_step;    
-#if LFO_SHIFT!=8    
-    LFO->phase&=(1<<(LFO_SHIFT+8))-1;
-#endif    
-    p=LFO->table[LFO->phase>>LFO_SHIFT];
+	LFO->phase+=LFO->phase_step;
+	#if LFO_SHIFT!=8
+	LFO->phase&=(1<<(LFO_SHIFT+8))-1;
+	#endif
+	p=LFO->table[LFO->phase>>LFO_SHIFT];
 	p=LFO->scale[p];
 	return p<<(SHIFT-LFO_SHIFT);
 }
 
 void LFO_ComputeStep(struct _LFO *LFO,UINT32 LFOF,UINT32 LFOWS,UINT32 LFOS,int ALFO)
 {
-    float step=(float) LFOFreq[LFOF]*256.0/(float)44100.0;
-    LFO->phase_step=(unsigned int) ((float) (1<<LFO_SHIFT)*step);
-    if(ALFO)
-    {
+	float step=(float) LFOFreq[LFOF]*256.0/(float)44100.0;
+	LFO->phase_step=(unsigned int) ((float) (1<<LFO_SHIFT)*step);
+	if(ALFO)
+	{
 		switch(LFOWS)
 		{
-			case 0: LFO->table=ALFO_SAW; break;
-			case 1: LFO->table=ALFO_SQR; break;
-			case 2: LFO->table=ALFO_TRI; break;
-			case 3: LFO->table=ALFO_NOI; break;
+			case 0:
+				LFO->table=ALFO_SAW;
+				break;
+			case 1:
+				LFO->table=ALFO_SQR;
+				break;
+			case 2:
+				LFO->table=ALFO_TRI;
+				break;
+			case 3:
+				LFO->table=ALFO_NOI;
+				break;
 		}
 		LFO->scale=ASCALES[LFOS];
 	}
@@ -147,10 +155,18 @@ void LFO_ComputeStep(struct _LFO *LFO,UINT32 LFOF,UINT32 LFOWS,UINT32 LFOS,int A
 	{
 		switch(LFOWS)
 		{
-		    case 0: LFO->table=PLFO_SAW; break;
-		    case 1: LFO->table=PLFO_SQR; break;
-			case 2: LFO->table=PLFO_TRI; break;
-		    case 3: LFO->table=PLFO_NOI; break;
+			case 0:
+				LFO->table=PLFO_SAW;
+				break;
+			case 1:
+				LFO->table=PLFO_SQR;
+				break;
+			case 2:
+				LFO->table=PLFO_TRI;
+				break;
+			case 3:
+				LFO->table=PLFO_NOI;
+				break;
 		}
 		LFO->scale=PSCALES[LFOS];
 	}

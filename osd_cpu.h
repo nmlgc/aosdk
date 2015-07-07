@@ -56,7 +56,8 @@
  * thus PAIR.d can be used to pass arguments to the memory system
  * which expects 'int' really.
  ******************************************************************************/
-typedef union {
+typedef union
+{
 #if LSB_FIRST
 	struct { UINT8 l,h,h2,h3; } b;
 	struct { UINT16 l,h; } w;

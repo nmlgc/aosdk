@@ -141,10 +141,10 @@ struct Memory_ReadAddress
 
 struct Memory_WriteAddress
 {
-    offs_t start, end;
+	offs_t start, end;
 	mem_write_handler handler;				/* see special values above */
 	data8_t **base;							/* optional (see explanation above) */
-    size_t *size;                           /* optional (see explanation above) */
+	size_t *size;                           /* optional (see explanation above) */
 };
 
 #define MEMORY_MARKER ((offs_t)~0)
@@ -237,7 +237,7 @@ struct Memory_WriteAddress16
 	offs_t start, end;
 	mem_write16_handler handler;			/* see special values above */
 	data16_t **base;						/* optional (see explanation above) */
-    size_t *size;                           /* optional (see explanation above) */
+	size_t *size;                           /* optional (see explanation above) */
 };
 
 #define MEMORY_READ16_START(name) const struct Memory_ReadAddress16 name[] = { \
@@ -377,7 +377,7 @@ to track the external areas.
 struct ExtMemory
 {
 	offs_t start,end,region;
-    UINT8 *data;
+	UINT8 *data;
 };
 
 extern struct ExtMemory ext_memory[MAX_EXT_MEMORY];
@@ -498,7 +498,7 @@ extern UINT8 *cpu_bankbase[];	/* array of bank bases */
 	if (cur_mrhard[(pc)>>(abits2+abitsmin+shift)] != ophw)	\
 		setop(pc);											\
 }
-#define change_pc16(pc) 	 
+#define change_pc16(pc)
 //change_pc_generic(pc, ABITS2_16, ABITS_MIN_16, 0, cpu_setOPbase16)
 #define change_pc20(pc) 	 change_pc_generic(pc, ABITS2_20, ABITS_MIN_20, 0, cpu_setOPbase20)
 #define change_pc21(pc) 	 change_pc_generic(pc, ABITS2_21, ABITS_MIN_21, 0, cpu_setOPbase21)

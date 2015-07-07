@@ -9,7 +9,7 @@ typedef int offs_t;
 
 #define cpu_readop32(pc) program_read_dword_32le(pc)
 #define change_pc(pc)																	\
-
+ 
 
 #ifdef __GNUC__
 #if (__GNUC__ < 2) || ((__GNUC__ == 2) && (__GNUC_MINOR__ <= 7))
@@ -234,7 +234,7 @@ enum
 #define FUNCT_SRLV ( 6 )
 #define FUNCT_SRAV ( 7 )
 #define FUNCT_JR ( 8 )
-#define FUNCT_JALR ( 9 )	   
+#define FUNCT_JALR ( 9 )
 #define FUNCT_HLECALL ( 11 )
 #define FUNCT_SYSCALL ( 12 )
 #define FUNCT_BREAK ( 13 )

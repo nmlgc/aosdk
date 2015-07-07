@@ -83,7 +83,7 @@ static char *Z80ROM, *QSamples;
 static char RAM[0x1000], RAM2[0x1000];
 static int32 cur_bank;
 
-static struct QSound_interface qsintf = 
+static struct QSound_interface qsintf =
 {
 	QSOUND_CLOCK,
 	NULL
@@ -98,13 +98,13 @@ static void qsf_walktags(uint8 *buffer, uint8 *end)
 
 	while (cbuf < end)
 	{
-		#if DEBUG_LOADER				
+		#if DEBUG_LOADER
 		printf("cbuf: %08x end: %08x\n", (uint32)cbuf, (uint32)end);
 		#endif
 		offset = cbuf[3] | cbuf[4]<<8 | cbuf[5]<<16 | cbuf[6]<<24;
 		length = cbuf[7] | cbuf[8]<<8 | cbuf[9]<<16 | cbuf[10]<<24;
 
-		#if DEBUG_LOADER				
+		#if DEBUG_LOADER
 		printf("Tag: %c%c%c @ %08x, length %08x\n", cbuf[0], cbuf[1], cbuf[2], offset, length);
 		#endif
 
@@ -158,7 +158,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 
 	memset(RAM, 0, 0x1000);
 	memset(RAM2, 0, 0x1000);
-		
+
 	// Decode the current QSF
 	if (corlett_decode(buffer, length, &file, &file_len, &c) != AO_SUCCESS)
 	{
@@ -169,8 +169,8 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 	if (c->lib[0] != 0)
 	{
 		uint64 tmp_length;
-	
-		#if DEBUG_LOADER	
+
+		#if DEBUG_LOADER
 		printf("Loading library: %s\n", c->lib);
 		#endif
 		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -178,19 +178,19 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 			return AO_FAIL;
 		}
 		lib_raw_length = tmp_length;
-		
+
 		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
 		{
 			free(lib_raw_file);
 			return AO_FAIL;
 		}
-				
+
 		// Free up raw file
 		free(lib_raw_file);
 
 		// use the contents
 		qsf_walktags(lib_decoded, lib_decoded+lib_len);
-		
+
 		// Dispose the corlett structure for the lib - we don't use it
 		free(lib);
 	}
@@ -239,7 +239,7 @@ static void timer_tick(void)
 }
 
 int32 qsf_gen(int16 *buffer, uint32 samples)
-{	
+{
 	int16 output[44100/30], output2[44100/30];
 	int16 *stereo[2];
 	int16 *outp = buffer;
@@ -315,7 +315,7 @@ int32 qsf_command(int32 command, int32 parameter)
 	{
 		case COMMAND_RESTART:
 			return AO_SUCCESS;
-		
+
 	}
 	return AO_FAIL;
 }
@@ -324,13 +324,13 @@ int32 qsf_fill_info(ao_display_info *info)
 {
 	if (c == NULL)
 		return AO_FAIL;
-		
+
 	strcpy(info->title[1], "Name: ");
 	sprintf(info->info[1], "%s", c->inf_title);
 
 	strcpy(info->title[2], "Game: ");
 	sprintf(info->info[2], "%s", c->inf_game);
-	
+
 	strcpy(info->title[3], "Artist: ");
 	sprintf(info->info[3], "%s", c->inf_artist);
 
@@ -400,7 +400,7 @@ void qsf_memory_write(uint16 addr, uint8 byte)
 {
 	if (addr >= 0xc000 && addr <= 0xcfff)
 	{
-		
+
 		RAM[addr-0xc000] = byte;
 		return;
 	}

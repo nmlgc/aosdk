@@ -82,13 +82,13 @@ void SCSPDSP_Step(struct _SCSPDSP *DSP)
 		return;
 
 	memset(DSP->EFREG,0,2*16);
-#if 0
+	#if 0
 	int dump=0;
 	FILE *f=NULL;
 	if(dump)
 		f=fopen("dsp.txt","wt");
-#endif
-	for(step=0;step</*128*/DSP->LastStep;++step)
+	#endif
+	for(step=0; step</*128*/DSP->LastStep; ++step)
 	{
 		UINT16 *IPtr=DSP->MPRO+step*4;
 
@@ -128,7 +128,7 @@ void SCSPDSP_Step(struct _SCSPDSP *DSP)
 		INT64 v;
 
 		//operations are done at 24 bit precision
-#if 0
+		#if 0
 		if(MASA)
 			int a=1;
 		if(NOFL)
@@ -154,7 +154,7 @@ void SCSPDSP_Step(struct _SCSPDSP *DSP)
 			DUMP(ADRS_REG);
 			fprintf(f,"\n");
 		}
-#endif
+		#endif
 		//INPUTS RW
 		assert(IRA<0x32);
 		if(IRA<=0x1f)
@@ -341,7 +341,7 @@ void SCSPDSP_Start(struct _SCSPDSP *DSP)
 {
 	int i;
 	DSP->Stopped=0;
-	for(i=127;i>=0;--i)
+	for(i=127; i>=0; --i)
 	{
 		UINT16 *IPtr=DSP->MPRO+i*4;
 

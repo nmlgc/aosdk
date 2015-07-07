@@ -12,22 +12,22 @@
 static const int thumbCycles[256] =
 {
 //  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 0
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 1
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 2
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 3
-    1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 4
-    2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 5
-    2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 6
-    2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 7
-    2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 8
-    2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 9
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // a
-    1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 4, 1, 1,  // b
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // c
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,  // d
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // e
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2   // f
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 0
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 1
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 2
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 3
+	1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 4
+	2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 5
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 6
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 7
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 8
+	2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,  // 9
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // a
+	1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 4, 1, 1,  // b
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // c
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,  // d
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // e
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2   // f
 };
 
 // utility macros
@@ -92,30 +92,30 @@ int ARM7i_Thumb_Step()
 				if( offs != 0 )
 				{
 					SET_REGISTER( rd, rrs >> offs );
-				if( rrs & ( 1 << (offs-1) ) )
-				{
-					ARM7_SetCPSR(GET_CPSR | ARM7_CPSR_C);
-				}
-				else
-				{
-					ARM7_SetCPSR(GET_CPSR &~ ARM7_CPSR_C);
-				}
+					if( rrs & ( 1 << (offs-1) ) )
+					{
+						ARM7_SetCPSR(GET_CPSR | ARM7_CPSR_C);
+					}
+					else
+					{
+						ARM7_SetCPSR(GET_CPSR &~ ARM7_CPSR_C);
+					}
 				}
 				else
 				{
 					SET_REGISTER( rd, 0 );
 					if( rrs & 0x80000000 )
 					{
-					        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+						ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
 					}
 					else
 					{
-					        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+						ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
 					}
 				}
 				ARM7_SetCPSR(GET_CPSR &~ ( ARM7_CPSR_Z | ARM7_CPSR_N ) );
 				ARM7_SetCPSR( GET_CPSR | HandleALUNZFlags( GET_REGISTER(rd) ) );
-			        R15 += 2;
+				R15 += 2;
 			}
 			else /* Shift left */
 			{
@@ -199,27 +199,27 @@ int ARM7i_Thumb_Step()
 
 					if( offs >= 32 )
 					{
-					        if( rrs >> 31 )
-					{
-						ARM7_SetCPSR(GET_CPSR | ARM7_CPSR_C);
+						if( rrs >> 31 )
+						{
+							ARM7_SetCPSR(GET_CPSR | ARM7_CPSR_C);
+						}
+						else
+						{
+							ARM7_SetCPSR(GET_CPSR &~ ARM7_CPSR_C);
+						}
+						SET_REGISTER( rd, ( rrs & 0x80000000 ) ? 0xFFFFFFFF : 0x00000000 );
 					}
 					else
 					{
-						ARM7_SetCPSR(GET_CPSR &~ ARM7_CPSR_C);
-					}
-					        SET_REGISTER( rd, ( rrs & 0x80000000 ) ? 0xFFFFFFFF : 0x00000000 );
-					}
-					else
-					{
-					        if( ( rrs >> ( offs - 1 ) ) & 1 )
-					        {
-					        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
-					        }
-					        else
-					        {
-					        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
-					        }
-					        SET_REGISTER( rd, ( rrs & 0x80000000 ) ? ( ( 0xFFFFFFFF << ( 32 - offs ) ) | ( rrs >> offs ) ) : ( rrs >> offs ) );
+						if( ( rrs >> ( offs - 1 ) ) & 1 )
+						{
+							ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+						}
+						else
+						{
+							ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+						}
+						SET_REGISTER( rd, ( rrs & 0x80000000 ) ? ( ( 0xFFFFFFFF << ( 32 - offs ) ) | ( rrs >> offs ) ) : ( rrs >> offs ) );
 					}
 					ARM7_SetCPSR(GET_CPSR &~ (ARM7_CPSR_N | ARM7_CPSR_Z));
 					ARM7_SetCPSR( GET_CPSR | HandleALUNZFlags( GET_REGISTER(rd) ) );
@@ -298,32 +298,32 @@ int ARM7i_Thumb_Step()
 							{
 								if ( offs < 32 )
 								{
-								        SET_REGISTER( rd, rrd << offs );
-								        if( rrd & ( 1 << ( 31 - ( offs - 1 ) ) ) )
-								        {
-									        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
-								        }
-								        else
-								        {
-									        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
-								        }
+									SET_REGISTER( rd, rrd << offs );
+									if( rrd & ( 1 << ( 31 - ( offs - 1 ) ) ) )
+									{
+										ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+									}
+									else
+									{
+										ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									}
 								}
 								else if( offs == 32 )
 								{
-								        SET_REGISTER( rd, 0 );
-								        if( rrd & 1 )
-								        {
-									        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
-								        }
-								        else
-								        {
-									        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
-								        }
+									SET_REGISTER( rd, 0 );
+									if( rrd & 1 )
+									{
+										ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+									}
+									else
+									{
+										ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									}
 								}
 								else
 								{
-								        SET_REGISTER( rd, 0 );
-								        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									SET_REGISTER( rd, 0 );
+									ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
 								}
 							}
 							ARM7_SetCPSR( GET_CPSR &~ ( ARM7_CPSR_Z | ARM7_CPSR_N ) );
@@ -339,32 +339,32 @@ int ARM7i_Thumb_Step()
 							{
 								if( offs < 32 )
 								{
-								        SET_REGISTER( rd, rrd >> offs );
-								        if( rrd & ( 1 << ( offs - 1 ) ) )
-								        {
-									        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
-								        }
-								        else
-								        {
-									        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
-								        }
+									SET_REGISTER( rd, rrd >> offs );
+									if( rrd & ( 1 << ( offs - 1 ) ) )
+									{
+										ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+									}
+									else
+									{
+										ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									}
 								}
 								else if( offs == 32 )
 								{
-								        SET_REGISTER( rd, 0 );
-								        if( rrd & 0x80000000 )
-								        {
-									        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
-								        }
-								        else
-								        {
-									        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
-								        }
+									SET_REGISTER( rd, 0 );
+									if( rrd & 0x80000000 )
+									{
+										ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+									}
+									else
+									{
+										ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									}
 								}
 								else
 								{
-								        SET_REGISTER( rd, 0 );
-								        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+									SET_REGISTER( rd, 0 );
+									ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
 								}
 							}
 							ARM7_SetCPSR( GET_CPSR &~ ( ARM7_CPSR_Z | ARM7_CPSR_N ) );
@@ -428,16 +428,16 @@ int ARM7i_Thumb_Step()
 						case 0x7: /* ROR Rd, Rs */
 							rs = ( insn & THUMB_ADDSUB_RS ) >> THUMB_ADDSUB_RS_SHIFT;
 							rd = ( insn & THUMB_ADDSUB_RD ) >> THUMB_ADDSUB_RD_SHIFT;
-                     					rrd = GET_REGISTER(rd);
+							rrd = GET_REGISTER(rd);
 							imm = GET_REGISTER(rs) & 0x0000001f;
 							SET_REGISTER( rd, ( rrd >> imm ) | ( rrd << ( 32 - imm ) ) );
 							if( rrd & ( 1 << ( imm - 1 ) ) )
 							{
-							        ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
+								ARM7_SetCPSR( GET_CPSR | ARM7_CPSR_C );
 							}
 							else
 							{
-							        ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
+								ARM7_SetCPSR( GET_CPSR &~ ARM7_CPSR_C );
 							}
 							ARM7_SetCPSR( GET_CPSR &~ ( ARM7_CPSR_Z | ARM7_CPSR_N ) );
 							ARM7_SetCPSR( GET_CPSR | HandleALUNZFlags( GET_REGISTER(rd) ) );
@@ -453,7 +453,7 @@ int ARM7i_Thumb_Step()
 						case 0x9: /* NEG Rd, Rs - todo: check me */
 							rs = ( insn & THUMB_ADDSUB_RS ) >> THUMB_ADDSUB_RS_SHIFT;
 							rd = ( insn & THUMB_ADDSUB_RD ) >> THUMB_ADDSUB_RD_SHIFT;
-				                        rrs = GET_REGISTER(rs);
+							rrs = GET_REGISTER(rs);
 							rn = 0 - rrs;
 							SET_REGISTER( rd, rn );
 							HandleThumbALUSubFlags( GET_REGISTER(rd), 0, rrs );
@@ -519,7 +519,7 @@ int ARM7i_Thumb_Step()
 							switch( ( insn & THUMB_HIREG_H ) >> THUMB_HIREG_H_SHIFT )
 							{
 								case 0x1: /* ADD Rd, HRs */
-					      				SET_REGISTER( rd, GET_REGISTER(rd) + GET_REGISTER(rs+8) );
+									SET_REGISTER( rd, GET_REGISTER(rd) + GET_REGISTER(rs+8) );
 									// emulate the effects of pre-fetch
 									if (rs == 7)
 									{
@@ -611,10 +611,10 @@ int ARM7i_Thumb_Step()
 										R15 += 2;
 									}
 									else
-				                                        {
-                                            					R15 &= ~1;
+									{
+										R15 &= ~1;
 										change_pc(R15);
-                                        				}
+									}
 									break;
 								case 0x3:	// MOV Hd, Hs
 									rs = ( insn & THUMB_HIREG_RS ) >> THUMB_HIREG_RS_SHIFT;
@@ -625,18 +625,18 @@ int ARM7i_Thumb_Step()
 									}
 									else
 									{
-									SET_REGISTER( rd + 8, GET_REGISTER(rs+8) );
+										SET_REGISTER( rd + 8, GET_REGISTER(rs+8) );
 									}
 									if( rd != 7 )
 									{
 										R15 += 2;
 									}
 
-								        if( rd == 7 )
-				                                        {
-                                            					R15 &= ~1;
+									if( rd == 7 )
+									{
+										R15 &= ~1;
 										change_pc(R15);
-                                        				}
+									}
 									break;
 								default:
 									printf("%08x: G4-2 Undefined Thumb instruction: %04x (%x)\n", pc, insn, ( insn & THUMB_HIREG_H ) >> THUMB_HIREG_H_SHIFT);
@@ -729,10 +729,10 @@ int ARM7i_Thumb_Step()
 					break;
 				case 0x2: /* STRB Rd, [Rn, Rm] */
 					rm = ( insn & THUMB_GROUP5_RM ) >> THUMB_GROUP5_RM_SHIFT;
- 					rn = ( insn & THUMB_GROUP5_RN ) >> THUMB_GROUP5_RN_SHIFT;
+					rn = ( insn & THUMB_GROUP5_RN ) >> THUMB_GROUP5_RN_SHIFT;
 					rd = ( insn & THUMB_GROUP5_RD ) >> THUMB_GROUP5_RD_SHIFT;
- 					addr = GET_REGISTER(rn) + GET_REGISTER(rm);
- 					arm7_write_8( addr, GET_REGISTER(rd) );
+					addr = GET_REGISTER(rn) + GET_REGISTER(rm);
+					arm7_write_8( addr, GET_REGISTER(rd) );
 					R15 += 2;
 					break;
 				case 0x3: /* LDSB Rd, [Rn, Rm] todo, add dasm */
@@ -977,8 +977,8 @@ int ARM7i_Thumb_Step()
 			switch( ( insn & THUMB_COND_TYPE ) >> THUMB_COND_TYPE_SHIFT )
 			{
 				case COND_EQ:
-		        	    	if( Z_IS_SET(GET_CPSR) )
-		        	    	{
+					if( Z_IS_SET(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -987,8 +987,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_NE:
-		        	    	if( Z_IS_CLEAR(GET_CPSR) )
-		        	    	{
+					if( Z_IS_CLEAR(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -997,8 +997,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_CS:
-		        	    	if( C_IS_SET(GET_CPSR) )
-		        	    	{
+					if( C_IS_SET(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1007,8 +1007,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_CC:
-		        	    	if( C_IS_CLEAR(GET_CPSR) )
-		        	    	{
+					if( C_IS_CLEAR(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1017,8 +1017,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_MI:
-		        	    	if( N_IS_SET(GET_CPSR) )
-		        	    	{
+					if( N_IS_SET(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1027,8 +1027,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_PL:
-		        	    	if( N_IS_CLEAR(GET_CPSR) )
-		        	    	{
+					if( N_IS_CLEAR(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1037,8 +1037,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_VS:
-		        	    	if( V_IS_SET(GET_CPSR) )
-		        	    	{
+					if( V_IS_SET(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1047,8 +1047,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_VC:
-		        	    	if( V_IS_CLEAR(GET_CPSR) )
-		        	    	{
+					if( V_IS_CLEAR(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1057,8 +1057,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_HI:
-		        	    	if( C_IS_SET(GET_CPSR) && Z_IS_CLEAR(GET_CPSR) )
-		        	    	{
+					if( C_IS_SET(GET_CPSR) && Z_IS_CLEAR(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1067,8 +1067,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_LS:
-		        	    	if( C_IS_CLEAR(GET_CPSR) || Z_IS_SET(GET_CPSR) )
-		        	    	{
+					if( C_IS_CLEAR(GET_CPSR) || Z_IS_SET(GET_CPSR) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1077,8 +1077,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_GE:
-		        	    	if( !(GET_CPSR & ARM7_CPSR_N) == !(GET_CPSR & ARM7_CPSR_V) )
-		        	    	{
+					if( !(GET_CPSR & ARM7_CPSR_N) == !(GET_CPSR & ARM7_CPSR_V) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1087,8 +1087,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_LT:
-		        	    	if( !(GET_CPSR & ARM7_CPSR_N) != !(GET_CPSR & ARM7_CPSR_V) )
-		        	    	{
+					if( !(GET_CPSR & ARM7_CPSR_N) != !(GET_CPSR & ARM7_CPSR_V) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1097,8 +1097,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_GT:
-		        	    	if( Z_IS_CLEAR(GET_CPSR) && ( !(GET_CPSR & ARM7_CPSR_N) == !(GET_CPSR & ARM7_CPSR_V) ) )
-		        	    	{
+					if( Z_IS_CLEAR(GET_CPSR) && ( !(GET_CPSR & ARM7_CPSR_N) == !(GET_CPSR & ARM7_CPSR_V) ) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1107,8 +1107,8 @@ int ARM7i_Thumb_Step()
 					}
 					break;
 				case COND_LE:
-		        	    	if( Z_IS_SET(GET_CPSR) || ( !(GET_CPSR & ARM7_CPSR_N) != !(GET_CPSR & ARM7_CPSR_V) ) )
-		        	    	{
+					if( Z_IS_SET(GET_CPSR) || ( !(GET_CPSR & ARM7_CPSR_N) != !(GET_CPSR & ARM7_CPSR_V) ) )
+					{
 						R15 += 4 + (offs << 1);
 					}
 					else
@@ -1128,23 +1128,23 @@ int ARM7i_Thumb_Step()
 			}
 			break;
 		case 0xe: /* B #offs */
-        if( insn & THUMB_BLOP_LO )
-        {
-                addr = GET_REGISTER(14);
-                addr += ( insn & THUMB_BLOP_OFFS ) << 1;
-                addr &= 0xfffffffc;
-                SET_REGISTER( 14, ( R15 + 4 ) | 1 );
-                R15 = addr;
-        }
-        else
-        {
-                offs = ( insn & THUMB_BRANCH_OFFS ) << 1;
-                if( offs & 0x00000800 )
-                {
-                offs |= 0xfffff800;
-                }
-                R15 += 4 + offs;
-        }
+			if( insn & THUMB_BLOP_LO )
+			{
+				addr = GET_REGISTER(14);
+				addr += ( insn & THUMB_BLOP_OFFS ) << 1;
+				addr &= 0xfffffffc;
+				SET_REGISTER( 14, ( R15 + 4 ) | 1 );
+				R15 = addr;
+			}
+			else
+			{
+				offs = ( insn & THUMB_BRANCH_OFFS ) << 1;
+				if( offs & 0x00000800 )
+				{
+					offs |= 0xfffff800;
+				}
+				R15 += 4 + offs;
+			}
 			break;
 		case 0xf: /* BL */
 			if( insn & THUMB_BLOP_LO )

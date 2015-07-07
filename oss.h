@@ -20,7 +20,7 @@ void m1sdr_SetCallback(void *fn);
 void m1sdr_SetCPUHog(int hog);
 INT32 m1sdr_HwPresent(void);
 void m1sdr_FlushAudio(void);
-void m1sdr_Pause(int); 
+void m1sdr_Pause(int);
 void m1sdr_SetNoWait(int nw);
 short *m1sdr_GetSamples(void);
 int m1sdr_GetPlayTime(void);

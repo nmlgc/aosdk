@@ -17,15 +17,16 @@
 
 #define	IRQ_LINE_NMI	10
 /* Values passed to the cpu_info function of a core to retrieve information */
-enum {
+enum
+{
 	CPU_INFO_REG,
 	CPU_INFO_FLAGS=MAX_REGS,
 	CPU_INFO_NAME,
-    CPU_INFO_FAMILY,
-    CPU_INFO_VERSION,
-    CPU_INFO_FILE,
-    CPU_INFO_CREDITS,
-    CPU_INFO_REG_LAYOUT,
+	CPU_INFO_FAMILY,
+	CPU_INFO_VERSION,
+	CPU_INFO_FILE,
+	CPU_INFO_CREDITS,
+	CPU_INFO_REG_LAYOUT,
 	CPU_INFO_WIN_LAYOUT
 };
 
@@ -214,38 +215,38 @@ enum {
 /* ASG 971222 -- added this generic structure */
 struct cpu_interface
 {
-    unsigned cpu_num;
-    void (*reset)(void *param);
-    void (*exit)(void);
-    int (*execute)(int cycles);
-    void (*burn)(int cycles);
-    unsigned (*get_context)(void *reg);
-    void (*set_context)(void *reg);
-    unsigned (*get_pc)(void);
-    void (*set_pc)(unsigned val);
-    unsigned (*get_sp)(void);
-    void (*set_sp)(unsigned val);
-    unsigned (*get_reg)(int regnum);
-    void (*set_reg)(int regnum, unsigned val);
-    void (*set_nmi_line)(int linestate);
-    void (*set_irq_line)(int irqline, int linestate);
-    void (*set_irq_callback)(int(*callback)(int irqline));
-    void (*internal_interrupt)(int type);
-    void (*cpu_state_save)(void *file);
-    void (*cpu_state_load)(void *file);
-    const char* (*cpu_info)(void *context,int regnum);
-    unsigned (*cpu_dasm)(char *buffer,unsigned pc);
+	unsigned cpu_num;
+	void (*reset)(void *param);
+	void (*exit)(void);
+	int (*execute)(int cycles);
+	void (*burn)(int cycles);
+	unsigned (*get_context)(void *reg);
+	void (*set_context)(void *reg);
+	unsigned (*get_pc)(void);
+	void (*set_pc)(unsigned val);
+	unsigned (*get_sp)(void);
+	void (*set_sp)(unsigned val);
+	unsigned (*get_reg)(int regnum);
+	void (*set_reg)(int regnum, unsigned val);
+	void (*set_nmi_line)(int linestate);
+	void (*set_irq_line)(int irqline, int linestate);
+	void (*set_irq_callback)(int(*callback)(int irqline));
+	void (*internal_interrupt)(int type);
+	void (*cpu_state_save)(void *file);
+	void (*cpu_state_load)(void *file);
+	const char* (*cpu_info)(void *context,int regnum);
+	unsigned (*cpu_dasm)(char *buffer,unsigned pc);
 	unsigned num_irqs;
 	int default_vector;
-    int *icount;
-    double overclock;
-    int no_int, irq_int, nmi_int;
-    int (*memory_read)(int offset);
-    void (*memory_write)(int offset, int data);
-    void (*set_op_base)(int pc);
+	int *icount;
+	double overclock;
+	int no_int, irq_int, nmi_int;
+	int (*memory_read)(int offset);
+	void (*memory_write)(int offset, int data);
+	void (*set_op_base)(int pc);
 	int address_shift;
 	unsigned address_bits, endianess, align_unit, max_inst_len;
-    unsigned abits1, abits2, abitsmin;
+	unsigned abits1, abits2, abitsmin;
 };
 
 extern struct cpu_interface cpuintf[];
@@ -528,11 +529,12 @@ const char *cpunum_core_credits(int cpunum);
 void cpu_dump_states(void);
 
 /* daisy-chain link */
-typedef struct {
-    void (*reset)(int);             /* reset callback     */
-    int  (*interrupt_entry)(int);   /* entry callback     */
-    void (*interrupt_reti)(int);    /* reti callback      */
-    int irq_param;                  /* callback paramater */
+typedef struct
+{
+	void (*reset)(int);             /* reset callback     */
+	int  (*interrupt_entry)(int);   /* entry callback     */
+	void (*interrupt_reti)(int);    /* reti callback      */
+	int irq_param;                  /* callback paramater */
 }	Z80_DaisyChain;
 
 #define Z80_MAXDAISY	4		/* maximum of daisy chan device */

@@ -1,6 +1,6 @@
 /*
 
-	Sega/Yamaha AICA emulation	
+	Sega/Yamaha AICA emulation
 */
 
 #ifndef _AICA_H_
@@ -16,7 +16,7 @@ typedef int16 data16_t;
 typedef int32 data32_t;
 typedef int offs_t;
 
-struct AICAinterface 
+struct AICAinterface
 {
 	int num;
 	void *region[MAX_AICA];

@@ -9,7 +9,7 @@
 
 #define QSOUND_CLOCK    4000000   /* default 4MHz clock */
 
-struct QSound_interface 
+struct QSound_interface
 {
 	int clock;			/* clock */
 	char *sample_rom;		/* sample data */

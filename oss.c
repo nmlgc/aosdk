@@ -76,7 +76,7 @@ void m1sdr_SetSamplesPerTick(UINT32 spf)
 // m1sdr_Update - timer callback routine: runs sequencer and mixes sound
 
 void m1sdr_Update(void)
-{	
+{
 	if (!hw_present) return;
 
 	if (m1sdr_Callback)
@@ -88,12 +88,12 @@ void m1sdr_Update(void)
 
 void m1sdr_TimeCheck(void)
 {
-#if VALGRIND
+	#if VALGRIND
 	m1sdr_Update();
-#else
+	#else
 	audio_buf_info info;
 
-    	ioctl(audiofd, SNDCTL_DSP_GETOSPACE, &info);
+	ioctl(audiofd, SNDCTL_DSP_GETOSPACE, &info);
 
 	if (oss_nw)
 	{
@@ -115,7 +115,7 @@ void m1sdr_TimeCheck(void)
 	}
 	else
 	{
-	    	while (info.bytes >= (nDSoundSegLen * 4))
+		while (info.bytes >= (nDSoundSegLen * 4))
 		{
 			m1sdr_Update();
 			playtime++;
@@ -127,18 +127,18 @@ void m1sdr_TimeCheck(void)
 			fwrite(samples, nDSoundSegLen*4, 1, logfil);
 			#endif
 
-		    	ioctl(audiofd, SNDCTL_DSP_GETOSPACE, &info);
+			ioctl(audiofd, SNDCTL_DSP_GETOSPACE, &info);
 		}
 	}
 
 	usleep(50);
-#endif
+	#endif
 }
 
 // m1sdr_Init - inits the output device and our global state
 
 INT16 m1sdr_Init(int sample_rate)
-{	
+{
 	int format, stereo, rate, fsize;
 
 	hw_present = 0;
@@ -173,15 +173,15 @@ INT16 m1sdr_Init(int sample_rate)
 	fsize = OSS_FRAGMENT;
 	if (ioctl(audiofd, SNDCTL_DSP_SETFRAGMENT, &fsize) == - 1)
 	{
-	perror("SNDCTL_DSP_SETFRAGMENT");
-	return(0);
+		perror("SNDCTL_DSP_SETFRAGMENT");
+		return(0);
 	}
 
 	// set 16-bit output
 	format = AFMT_S16_NE;	// 16 bit signed "native"-endian
 	if (ioctl(audiofd, SNDCTL_DSP_SETFMT, &format) == - 1)
 	{
-			perror("SNDCTL_DSP_SETFMT");
+		perror("SNDCTL_DSP_SETFMT");
 		return(0);
 	}
 
@@ -189,7 +189,7 @@ INT16 m1sdr_Init(int sample_rate)
 	stereo = 1;
 	if (ioctl(audiofd, SNDCTL_DSP_STEREO, &stereo) == - 1)
 	{
-			perror("SNDCTL_DSP_STEREO");
+		perror("SNDCTL_DSP_STEREO");
 		return(0);
 	}
 
@@ -197,7 +197,7 @@ INT16 m1sdr_Init(int sample_rate)
 	rate = sample_rate;
 	if (ioctl(audiofd, SNDCTL_DSP_SPEED, &rate) == - 1)
 	{
-			perror("SNDCTL_DSP_SPEED");
+		perror("SNDCTL_DSP_SPEED");
 		return(0);
 	}
 
@@ -207,21 +207,21 @@ INT16 m1sdr_Init(int sample_rate)
 
 	hw_present = 1;
 
-#if LOG_WAVE
+	#if LOG_WAVE
 	logfil = fopen("log.bin", "wb");
-#endif
+	#endif
 
 	return (1);
 }
 
 void m1sdr_Exit(void)
-{	
+{
 	if (!hw_present) return;
 
 	close(audiofd);
-#if LOG_WAVE
+	#if LOG_WAVE
 	fclose(logfil);
-#endif
+	#endif
 }
 
 void m1sdr_SetCallback(void *fn)

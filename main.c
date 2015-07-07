@@ -36,17 +36,18 @@ static uint32 type;
 
 ao_bool ao_song_done;
 
-static struct 
-{ 
-	uint32 sig; 
-	char *name; 
-	int32 (*start)(uint8 *, uint32); 
-	int32 (*gen)(int16 *, uint32); 
-	int32 (*stop)(void); 
-	int32 (*command)(int32, int32); 
-	uint32 rate; 
-	int32 (*fillinfo)(ao_display_info *); 
-} types[] = {
+static struct
+{
+	uint32 sig;
+	char *name;
+	int32 (*start)(uint8 *, uint32);
+	int32 (*gen)(int16 *, uint32);
+	int32 (*stop)(void);
+	int32 (*command)(int32, int32);
+	uint32 rate;
+	int32 (*fillinfo)(ao_display_info *);
+} types[] =
+{
 	{ 0x50534641, "Capcom QSound (.qsf)", qsf_start, qsf_gen, qsf_stop, qsf_command, 60, qsf_fill_info },
 	{ 0x50534611, "Sega Saturn (.ssf)", ssf_start, ssf_gen, ssf_stop, ssf_command, 60, ssf_fill_info },
 	{ 0x50534601, "Sony PlayStation (.psf)", psf_start, psf_gen, psf_stop, psf_command, 60, psf_fill_info },
@@ -137,7 +138,7 @@ int main(int argv, char *argc[])
 	{
 		printf("Error: must specify a filename!\n");
 		return -1;
-	}	
+	}
 
 	file = fopen(argc[1], "rb");
 
@@ -199,7 +200,7 @@ int main(int argv, char *argc[])
 		printf("ERROR: Engine rejected file!\n");
 		return -1;
 	}
-	
+
 	m1sdr_Init(44100);
 	m1sdr_SetCallback(do_frame);
 	m1sdr_PlayStart();
@@ -209,7 +210,7 @@ int main(int argv, char *argc[])
 	while (!ao_song_done)
 	{
 		m1sdr_TimeCheck();
-	}		
+	}
 
 	free(buffer);
 

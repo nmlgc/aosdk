@@ -100,7 +100,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	offset = file[0x1c] | file[0x1d]<<8 | file[0x1e]<<16 | file[0x1f]<<24;
 	printf("Text section size: %x\n", offset);
 	printf("Region: [%s]\n", &file[0x4c]);
-	printf("refresh: [%s]\n", c->inf_refresh);			
+	printf("refresh: [%s]\n", c->inf_refresh);
 	#endif
 
 	if (c->inf_refresh[0] == '5')
@@ -124,8 +124,8 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	if (c->lib[0] != 0)
 	{
 		uint64 tmp_length;
-	
-		#if DEBUG_LOADER	
+
+		#if DEBUG_LOADER
 		printf("Loading library: %s\n", c->lib);
 		#endif
 		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -133,13 +133,13 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			return AO_FAIL;
 		}
 		lib_raw_length = tmp_length;
-		
+
 		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
 		{
 			free(lib_raw_file);
 			return AO_FAIL;
 		}
-				
+
 		// Free up raw file
 		free(lib_raw_file);
 
@@ -150,13 +150,13 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			return AO_FAIL;
 		}
 
-		#if DEBUG_LOADER	
+		#if DEBUG_LOADER
 		offset = lib_decoded[0x18] | lib_decoded[0x19]<<8 | lib_decoded[0x1a]<<16 | lib_decoded[0x1b]<<24;
 		printf("Text section start: %x\n", offset);
 		offset = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
 		printf("Text section size: %x\n", offset);
 		printf("Region: [%s]\n", &lib_decoded[0x4c]);
-		printf("refresh: [%s]\n", lib->inf_refresh);			
+		printf("refresh: [%s]\n", lib->inf_refresh);
 		#endif
 
 		// if the original file had no refresh tag, give the lib a shot
@@ -188,7 +188,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		printf("library offset: %x plength: %d\n", offset, plength);
 		#endif
 		memcpy(&psx_ram[offset/4], lib_decoded+2048, plength);
-		
+
 		// Dispose the corlett structure for the lib - we don't use it
 		free(lib);
 	}
@@ -211,8 +211,8 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		if (c->libaux[i][0] != 0)
 		{
 			uint64 tmp_length;
-		
-			#if DEBUG_LOADER	
+
+			#if DEBUG_LOADER
 			printf("Loading aux library: %s\n", c->libaux[i]);
 			#endif
 
@@ -221,13 +221,13 @@ int32 psf_start(uint8 *buffer, uint32 length)
 				return AO_FAIL;
 			}
 			lib_raw_length = tmp_length;
-		
+
 			if (corlett_decode(lib_raw_file, lib_raw_length, &alib_decoded, &alib_len, &lib) != AO_SUCCESS)
 			{
 				free(lib_raw_file);
 				return AO_FAIL;
 			}
-				
+
 			// Free up raw file
 			free(lib_raw_file);
 
@@ -238,7 +238,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 				return AO_FAIL;
 			}
 
-			#if DEBUG_LOADER	
+			#if DEBUG_LOADER
 			offset = alib_decoded[0x18] | alib_decoded[0x19]<<8 | alib_decoded[0x1a]<<16 | alib_decoded[0x1b]<<24;
 			printf("Text section start: %x\n", offset);
 			offset = alib_decoded[0x1c] | alib_decoded[0x1d]<<8 | alib_decoded[0x1e]<<16 | alib_decoded[0x1f]<<24;
@@ -251,7 +251,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
 			plength = alib_decoded[0x1c] | alib_decoded[0x1d]<<8 | alib_decoded[0x1e]<<16 | alib_decoded[0x1f]<<24;
 			memcpy(&psx_ram[offset/4], alib_decoded+2048, plength);
-		
+
 			// Dispose the corlett structure for the lib - we don't use it
 			free(lib);
 		}
@@ -259,7 +259,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 
 	free(file);
 //	free(lib_decoded);
-	
+
 	// Finally, set psfby tag
 	strcpy(psfby, "n/a");
 	if (c)
@@ -276,7 +276,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	mips_reset(NULL);
 
 	// set the initial PC, SP, GP
-	#if DEBUG_LOADER	
+	#if DEBUG_LOADER
 	printf("Initial PC %x, GP %x, SP %x\n", PC, GP, SP);
 	printf("Refresh = %d\n", psf_refresh);
 	#endif
@@ -317,7 +317,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	printf("length %d fade %d\n", lengthMS, fadeMS);
 	#endif
 
-	if (lengthMS == 0) 
+	if (lengthMS == 0)
 	{
 		lengthMS = ~0;
 	}
@@ -333,7 +333,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		{
 			if (psx_ram[0xbc090/4] == LE32(0x0802f040))
 			{
-		 		psx_ram[0xbc090/4] = LE32(0);
+				psx_ram[0xbc090/4] = LE32(0);
 				psx_ram[0xbc094/4] = LE32(0x0802f040);
 				psx_ram[0xbc098/4] = LE32(0);
 			}
@@ -350,7 +350,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	initialSP = SP;
 
 	mips_execute(5000);
-	
+
 	return AO_SUCCESS;
 }
 
@@ -360,7 +360,7 @@ void spu_update(unsigned char* pSound,long lBytes)
 }
 
 int32 psf_gen(int16 *buffer, uint32 samples)
-{	
+{
 	int i;
 
 	for (i = 0; i < samples; i++)
@@ -407,7 +407,7 @@ int32 psf_command(int32 command, int32 parameter)
 			lengthMS = psfTimeToMS(c->inf_length);
 			fadeMS = psfTimeToMS(c->inf_fade);
 
-			if (lengthMS == 0) 
+			if (lengthMS == 0)
 			{
 				lengthMS = ~0;
 			}
@@ -424,7 +424,7 @@ int32 psf_command(int32 command, int32 parameter)
 			mips_execute(5000);
 
 			return AO_SUCCESS;
-		
+
 	}
 	return AO_FAIL;
 }
@@ -433,13 +433,13 @@ int32 psf_fill_info(ao_display_info *info)
 {
 	if (c == NULL)
 		return AO_FAIL;
-		
+
 	strcpy(info->title[1], "Name: ");
 	sprintf(info->info[1], "%s", c->inf_title);
 
 	strcpy(info->title[2], "Game: ");
 	sprintf(info->info[2], "%s", c->inf_game);
-	
+
 	strcpy(info->title[3], "Artist: ");
 	sprintf(info->info[3], "%s", c->inf_artist);
 

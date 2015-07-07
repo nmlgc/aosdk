@@ -84,22 +84,22 @@
 
 enum
 {
-    COND_EQ = 0,    /* Z: equal */
-    COND_NE,        /* ~Z: not equal */
-    COND_CS, COND_HS = 2,   /* C: unsigned higher or same */
-    COND_CC, COND_LO = 3,   /* ~C: unsigned lower */
-    COND_MI,        /* N: negative */
-    COND_PL,        /* ~N: positive or zero */
-    COND_VS,        /* V: overflow */
-    COND_VC,        /* ~V: no overflow */
-    COND_HI,        /* C && ~Z: unsigned higher */
-    COND_LS,        /* ~C || Z: unsigned lower or same */
-    COND_GE,        /* N == V: greater or equal */
-    COND_LT,        /* N != V: less than */
-    COND_GT,        /* ~Z && (N == V): greater than */
-    COND_LE,        /* Z || (N != V): less than or equal */
-    COND_AL,        /* always */
-    COND_NV         /* never */
+	COND_EQ = 0,    /* Z: equal */
+	COND_NE,        /* ~Z: not equal */
+	COND_CS, COND_HS = 2,   /* C: unsigned higher or same */
+	COND_CC, COND_LO = 3,   /* ~C: unsigned lower */
+	COND_MI,        /* N: negative */
+	COND_PL,        /* ~N: positive or zero */
+	COND_VS,        /* V: overflow */
+	COND_VC,        /* ~V: no overflow */
+	COND_HI,        /* C && ~Z: unsigned higher */
+	COND_LS,        /* ~C || Z: unsigned lower or same */
+	COND_GE,        /* N == V: greater or equal */
+	COND_LT,        /* N != V: less than */
+	COND_GT,        /* ~Z && (N == V): greater than */
+	COND_LE,        /* Z || (N != V): less than or equal */
+	COND_AL,        /* always */
+	COND_NV         /* never */
 };
 
 #define GET_CPSR	ARM7.Rx [ARM7_CPSR]

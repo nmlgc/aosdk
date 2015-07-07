@@ -75,7 +75,7 @@
 #define DIPAN(slot)		((slot->udata.data[0x24/2]>>0x0)&0x001F)
 
 #define EFSDL(slot)		((AICA->EFSPAN[slot*4]>>8)&0x000f)
-#define EFPAN(slot)		((AICA->EFSPAN[slot*4]>>0)&0x001f) 
+#define EFPAN(slot)		((AICA->EFSPAN[slot*4]>>0)&0x001f)
 
 //Envelope times in ms
 static const double ARTimes[64]={100000/*infinity*/,100000/*infinity*/,8100.0,6900.0,6000.0,4800.0,4000.0,3400.0,3000.0,2400.0,2000.0,1700.0,1500.0,
@@ -197,13 +197,14 @@ struct _AICA
 	int TimCnt[3];
 
 	// DMA stuff
-	struct{
+	struct
+	{
 		UINT32 dmea;
 		UINT16 drga;
 		UINT16 dlg;
 		UINT8 dgate;
 		UINT8 ddir;
-	}dma;
+	} dma;
 
 	int ARTABLE[64], DRTABLE[64];
 
@@ -238,13 +239,13 @@ static unsigned char DecodeSCI(struct _AICA *AICA, unsigned char irq)
 
 static void ResetInterrupts(struct _AICA *AICA)
 {
-#if 0
+	#if 0
 	UINT32 reset = AICA->udata.data[0xa4/2];
 	if (reset & 0x40)
 		AICA->IntARMCB(-AICA->IrqTimA);
 	if (reset & 0x180)
 		AICA->IntARMCB(-AICA->IrqTimBC);
-#endif
+	#endif
 }
 
 static void CheckPendingIRQ(struct _AICA *AICA)
@@ -361,7 +362,7 @@ static int EG_Update(struct _SLOT *slot)
 			slot->EG.volume-=slot->EG.RR;
 			if(slot->EG.volume<=0)
 			{
- 				slot->EG.volume=0;
+				slot->EG.volume=0;
 				AICA_StopSlot(slot,0);
 //				slot->EG.volume=0x17f<<EG_SHIFT;
 //				slot->EG.state=ATTACK;
@@ -408,7 +409,7 @@ void InitADPCM(int *PrevSignal, int *PrevQuant)
 INLINE signed short DecodeADPCM(int *PrevSignal, unsigned char Delta, int *PrevQuant)
 {
 	int x = *PrevQuant * quant_mul [Delta & 15];
-        x = *PrevSignal + ((int)(x + ((UINT32)x >> 29)) >> 3);
+	x = *PrevSignal + ((int)(x + ((UINT32)x >> 29)) >> 3);
 	*PrevSignal=ICLIP16(x);
 	*PrevQuant=(*PrevQuant*TableQuant[Delta&7])>>ADPCMSHIFT;
 	*PrevQuant=(*PrevQuant<0x7f)?0x7f:((*PrevQuant>0x6000)?0x6000:*PrevQuant);
@@ -421,7 +422,9 @@ static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 
 	slot->active=1;
 	slot->Backwards=0;
-	slot->cur_addr=0; slot->nxt_addr=1<<SHIFT; slot->prv_addr=-1;
+	slot->cur_addr=0;
+	slot->nxt_addr=1<<SHIFT;
+	slot->prv_addr=-1;
 	start_offset = SA(slot);	// AICA can play 16-bit samples from any boundry
 	slot->base=&AICA->AICARAM[start_offset];
 	slot->step=AICA_Step(slot);
@@ -457,7 +460,7 @@ static void AICA_StopSlot(struct _SLOT *slot,int keyoff)
 		slot->lpend = 1;
 	}
 	slot->udata.data[0]&=~0x4000;
-	
+
 }
 
 #define log_base_2(n) (log((float) n)/log((float) 2))
@@ -494,14 +497,14 @@ static void AICA_Init(struct _AICA *AICA, const struct AICAinterface *intf)
 		}
 	}
 
-	for(i=0;i<0x400;++i)
+	for(i=0; i<0x400; ++i)
 	{
 		float envDB=((float)(3*(i-0x3ff)))/32.0;
 		float scale=(float)(1<<SHIFT);
 		EG_TABLE[i]=(INT32)(pow(10.0,envDB/20.0)*scale);
 	}
 
-	for(i=0;i<0x20000;++i)
+	for(i=0; i<0x20000; ++i)
 	{
 		int iTL =(i>>0x0)&0xff;
 		int iPAN=(i>>0x8)&0x1f;
@@ -554,7 +557,7 @@ static void AICA_Init(struct _AICA *AICA, const struct AICAinterface *intf)
 
 	AICA->ARTABLE[0]=AICA->DRTABLE[0]=0;	//Infinite time
 	AICA->ARTABLE[1]=AICA->DRTABLE[1]=0;	//Infinite time
-	for(i=2;i<64;++i)
+	for(i=2; i<64; ++i)
 	{
 		double t,step,scale;
 		t=ARTimes[i];	//In ms
@@ -574,7 +577,7 @@ static void AICA_Init(struct _AICA *AICA, const struct AICAinterface *intf)
 	}
 
 	// make sure all the slots are off
-	for(i=0;i<64;++i)
+	for(i=0; i<64; ++i)
 	{
 		AICA->Slots[i].slot=i;
 		AICA->Slots[i].active=0;
@@ -607,7 +610,7 @@ static void AICA_UpdateSlotReg(struct _AICA *AICA,int s,int r)
 		case 1:
 			if(KEYONEX(slot))
 			{
-				for(sl=0;sl<64;++sl)
+				for(sl=0; sl<64; ++sl)
 				{
 					struct _SLOT *s2=AICA->Slots+sl;
 					{
@@ -615,7 +618,6 @@ static void AICA_UpdateSlotReg(struct _AICA *AICA,int s,int r)
 						{
 							s2->lpend = 0;
 							AICA_StartSlot(AICA, s2);
-
 							#if 0
 							printf("StartSlot[%02X]:   SSCTL %01X SA %06X LSA %04X LEA %04X PCMS %01X LPCTL %01X\n",sl,SSCTL(s2),SA(s2),LSA(s2),LEA(s2),PCMS(s2),LPCTL(s2));
 							printf("                 AR %02X D1R %02X D2R %02X RR %02X DL %02X KRS %01X LPSLNK %01X\n",AR(s2),D1R(s2),D2R(s2),RR(s2),DL(s2),KRS(s2),LPSLNK(s2)>>14);
@@ -737,7 +739,7 @@ static void AICA_UpdateReg(struct _AICA *AICA, int reg)
 		case 0xa4:	//SCIRE
 		case 0xa5:
 
-			if(AICA->Master)		   
+			if(AICA->Master)
 			{
 				AICA->udata.data[0xa0/2] &= ~AICA->udata.data[0xa4/2];
 				ResetInterrupts(AICA);
@@ -837,7 +839,7 @@ static void AICA_UpdateRegR(struct _AICA *AICA, int reg)
 				}
 			}
 			break;
-			
+
 		case 0x14:	// CA (slot address)
 		case 0x15:
 			{
@@ -1038,7 +1040,7 @@ void AICA_TimersAddTicks(struct _AICA *AICA, int ticks)
 {
 	if(AICA->TimCnt[0]<=0xff00)
 	{
- 		AICA->TimCnt[0] += ticks << (8-((AICA->udata.data[0x90/2]>>8)&0x7));
+		AICA->TimCnt[0] += ticks << (8-((AICA->udata.data[0x90/2]>>8)&0x7));
 		if (AICA->TimCnt[0] >= 0xFF00)
 		{
 			AICA->TimCnt[0] = 0xFFFF;
@@ -1090,7 +1092,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 		step>>=SHIFT;
 	}
 
-	if(PCMS(slot) == 0) 
+	if(PCMS(slot) == 0)
 	{
 		addr1=(slot->cur_addr>>(SHIFT-1))&0x7ffffe;
 		addr2=(slot->nxt_addr>>(SHIFT-1))&0x7ffffe;
@@ -1122,7 +1124,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 
 		if (base)
 		{
-			cur_sample = slot->cur_sample; // may already contains current decoded sample 
+			cur_sample = slot->cur_sample; // may already contains current decoded sample
 
 			// seek to the interpolation sample
 			while (curstep < steps_to_go)
@@ -1152,7 +1154,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 	}
 	fpart = slot->cur_addr & ((1<<SHIFT)-1);
 	sample=cur_sample*((1<<SHIFT)-fpart)+nxt_sample*fpart;
-	sample>>=SHIFT;	
+	sample>>=SHIFT;
 
 	slot->prv_addr=slot->cur_addr;
 	slot->cur_addr+=step;
@@ -1169,39 +1171,39 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 
 	switch(LPCTL(slot))
 	{
-	case 0:	//no loop
-		if(addr2>=LSA(slot) && addr2>=LEA(slot)) // if next sample exceed then current must exceed too
-		{
-			AICA_StopSlot(slot,0);
-		}
-		break;
-	case 1: //normal loop
-		if(addr2>=LEA(slot))
-		{
-			INT32 rem_addr;
-			slot->lpend = 1;
-			rem_addr = slot->nxt_addr - (LEA(slot)<<SHIFT);
-			slot->nxt_addr = (LSA(slot)<<SHIFT) + rem_addr;
-			if(addr1>=LEA(slot))
+		case 0:	//no loop
+			if(addr2>=LSA(slot) && addr2>=LEA(slot)) // if next sample exceed then current must exceed too
 			{
-				rem_addr = slot->cur_addr - (LEA(slot)<<SHIFT);
-				slot->cur_addr = (LSA(slot)<<SHIFT) + rem_addr;
+				AICA_StopSlot(slot,0);
 			}
-				
-			if(PCMS(slot)>=2)
+			break;
+		case 1: //normal loop
+			if(addr2>=LEA(slot))
 			{
-				// restore the state @ LSA - the sampler will naturally walk to (LSA + remainder)
-				slot->adbase = &AICA->AICARAM[SA(slot)+(LSA(slot)/2)];
-				slot->curstep = LSA(slot);
-				if (PCMS(slot) == 2)
+				INT32 rem_addr;
+				slot->lpend = 1;
+				rem_addr = slot->nxt_addr - (LEA(slot)<<SHIFT);
+				slot->nxt_addr = (LSA(slot)<<SHIFT) + rem_addr;
+				if(addr1>=LEA(slot))
 				{
-					slot->cur_sample = slot->cur_lpsample;
-					slot->cur_quant = slot->cur_lpquant;
+					rem_addr = slot->cur_addr - (LEA(slot)<<SHIFT);
+					slot->cur_addr = (LSA(slot)<<SHIFT) + rem_addr;
 				}
+
+				if(PCMS(slot)>=2)
+				{
+					// restore the state @ LSA - the sampler will naturally walk to (LSA + remainder)
+					slot->adbase = &AICA->AICARAM[SA(slot)+(LSA(slot)/2)];
+					slot->curstep = LSA(slot);
+					if (PCMS(slot) == 2)
+					{
+						slot->cur_sample = slot->cur_lpsample;
+						slot->cur_quant = slot->cur_lpquant;
+					}
 //printf("Looping: slot_addr %x LSA %x LEA %x step %x base %x\n", slot->cur_addr>>SHIFT, LSA(slot), LEA(slot), slot->curstep, slot->adbase);
+				}
 			}
-		}
-		break;
+			break;
 	}
 
 	if(ALFOS(slot)!=0)
@@ -1214,7 +1216,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 		sample=(sample*EG_Update(slot))>>SHIFT;
 	else
 		sample=(sample*EG_TABLE[EG_Update(slot)>>(SHIFT-10)])>>SHIFT;
-		
+
 	return sample;
 }
 
@@ -1226,14 +1228,14 @@ static void AICA_DoMasterSamples(struct _AICA *AICA, int nsamples)
 	bufr=bufferr;
 	bufl=bufferl;
 
-	for(s=0;s<nsamples;++s)
+	for(s=0; s<nsamples; ++s)
 	{
- 		INT32 smpl, smpr;
+		INT32 smpl, smpr;
 
 		smpl = smpr = 0;
 
 		// mix slots' direct output
-		for(sl=0;sl<64;++sl)
+		for(sl=0; sl<64; ++sl)
 		{
 			struct _SLOT *slot=AICA->Slots+sl;
 			RBUFDST=AICA->RINGBUF+AICA->BUFPTR;
@@ -1252,7 +1254,7 @@ static void AICA_DoMasterSamples(struct _AICA *AICA, int nsamples)
 					smpr+=(sample*AICA->RPANTABLE[Enc])>>SHIFT;
 				}
 			}
-			
+
 			AICA->BUFPTR&=63;
 		}
 
@@ -1260,7 +1262,7 @@ static void AICA_DoMasterSamples(struct _AICA *AICA, int nsamples)
 		AICADSP_Step(&AICA->DSP);
 
 		// mix DSP output
-		for(i=0;i<16;++i)
+		for(i=0; i<16; ++i)
 		{
 			if(EFSDL(i))
 			{
@@ -1289,10 +1291,10 @@ static void aica_exec_dma(struct _AICA *aica)
 				"DGATE: %d  DDIR: %d\n",aica->dma.dmea,aica->dma.drga,aica->dma.dlg,aica->dma.dgate,aica->dma.ddir);
 
 	/* Copy the dma values in a temp storage for resuming later */
-		/* (DMA *can't* overwrite its parameters).                  */
+	/* (DMA *can't* overwrite its parameters).                  */
 	if(!(aica->dma.ddir))
 	{
-		for(i=0;i<4;i++)
+		for(i=0; i<4; i++)
 			tmp_dma[i] = aica->udata.data[(0x80+(i*4))/2];
 	}
 
@@ -1302,7 +1304,7 @@ static void aica_exec_dma(struct _AICA *aica)
 	{
 		if(aica->dma.dgate)
 		{
-			for(i=0;i < aica->dma.dlg;i+=2)
+			for(i=0; i < aica->dma.dlg; i+=2)
 			{
 				aica->AICARAM[aica->dma.dmea] = 0;
 				aica->AICARAM[aica->dma.dmea+1] = 0;
@@ -1311,7 +1313,7 @@ static void aica_exec_dma(struct _AICA *aica)
 		}
 		else
 		{
-			for(i=0;i < aica->dma.dlg;i+=2)
+			for(i=0; i < aica->dma.dlg; i+=2)
 			{
 				UINT16 tmp;
 				tmp = AICA_r16(aica, aica->dma.drga);;
@@ -1326,7 +1328,7 @@ static void aica_exec_dma(struct _AICA *aica)
 	{
 		if(aica->dma.dgate)
 		{
-			for(i=0;i < aica->dma.dlg;i+=2)
+			for(i=0; i < aica->dma.dlg; i+=2)
 			{
 				AICA_w16(aica, aica->dma.drga, 0);
 				aica->dma.drga+=4;
@@ -1334,7 +1336,7 @@ static void aica_exec_dma(struct _AICA *aica)
 		}
 		else
 		{
-			for(i=0;i < aica->dma.dlg;i+=2)
+			for(i=0; i < aica->dma.dlg; i+=2)
 			{
 				UINT16 tmp;
 				tmp = aica->AICARAM[aica->dma.dmea];
@@ -1349,7 +1351,7 @@ static void aica_exec_dma(struct _AICA *aica)
 	/*Resume the values*/
 	if(!(aica->dma.ddir))
 	{
-		for(i=0;i<4;i++)
+		for(i=0; i<4; i++)
 			aica->udata.data[(0x80+(i*4))/2] = tmp_dma[i];
 	}
 
@@ -1441,14 +1443,14 @@ WRITE16_HANDLER( AICA_0_w )
 
 WRITE16_HANDLER( AICA_MidiIn )
 {
-	struct _AICA *AICA = AllocedAICA; 
+	struct _AICA *AICA = AllocedAICA;
 	AICA->MidiStack[AICA->MidiW++]=data;
 	AICA->MidiW &= 15;
 }
 
 READ16_HANDLER( AICA_MidiOutR )
 {
-	struct _AICA *AICA = AllocedAICA; 
+	struct _AICA *AICA = AllocedAICA;
 	unsigned char val;
 
 	val=AICA->MidiStack[AICA->MidiR++];
