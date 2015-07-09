@@ -259,7 +259,6 @@ extern unsigned short  regArea[];
 extern unsigned short  spuMem[];
 extern unsigned char * spuMemC;
 extern unsigned char * pSpuIrq[];
-extern unsigned char * pSpuBuffer;
 
 // user settings
 
@@ -296,8 +295,6 @@ extern int iCycle;
 extern short *pS;
 extern unsigned long dwNewChannel2[];
 extern unsigned long dwEndChannel2[];
-
-extern int iSpuAsyncWait;
 
 #ifdef _WINDOWS
 // extern HWND hWMain; // window handle

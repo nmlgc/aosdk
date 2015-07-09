@@ -219,8 +219,6 @@ EXPORT_GCC void CALLBACK SPU2write(unsigned long reg, unsigned short val)
 			//------------------------------------------------//
 		}
 
-		iSpuAsyncWait=0;
-
 		return;
 	}
 
@@ -265,8 +263,6 @@ EXPORT_GCC void CALLBACK SPU2write(unsigned long reg, unsigned short val)
 			break;
 			//------------------------------------------------//
 		}
-
-		iSpuAsyncWait=0;
 
 		return;
 	}
@@ -856,8 +852,6 @@ EXPORT_GCC void CALLBACK SPU2write(unsigned long reg, unsigned short val)
 		break;
 	}
 
-	iSpuAsyncWait=0;
-
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -873,8 +867,6 @@ EXPORT_GCC unsigned short CALLBACK SPU2read(unsigned long reg)
 	//	logprintf("R_REG %X\r\n",reg&0xFFFF);
 	// }
 #endif
-
-	iSpuAsyncWait=0;
 
 	if((r>=0x0000 && r<0x0180)||(r>=0x0400 && r<0x0580)) { // some channel info?
 		switch(r&0x0f) {

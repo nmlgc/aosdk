@@ -69,7 +69,6 @@
 
 static corlett_t	*c = NULL;
 static char 		psfby[256];
-static char		*spu_pOutput;
 
 // main RAM
 extern uint32 psx_ram[(2*1024*1024)/4];
@@ -581,20 +580,14 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-void ps2_update(unsigned char *pSound, long lBytes)
-{
-	memcpy(spu_pOutput, pSound, lBytes);	// (for direct 44.1kHz output)
-}
-
 int32 psf2_gen(int16 *buffer, uint32 samples)
 {
 	int i;
 
-	spu_pOutput = (char *)buffer;
-
 	for (i = 0; i < samples; i++)
 	{
-		SPU2async(1);
+		SPU2sample(&buffer[0], &buffer[1]);
+		buffer += 2;
 		ps2_hw_slice();
 	}
 

@@ -26,8 +26,7 @@
 
 void sexyd_update(unsigned char* pSound,long lBytes);
 
-int SPUasync(u32 cycles);
-void SPU_flushboot(void);
+int SPUsample(s16 *l, s16 *r);
 int SPUinit(void);
 int SPUopen(void);
 int SPUclose(void);

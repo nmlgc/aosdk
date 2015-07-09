@@ -58,8 +58,6 @@ EXPORT_GCC void CALLBACK SPU2readDMA4Mem(u32 usPSXMem,int iSize)
 	spuAddr2[0]+=0x20; //?????
 
 
-	iSpuAsyncWait=0;
-
 	// got from J.F. and Kanodin... is it needed?
 	regArea[(PS2_C0_ADMAS)>>1]=0; // Auto DMA complete
 	spuStat2[0]=0x80; // DMA complete
@@ -80,8 +78,6 @@ EXPORT_GCC void CALLBACK SPU2readDMA7Mem(u32 usPSXMem,int iSize)
 	}
 
 	spuAddr2[1]+=0x20; //?????
-
-	iSpuAsyncWait=0;
 
 	// got from J.F. and Kanodin... is it needed?
 	regArea[(PS2_C1_ADMAS)>>1]=0; // Auto DMA complete
@@ -114,8 +110,6 @@ EXPORT_GCC void CALLBACK SPU2writeDMA4Mem(u32 usPSXMem,int iSize)
 		}
 	}
 
-	iSpuAsyncWait=0;
-
 	// got from J.F. and Kanodin... is it needed?
 	spuStat2[0]=0x80; // DMA complete
 }
@@ -132,8 +126,6 @@ EXPORT_GCC void CALLBACK SPU2writeDMA7Mem(u32 usPSXMem,int iSize)
 			spuAddr2[1]=0;    // wrap
 		}
 	}
-
-	iSpuAsyncWait=0;
 
 	// got from J.F. and Kanodin... is it needed?
 	spuStat2[1]=0x80; // DMA complete

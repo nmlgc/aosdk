@@ -46,7 +46,6 @@
 
 static corlett_t	*c = NULL;
 static char 		psfby[256];
-char			*spu_pOutput;
 int			psf_refresh  = -1;
 
 
@@ -348,11 +347,6 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-void spu_update(unsigned char* pSound,long lBytes)
-{
-	memcpy(spu_pOutput, pSound, lBytes);
-}
-
 int32 psf_gen(int16 *buffer, uint32 samples)
 {
 	int i;
@@ -360,11 +354,9 @@ int32 psf_gen(int16 *buffer, uint32 samples)
 	for (i = 0; i < samples; i++)
 	{
 		psx_hw_slice();
-		SPUasync(384);
+		SPUsample(&buffer[0], &buffer[1]);
+		buffer += 2;
 	}
-
-	spu_pOutput = (char *)buffer;
-	SPU_flushboot();
 
 	psx_hw_frame();
 

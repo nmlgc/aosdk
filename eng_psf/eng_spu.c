@@ -115,10 +115,7 @@ int32 spu_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-extern int SPUasync(uint32 cycles);
-extern void SPU_flushboot(void);
-
-extern char *spu_pOutput;	// this is a bit lame, but we'll deal
+extern int SPUsample(int16 *l, int16 *r);
 
 static void spu_tick(void)
 {
@@ -236,11 +233,9 @@ int32 spu_gen(int16 *buffer, uint32 samples)
 		for (i = 0; i < samples; i++)
 		{
 			spu_tick();
-			SPUasync(384);
+			SPUsample(&buffer[0], &buffer[1]);
+			buffer += 2;
 		}
-
-		spu_pOutput = (char *)buffer;
-		SPU_flushboot();
 	}
 	else
 	{

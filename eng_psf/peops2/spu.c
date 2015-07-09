@@ -113,7 +113,6 @@ unsigned short  regArea[32*1024];
 unsigned short  spuMem[1*1024*1024];
 unsigned char * spuMemC;
 unsigned char * pSpuIrq[2];
-unsigned char * pSpuBuffer;
 
 // user settings
 
@@ -163,7 +162,6 @@ const int f[5][2] = {   {    0,  0  },
 int SSumR[NSSIZE];
 int SSumL[NSSIZE];
 int iCycle=0;
-short * pS;
 
 static int lastch=-1; // last channel processed on spu irq in timer mode
 static int lastns=0; // last ns pos
@@ -342,9 +340,7 @@ INLINE void StartSound(int ch)
 
 ////////////////////////////////////////////////////////////////////////
 
-int iSpuAsyncWait=0;
-
-static void *MAINThread(int samp2run)
+EXPORT_GCC int CALLBACK SPU2sample(s16 *l, s16 *r)
 {
 	int s_1,s_2,fa,voldiv=iVolume;
 	unsigned char * start;
@@ -376,7 +372,7 @@ static void *MAINThread(int samp2run)
 
 		/* if(!iSecureStart) {
 			iSecureStart=0; // reset secure
-			return;
+			return 0;
 		} */
 
 #if 0
@@ -504,7 +500,6 @@ static void *MAINThread(int samp2run)
 
 								// -> option: wait after irq for main emu
 								if(iSPUIRQWait) {
-									iSpuAsyncWait=1;
 									bIRQReturn=1;
 								}
 							}
@@ -546,7 +541,7 @@ static void *MAINThread(int samp2run)
 							lastch=ch;
 							// lastns=ns;	// changemeback
 
-							return;
+							return 0;
 						}
 
 						////////////////////////////////////////////
@@ -771,48 +766,22 @@ ENDX:
 		}
 
 		corlett_sample_fade(&d, &d2);
-		*pS++=d;
-		*pS++=d2;
+		*l=d;
+		*r=d2;
 
 		InitREVERB();
-
-		//////////////////////////////////////////////////////
-		// feed the sound
-		// wanna have around 1/60 sec (16.666 ms) updates
-		if ((((unsigned char *)pS)-((unsigned char *)pSpuBuffer)) == (735*4)) {
-			ps2_update((u8*)pSpuBuffer,(u8*)pS-(u8*)pSpuBuffer);
-			pS=(short *)pSpuBuffer;
-		}
 	// }
 
 	// end of big main loop...
 
 	bThreadEnded=1;
 
-	return 0;
+	return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////
-// SPU ASYNC... even newer epsxe func
-//  1 time every 'cycle' cycles... harhar
-////////////////////////////////////////////////////////////////////////
-
-EXPORT_GCC void CALLBACK SPU2async(unsigned long cycle)
-{
-	if(iSpuAsyncWait) {
-		iSpuAsyncWait++;
-		if(iSpuAsyncWait<=64) {
-			return;
-		}
-		iSpuAsyncWait=0;
-	}
-
-	MAINThread(0); // -> linux high-compat mode
-}
 
 ////////////////////////////////////////////////////////////////////////
 // INIT/EXIT STUFF
@@ -844,7 +813,6 @@ static void SetupTimer(void)
 	// init some mixing buffers
 	memset(SSumR,0,NSSIZE*sizeof(int));
 	memset(SSumL,0,NSSIZE*sizeof(int));
-	pS=(short *)pSpuBuffer; // setup soundbuffer pointer
 
 	// init thread vars
 	bEndThread=0;
@@ -870,8 +838,6 @@ static void RemoveTimer(void)
 static void SetupStreams(void)
 {
 	int i;
-
-	pSpuBuffer=(unsigned char *)malloc(32768); // alloc mixing buffer
 
 	i=NSSIZE*2;
 
@@ -902,8 +868,6 @@ static void SetupStreams(void)
 
 static void RemoveStreams(void)
 {
-	free(pSpuBuffer); // free mixing buffer
-	pSpuBuffer=NULL;
 	free(sRVBStart[0]); // free reverb buffer
 	sRVBStart[0]=0;
 	free(sRVBStart[1]); // free reverb buffer
