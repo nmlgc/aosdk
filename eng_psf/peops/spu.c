@@ -5,7 +5,7 @@
     copyright            : (C) 2002 by Pete Bernert
     email                : BlackDove@addcom.de
  ***************************************************************************/
-                       
+
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -15,7 +15,7 @@
  *   additional informations.                                              *
  *                                                                         *
  ***************************************************************************/
-                           
+
 //*************************************************************************//
 // History of changes:
 //
@@ -102,28 +102,29 @@ static u8 * spuMemC;
 static u8 * pSpuIrq=0;
 static u8 * pSpuBuffer;
 
-// user settings          
+// user settings
 static int             iVolume;
-                               
+
 // MAIN infos struct for each channel
 
-static SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
+static SPUCHAN         s_chan[MAXCHAN+1]; // channel + 1 infos (1 is security for fmod handling)
 static REVERBInfo      rvb;
 
-static u32   dwNoiseVal=1;                          // global noise generator
+static u32   dwNoiseVal=1; // global noise generator
 
-static u16  spuCtrl=0;                             // some vars to store psx reg infos
+static u16  spuCtrl=0; // some vars to store psx reg infos
 static u16  spuStat=0;
-static u16  spuIrq=0;             
-static u32  spuAddr=0xffffffff;                    // address into spu mem
+static u16  spuIrq=0;
+static u32  spuAddr=0xffffffff; // address into spu mem
 static int  bSPUIsOpen=0;
 
-static const int f[5][2] = {   
-			{    0,  0  },
-                        {   60,  0  },
-                        {  115, -52 },
-                        {   98, -55 },
-                        {  122, -60 } };
+static const int f[5][2] = {
+	{    0,  0  },
+	{   60,  0  },
+	{  115, -52 },
+	{   98, -55 },
+	{  122, -60 }
+};
 s16 * pS;
 static s32 ttemp;
 
@@ -133,7 +134,7 @@ static s32 ttemp;
 
 // dirty inline func includes
 
-#include "../peops/reverb.c"        
+#include "../peops/reverb.c"
 #include "../peops/adsr.c"
 
 // Try this to increase speed.
@@ -156,22 +157,23 @@ static s32 ttemp;
 
 static INLINE void StartSound(int ch)
 {
- StartADSR(ch);
+	StartADSR(ch);
 
- s_chan[ch].pCurr=s_chan[ch].pStart;                   // set sample start
-                         
- s_chan[ch].s_1=0;                                     // init mixing vars
- s_chan[ch].s_2=0;
- s_chan[ch].iSBPos=28;
+	s_chan[ch].pCurr=s_chan[ch].pStart; // set sample start
 
- s_chan[ch].bNew=0;                                    // init channel flags
- s_chan[ch].bStop=0;                                   
- s_chan[ch].bOn=1;
+	s_chan[ch].s_1=0; // init mixing vars
+	s_chan[ch].s_2=0;
+	s_chan[ch].iSBPos=28;
 
- s_chan[ch].SB[29]=0;                                  // init our interpolation helpers
- s_chan[ch].SB[30]=0;
+	s_chan[ch].bNew=0; // init channel flags
+	s_chan[ch].bStop=0;
+	s_chan[ch].bOn=1;
 
- s_chan[ch].spos=0x40000L;s_chan[ch].SB[28]=0;  // -> start with more decoding
+	s_chan[ch].SB[29]=0; // init our interpolation helpers
+	s_chan[ch].SB[30]=0;
+
+	s_chan[ch].spos=0x40000L;
+	s_chan[ch].SB[28]=0;  // -> start with more decoding
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -183,295 +185,314 @@ static INLINE void StartSound(int ch)
 #define CLIP(_x) {if(_x>32767) _x=32767; if(_x<-32767) _x=-32767;}
 int SPUasync(u32 cycles)
 {
- int volmul=iVolume;
- static s32 dosampies;
- s32 temp;
+	int volmul=iVolume;
+	static s32 dosampies;
+	s32 temp;
 
- ttemp+=cycles;
- dosampies=ttemp/384;
- if(!dosampies) return(1);
- ttemp-=dosampies*384;
- temp=dosampies;
+	ttemp+=cycles;
+	dosampies=ttemp/384;
+	if(!dosampies) {
+		return(1);
+	}
+	ttemp-=dosampies*384;
+	temp=dosampies;
 
- while(temp)
- {
-   s32 revLeft=0, revRight=0;
-   s32 sl=0, sr=0;
-   int ch,fa;
+	while(temp) {
+		s32 revLeft=0, revRight=0;
+		s32 sl=0, sr=0;
+		int ch,fa;
 
-   temp--;
-   //--------------------------------------------------//
-   //- main channel loop                              -// 
-   //--------------------------------------------------//
-    {
-     for(ch=0;ch<MAXCHAN;ch++)                         // loop em all.
-      {
-       if(s_chan[ch].bNew) StartSound(ch);             // start new sound
-       if(!s_chan[ch].bOn) continue;                   // channel not playing? next
+		temp--;
+		//--------------------------------------------------//
+		//- main channel loop                              -//
+		//--------------------------------------------------//
+		for(ch=0; ch<MAXCHAN; ch++) { // loop em all.
+			if(s_chan[ch].bNew) {
+				StartSound(ch); // start new sound
+			}
+			if(!s_chan[ch].bOn) {
+				continue;    // channel not playing? next
+			}
 
 
-       if(s_chan[ch].iActFreq!=s_chan[ch].iUsedFreq)   // new psx frequency?
-        {
-         s_chan[ch].iUsedFreq=s_chan[ch].iActFreq;     // -> take it and calc steps
-         s_chan[ch].sinc=s_chan[ch].iRawPitch<<4;
-         if(!s_chan[ch].sinc) s_chan[ch].sinc=1;
-        }
+			if(s_chan[ch].iActFreq!=s_chan[ch].iUsedFreq) { // new psx frequency?
+				s_chan[ch].iUsedFreq=s_chan[ch].iActFreq; // -> take it and calc steps
+				s_chan[ch].sinc=s_chan[ch].iRawPitch<<4;
+				if(!s_chan[ch].sinc) {
+					s_chan[ch].sinc=1;
+				}
+			}
 
-         while(s_chan[ch].spos>=0x10000L)
-          {
-           if(s_chan[ch].iSBPos==28)                   // 28 reached?
-            {
-	     int predict_nr,shift_factor,flags,d,s;
-	     u8* start;unsigned int nSample;
-	     int s_1,s_2;
+			while(s_chan[ch].spos>=0x10000L) {
+				if(s_chan[ch].iSBPos==28) { // 28 reached?
+					int predict_nr,shift_factor,flags,d,s;
+					u8* start;
+					unsigned int nSample;
+					int s_1,s_2;
 
-             start=s_chan[ch].pCurr;                   // set up the current pos
+					start=s_chan[ch].pCurr; // set up the current pos
 
-             if (start == (u8*)-1)          // special "stop" sign
-              {
-               s_chan[ch].bOn=0;                       // -> turn everything off
-               s_chan[ch].ADSRX.lVolume=0;
-               s_chan[ch].ADSRX.EnvelopeVol=0;
-               goto ENDX;                              // -> and done for this channel
-              }
+					if (start == (u8*)-1) {  // special "stop" sign
+						s_chan[ch].bOn=0; // -> turn everything off
+						s_chan[ch].ADSRX.lVolume=0;
+						s_chan[ch].ADSRX.EnvelopeVol=0;
+						goto ENDX;  // -> and done for this channel
+					}
 
-             s_chan[ch].iSBPos=0;	// Reset buffer play index.
+					s_chan[ch].iSBPos=0; // Reset buffer play index.
 
-             //////////////////////////////////////////// spu irq handler here? mmm... do it later
+					//////////////////////////////////////////// spu irq handler here? mmm... do it later
 
-             s_1=s_chan[ch].s_1;
-             s_2=s_chan[ch].s_2;
+					s_1=s_chan[ch].s_1;
+					s_2=s_chan[ch].s_2;
 
-             predict_nr=(int)*start;start++;           
-             shift_factor=predict_nr&0xf;
-             predict_nr >>= 4;
-             flags=(int)*start;start++;
+					predict_nr=(int)*start;
+					start++;
+					shift_factor=predict_nr&0xf;
+					predict_nr >>= 4;
+					flags=(int)*start;
+					start++;
 
-             // -------------------------------------- // 
-	     // Decode new samples into s_chan[ch].SB[0 through 27]
-             for (nSample=0;nSample<28;start++)      
-              {
-               d=(int)*start;
-               s=((d&0xf)<<12);
-               if(s&0x8000) s|=0xffff0000;
+					// -------------------------------------- //
+					// Decode new samples into s_chan[ch].SB[0 through 27]
+					for (nSample=0; nSample<28; start++) {
+						d=(int)*start;
+						s=((d&0xf)<<12);
+						if(s&0x8000) {
+							s|=0xffff0000;
+						}
 
-               fa=(s >> shift_factor);
-               fa=fa + ((s_1 * f[predict_nr][0])>>6) + ((s_2 * f[predict_nr][1])>>6);
-               s_2=s_1;s_1=fa;
-               s=((d & 0xf0) << 8);
+						fa=(s >> shift_factor);
+						fa=fa + ((s_1 * f[predict_nr][0])>>6) + ((s_2 * f[predict_nr][1])>>6);
+						s_2=s_1;
+						s_1=fa;
+						s=((d & 0xf0) << 8);
 
-               s_chan[ch].SB[nSample++]=fa;
+						s_chan[ch].SB[nSample++]=fa;
 
-               if(s&0x8000) s|=0xffff0000;
-               fa=(s>>shift_factor);              
-               fa=fa + ((s_1 * f[predict_nr][0])>>6) + ((s_2 * f[predict_nr][1])>>6);
-               s_2=s_1;s_1=fa;
+						if(s&0x8000) {
+							s|=0xffff0000;
+						}
+						fa=(s>>shift_factor);
+						fa=fa + ((s_1 * f[predict_nr][0])>>6) + ((s_2 * f[predict_nr][1])>>6);
+						s_2=s_1;
+						s_1=fa;
 
-               s_chan[ch].SB[nSample++]=fa;
-              }     
+						s_chan[ch].SB[nSample++]=fa;
+					}
 
-             //////////////////////////////////////////// irq check
+					//////////////////////////////////////////// irq check
 
-             if(spuCtrl&0x40)         			// irq active?
-              {
-               if((pSpuIrq >  start-16 &&              // irq address reached?
-                   pSpuIrq <= start) ||
-                  ((flags&1) &&                        // special: irq on looping addr, when stop/loop flag is set 
-                   (pSpuIrq >  s_chan[ch].pLoop-16 && 
-                    pSpuIrq <= s_chan[ch].pLoop)))
-               {
-		 //extern s32 spuirqvoodoo;
-                 s_chan[ch].iIrqDone=1;                // -> debug flag
-		 SPUirq();
-		//puts("IRQ");
-		 //if(spuirqvoodoo!=-1)
-		 //{
-		 // spuirqvoodoo=temp*384;
-		 // temp=0;
-		 //}
-                }
-              }
-      
-             //////////////////////////////////////////// flag handler
+					if(spuCtrl&0x40) { // irq active?
+						if((pSpuIrq > start-16 &&  // irq address reached?
+							pSpuIrq <= start) ||
+							((flags&1) &&  // special: irq on looping addr, when stop/loop flag is set
+							 (pSpuIrq >  s_chan[ch].pLoop-16 &&
+							  pSpuIrq <= s_chan[ch].pLoop))) {
+							//extern s32 spuirqvoodoo;
+							s_chan[ch].iIrqDone=1; // -> debug flag
+							SPUirq();
+							//puts("IRQ");
+							//if(spuirqvoodoo!=-1) {
+							//	spuirqvoodoo=temp*384;
+							//	temp=0;
+							//}
+						}
+					}
 
-             if((flags&4) && (!s_chan[ch].bIgnoreLoop))
-              s_chan[ch].pLoop=start-16;               // loop adress
+					//////////////////////////////////////////// flag handler
 
-             if(flags&1)                               // 1: stop/loop
-              {
-               // We play this block out first...
-               //if(!(flags&2))                          // 1+2: do loop... otherwise: stop
-               if(flags!=3 || s_chan[ch].pLoop==NULL)  // PETE: if we don't check exactly for 3, loop hang ups will happen (DQ4, for example)
-                {                                      // and checking if pLoop is set avoids crashes, yeah
-                 start = (u8*)-1;
-                }
-               else
-                {
-                 start = s_chan[ch].pLoop;
-                }
-              }
+					if((flags&4) && (!s_chan[ch].bIgnoreLoop)) {
+						s_chan[ch].pLoop=start-16;    // loop adress
+					}
 
-             s_chan[ch].pCurr=start;                   // store values for next cycle
-             s_chan[ch].s_1=s_1;
-             s_chan[ch].s_2=s_2;      
+					if(flags&1) {  // 1: stop/loop
+						// We play this block out first...
+						//if(!(flags&2)) // 1+2: do loop... otherwise: stop
+						if(flags!=3 || s_chan[ch].pLoop==NULL) { // PETE: if we don't check exactly for 3, loop hang ups will happen (DQ4, for example)
+							// and checking if pLoop is set avoids crashes, yeah
+							start = (u8*)-1;
+						} else {
+							start = s_chan[ch].pLoop;
+						}
+					}
 
-             ////////////////////////////////////////////
-            }
+					s_chan[ch].pCurr=start; // store values for next cycle
+					s_chan[ch].s_1=s_1;
+					s_chan[ch].s_2=s_2;
 
-           fa=s_chan[ch].SB[s_chan[ch].iSBPos++];      // get sample data
+					////////////////////////////////////////////
+				}
 
-           if((spuCtrl&0x4000)==0) fa=0;               // muted?
-	   else CLIP(fa);
+				fa=s_chan[ch].SB[s_chan[ch].iSBPos++]; // get sample data
 
-	    {
-	     int gpos;
-             gpos = s_chan[ch].SB[28];
-             gval0 = fa;
-             gpos = (gpos+1) & 3;
-             s_chan[ch].SB[28] = gpos;
-	    }
-           s_chan[ch].spos -= 0x10000L;
-          }
+				if((spuCtrl&0x4000)==0) {
+					fa=0;    // muted?
+				} else {
+					CLIP(fa);
+				}
 
-         ////////////////////////////////////////////////
-         // noise handler... just produces some noise data
-         // surely wrong... and no noise frequency (spuCtrl&0x3f00) will be used...
-         // and sometimes the noise will be used as fmod modulation... pfff
+				{
+					int gpos;
+					gpos = s_chan[ch].SB[28];
+					gval0 = fa;
+					gpos = (gpos+1) & 3;
+					s_chan[ch].SB[28] = gpos;
+				}
+				s_chan[ch].spos -= 0x10000L;
+			}
 
-         if(s_chan[ch].bNoise)
-          {
-	   //puts("Noise");
-           if((dwNoiseVal<<=1)&0x80000000L)
-            {
-             dwNoiseVal^=0x0040001L;
-             fa=((dwNoiseVal>>2)&0x7fff);
-             fa=-fa;
-            }
-           else fa=(dwNoiseVal>>2)&0x7fff;
+			////////////////////////////////////////////////
+			// noise handler... just produces some noise data
+			// surely wrong... and no noise frequency (spuCtrl&0x3f00) will be used...
+			// and sometimes the noise will be used as fmod modulation... pfff
 
-           // mmm... depending on the noise freq we allow bigger/smaller changes to the previous val
-           fa=s_chan[ch].iOldNoise+((fa-s_chan[ch].iOldNoise)/((0x001f-((spuCtrl&0x3f00)>>9))+1));
-           if(fa>32767L)  fa=32767L;
-           if(fa<-32767L) fa=-32767L;              
-           s_chan[ch].iOldNoise=fa;
+			if(s_chan[ch].bNoise) {
+				//puts("Noise");
+				if((dwNoiseVal<<=1)&0x80000000L) {
+					dwNoiseVal^=0x0040001L;
+					fa=((dwNoiseVal>>2)&0x7fff);
+					fa=-fa;
+				} else {
+					fa=(dwNoiseVal>>2)&0x7fff;
+				}
 
-          }                                            //----------------------------------------
-         else                                         // NO NOISE (NORMAL SAMPLE DATA) HERE 
-          {
-             int vl, vr, gpos;
-             vl = (s_chan[ch].spos >> 6) & ~3;
-             gpos = s_chan[ch].SB[28];
-             vr=(gauss[vl]*gval0)>>9;
-             vr+=(gauss[vl+1]*gval(1))>>9;
-             vr+=(gauss[vl+2]*gval(2))>>9;
-             vr+=(gauss[vl+3]*gval(3))>>9;
-             fa = vr>>2;
-          }
+				// mmm... depending on the noise freq we allow bigger/smaller changes to the previous val
+				fa=s_chan[ch].iOldNoise+((fa-s_chan[ch].iOldNoise)/((0x001f-((spuCtrl&0x3f00)>>9))+1));
+				if(fa>32767L) {
+					fa=32767L;
+				}
+				if(fa<-32767L) {
+					fa=-32767L;
+				}
+				s_chan[ch].iOldNoise=fa;
 
-         s_chan[ch].sval = (MixADSR(ch) * fa)>>10;     // / 1023;  // add adsr
-         if(s_chan[ch].bFMod==2)                       // fmod freq channel
-         {
-           int NP=s_chan[ch+1].iRawPitch;
-           NP=((32768L+s_chan[ch].sval)*NP)>>15; ///32768L;
+			}       //----------------------------------------
+			else {  // NO NOISE (NORMAL SAMPLE DATA) HERE
+				int vl, vr, gpos;
+				vl = (s_chan[ch].spos >> 6) & ~3;
+				gpos = s_chan[ch].SB[28];
+				vr=(gauss[vl]*gval0)>>9;
+				vr+=(gauss[vl+1]*gval(1))>>9;
+				vr+=(gauss[vl+2]*gval(2))>>9;
+				vr+=(gauss[vl+3]*gval(3))>>9;
+				fa = vr>>2;
+			}
 
-           if(NP>0x3fff) NP=0x3fff;
-           if(NP<0x1)    NP=0x1;
-                                                        
-	   // mmmm... if I do this, all is screwed              
-	  //           s_chan[ch+1].iRawPitch=NP;
+			s_chan[ch].sval = (MixADSR(ch) * fa)>>10; // / 1023;  // add adsr
+			if(s_chan[ch].bFMod==2) { // fmod freq channel
+				int NP=s_chan[ch+1].iRawPitch;
+				NP=((32768L+s_chan[ch].sval)*NP)>>15; ///32768L;
 
-           NP=(44100L*NP)/(4096L);                     // calc frequency
+				if(NP>0x3fff) {
+					NP=0x3fff;
+				}
+				if(NP<0x1) {
+					NP=0x1;
+				}
 
-           s_chan[ch+1].iActFreq=NP;
-           s_chan[ch+1].iUsedFreq=NP;
-           s_chan[ch+1].sinc=(((NP/10)<<16)/4410);
-           if(!s_chan[ch+1].sinc) s_chan[ch+1].sinc=1;
+				// mmmm... if I do this, all is screwed
+				//           s_chan[ch+1].iRawPitch=NP;
 
-		// mmmm... set up freq decoding positions?
-		//           s_chan[ch+1].iSBPos=28;
-		//           s_chan[ch+1].spos=0x10000L;
-          }                    
-         else
-          {                                          
-           //////////////////////////////////////////////
-           // ok, left/right sound volume (psx volume goes from 0 ... 0x3fff)
-	   int tmpl,tmpr;
+				NP=(44100L*NP)/(4096L); // calc frequency
 
-		if (1) //ao_channel_enable[ch+PSF_1]) {
-		{
-			tmpl=(s_chan[ch].sval*s_chan[ch].iLeftVolume)>>14;
-			tmpr=(s_chan[ch].sval*s_chan[ch].iRightVolume)>>14;
-		} else {
-			tmpl = 0;
-			tmpr = 0;
+				s_chan[ch+1].iActFreq=NP;
+				s_chan[ch+1].iUsedFreq=NP;
+				s_chan[ch+1].sinc=(((NP/10)<<16)/4410);
+				if(!s_chan[ch+1].sinc) {
+					s_chan[ch+1].sinc=1;
+				}
+
+				// mmmm... set up freq decoding positions?
+				//           s_chan[ch+1].iSBPos=28;
+				//           s_chan[ch+1].spos=0x10000L;
+			} else {
+				//////////////////////////////////////////////
+				// ok, left/right sound volume (psx volume goes from 0 ... 0x3fff)
+				int tmpl,tmpr;
+
+				if (1) { //ao_channel_enable[ch+PSF_1]) {
+					tmpl=(s_chan[ch].sval*s_chan[ch].iLeftVolume)>>14;
+					tmpr=(s_chan[ch].sval*s_chan[ch].iRightVolume)>>14;
+				} else {
+					tmpl = 0;
+					tmpr = 0;
+				}
+				sl+=tmpl;
+				sr+=tmpr;
+
+				if(((rvb.Enabled>>ch)&1) && (spuCtrl&0x80)) {
+					revLeft+=tmpl;
+					revRight+=tmpr;
+				}
+			}
+
+			s_chan[ch].spos += s_chan[ch].sinc;
+ENDX:
+			;
 		}
-	   sl+=tmpl;
-	   sr+=tmpr;
 
-	   if(((rvb.Enabled>>ch)&1) && (spuCtrl&0x80))
-	   {
-	    revLeft+=tmpl;
-	    revRight+=tmpr;
-	   }
-          }
+		///////////////////////////////////////////////////////
+		// mix all channels (including reverb) into one buffer
+		MixREVERBLeftRight(&sl,&sr,revLeft,revRight);
+		corlett_sample_fade(&sl,&sr);
+		sl=(sl*volmul)>>8;
+		sr=(sr*volmul)>>8;
 
-         s_chan[ch].spos += s_chan[ch].sinc;             
- ENDX:   ;                                                      
-      }
-    }                                                         
+		//{
+		// static double asl=0;
+		// static double asr=0;
 
-  ///////////////////////////////////////////////////////
-  // mix all channels (including reverb) into one buffer
-  MixREVERBLeftRight(&sl,&sr,revLeft,revRight);
-  corlett_sample_fade(&sl,&sr);
-  sl=(sl*volmul)>>8;
-  sr=(sr*volmul)>>8;
+		// asl+=(sl-asl)/5;
+		// asr+=(sl-asr)/5;
 
-  //{
-  // static double asl=0;
-  // static double asr=0;
-   
-  // asl+=(sl-asl)/5;
-  // asr+=(sl-asr)/5;
+		//sl-=asl;
+		//sr-=asr;
 
-   //sl-=asl;
-   //sr-=asr;
+		// if(sl>32767 || sl < -32767) printf("Left: %d, %f\n",sl,asl);
+		// if(sr>32767 || sr < -32767) printf("Right: %d, %f\n",sl,asl);
+		//}
 
-  // if(sl>32767 || sl < -32767) printf("Left: %d, %f\n",sl,asl);
-  // if(sr>32767 || sr < -32767) printf("Right: %d, %f\n",sl,asl);
-  //}
+		if(sl>32767) {
+			sl=32767;
+		}
+		if(sl<-32767) {
+			sl=-32767;
+		}
+		if(sr>32767) {
+			sr=32767;
+		}
+		if(sr<-32767) {
+			sr=-32767;
+		}
 
-  if(sl>32767) sl=32767; if(sl<-32767) sl=-32767;
-  if(sr>32767) sr=32767; if(sr<-32767) sr=-32767;
+		*pS++=sl;
+		*pS++=sr;
+	}
 
-  *pS++=sl;
-  *pS++=sr;
- }
-
- return(1);
+	return(1);
 }
 
 void SPU_flushboot(void)
 {
-   if((u8*)pS>((u8*)pSpuBuffer+1024))
-   {
-    spu_update((u8*)pSpuBuffer,(u8*)pS-(u8*)pSpuBuffer);
-    pS=(s16 *)pSpuBuffer;
-   }
-}   
+	if((u8*)pS>((u8*)pSpuBuffer+1024)) {
+		spu_update((u8*)pSpuBuffer,(u8*)pS-(u8*)pSpuBuffer);
+		pS=(s16 *)pSpuBuffer;
+	}
+}
 
 #ifdef TIMEO
 static u64 begintime;
 static u64 gettime64(void)
 {
- struct timeval tv;
- u64 ret;
+	struct timeval tv;
+	u64 ret;
 
- gettimeofday(&tv,0);
- ret=tv.tv_sec;
- ret*=1000000;
- ret+=tv.tv_usec;
- return(ret);
+	gettimeofday(&tv,0);
+	ret=tv.tv_sec;
+	ret*=1000000;
+	ret+=tv.tv_usec;
+	return(ret);
 }
 #endif
 ////////////////////////////////////////////////////////////////////////
@@ -481,20 +502,20 @@ static u64 gettime64(void)
 ////////////////////////////////////////////////////////////////////////
 // SPUINIT: this func will be called first by the main emu
 ////////////////////////////////////////////////////////////////////////
-              
+
 int SPUinit(void)
 {
- spuMemC=(u8*)spuMem;                      // just small setup
- memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
- memset((void *)&rvb,0,sizeof(REVERBInfo));
- memset(regArea,0,sizeof(regArea));
- memset(spuMem,0,sizeof(spuMem));
- InitADSR();
- ttemp=0;
- #ifdef TIMEO
- begintime=gettime64();
- #endif
- return 0;
+	spuMemC=(u8*)spuMem; // just small setup
+	memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
+	memset((void *)&rvb,0,sizeof(REVERBInfo));
+	memset(regArea,0,sizeof(regArea));
+	memset(spuMem,0,sizeof(spuMem));
+	InitADSR();
+	ttemp=0;
+#ifdef TIMEO
+	begintime=gettime64();
+#endif
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -502,20 +523,19 @@ int SPUinit(void)
 ////////////////////////////////////////////////////////////////////////
 
 void SetupStreams(void)
-{ 
- int i;
+{
+	int i;
 
- pSpuBuffer=(u8*)malloc(32768);            // alloc mixing buffer
- pS=(s16 *)pSpuBuffer;
+	pSpuBuffer=(u8*)malloc(32768); // alloc mixing buffer
+	pS=(s16 *)pSpuBuffer;
 
- for(i=0;i<MAXCHAN;i++)                                // loop sound channels
-  {
-   s_chan[i].ADSRX.SustainLevel = 1024;                // -> init sustain
-   s_chan[i].iIrqDone=0;
-   s_chan[i].pLoop=spuMemC;
-   s_chan[i].pStart=spuMemC;
-   s_chan[i].pCurr=spuMemC;
-  }
+	for(i=0; i<MAXCHAN; i++) { // loop sound channels
+		s_chan[i].ADSRX.SustainLevel = 1024; // -> init sustain
+		s_chan[i].iIrqDone=0;
+		s_chan[i].pLoop=spuMemC;
+		s_chan[i].pStart=spuMemC;
+		s_chan[i].pCurr=spuMemC;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -523,46 +543,49 @@ void SetupStreams(void)
 ////////////////////////////////////////////////////////////////////////
 
 void RemoveStreams(void)
-{ 
- free(pSpuBuffer);                                     // free mixing buffer
- pSpuBuffer=NULL;
+{
+	free(pSpuBuffer); // free mixing buffer
+	pSpuBuffer=NULL;
 
- #ifdef TIMEO
- {
-  u64 tmp;
-  tmp=gettime64();
-  tmp-=begintime;
-  if(tmp)
-   tmp=(u64)sampcount*1000000/tmp;
-  printf("%lld samples per second\n",tmp);
- }
- #endif
+#ifdef TIMEO
+	{
+		u64 tmp;
+		tmp=gettime64();
+		tmp-=begintime;
+		if(tmp) {
+			tmp=(u64)sampcount*1000000/tmp;
+		}
+		printf("%lld samples per second\n",tmp);
+	}
+#endif
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 // SPUOPEN: called by main emu after init
 ////////////////////////////////////////////////////////////////////////
-   
+
 int SPUopen(void)
 {
- if(bSPUIsOpen) return 0;                              // security for some stupid main emus
- spuIrq=0;                       
+	if(bSPUIsOpen) {
+		return 0; // security for some stupid main emus
+	}
+	spuIrq=0;
 
- spuStat=spuCtrl=0;
- spuAddr=0xffffffff;
- dwNoiseVal=1;
+	spuStat=spuCtrl=0;
+	spuAddr=0xffffffff;
+	dwNoiseVal=1;
 
- spuMemC=(u8*)spuMem;      
- memset((void *)s_chan,0,(MAXCHAN+1)*sizeof(SPUCHAN));
- pSpuIrq=0;
+	spuMemC=(u8*)spuMem;
+	memset((void *)s_chan,0,(MAXCHAN+1)*sizeof(SPUCHAN));
+	pSpuIrq=0;
 
- iVolume=255; //85;
- SetupStreams();                                       // prepare streaming
+	iVolume=255; //85;
+	SetupStreams(); // prepare streaming
 
- bSPUIsOpen=1;
+	bSPUIsOpen=1;
 
- return 1;
+	return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -573,13 +596,15 @@ int SPUopen(void)
 
 int SPUclose(void)
 {
- if(!bSPUIsOpen) return 0;                             // some security
+	if(!bSPUIsOpen) {
+		return 0; // some security
+	}
 
- bSPUIsOpen=0;                                         // no more open
+	bSPUIsOpen=0; // no more open
 
- RemoveStreams();                                      // no more streaming
+	RemoveStreams(); // no more streaming
 
- return 0;
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -588,15 +613,14 @@ int SPUclose(void)
 
 int SPUshutdown(void)
 {
- return 0;
+	return 0;
 }
 
 void SPUinjectRAMImage(u16 *pIncoming)
 {
 	int i;
 
-	for (i = 0; i < (256*1024); i++)
-	{
+	for (i = 0; i < (256*1024); i++) {
 		spuMem[i] = pIncoming[i];
 	}
 }

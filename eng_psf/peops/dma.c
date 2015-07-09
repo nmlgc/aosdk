@@ -37,16 +37,17 @@ extern uint32 psx_ram[(2*1024*1024)/4];
 
 void SPUreadDMAMem(u32 usPSXMem,int iSize)
 {
- int i;
- u16 *ram16 = (u16 *)&psx_ram[0];
+	int i;
+	u16 *ram16 = (u16 *)&psx_ram[0];
 
- for(i=0;i<iSize;i++)
-  {
-   ram16[usPSXMem>>1]=spuMem[spuAddr>>1];		// spu addr got by writeregister
-   usPSXMem+=2;
-   spuAddr+=2;                                         // inc spu addr
-   if(spuAddr>0x7ffff) spuAddr=0;                      // wrap
-  }
+	for(i=0; i<iSize; i++) {
+		ram16[usPSXMem>>1]=spuMem[spuAddr>>1]; // spu addr got by writeregister
+		usPSXMem+=2;
+		spuAddr+=2; // inc spu addr
+		if(spuAddr>0x7ffff) {
+			spuAddr=0; // wrap
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -63,18 +64,18 @@ void SPUreadDMAMem(u32 usPSXMem,int iSize)
 
 void SPUwriteDMAMem(u32 usPSXMem,int iSize)
 {
- int i;
- u16 *ram16 = (u16 *)&psx_ram[0];
+	int i;
+	u16 *ram16 = (u16 *)&psx_ram[0];
 
- for(i=0;i<iSize;i++)
-  {
-//  printf("main RAM %x => SPU %x\n", usPSXMem, spuAddr);
-   spuMem[spuAddr>>1] = ram16[usPSXMem>>1];
-   usPSXMem+=2;                  			// spu addr got by writeregister
-   spuAddr+=2;                                         // inc spu addr
-   if(spuAddr>0x7ffff) spuAddr=0;                      // wrap
-  }
+	for(i=0; i<iSize; i++) {
+		// printf("main RAM %x => SPU %x\n", usPSXMem, spuAddr);
+		spuMem[spuAddr>>1] = ram16[usPSXMem>>1];
+		usPSXMem+=2; // spu addr got by writeregister
+		spuAddr+=2; // inc spu addr
+		if(spuAddr>0x7ffff) {
+			spuAddr=0; // wrap
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
-

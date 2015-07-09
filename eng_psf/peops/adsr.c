@@ -38,142 +38,139 @@
 
 static u32 RateTable[160];
 
-static void InitADSR(void)                                    // INIT ADSR
+// INIT ADSR
+static void InitADSR(void)
 {
- u32 r,rs,rd;int i;
+	u32 r,rs,rd;
+	int i;
 
- memset(RateTable,0,sizeof(u32)*160);        // build the rate table according to Neill's rules (see at bottom of file)
+	// build the rate table according to Neill's rules (see at bottom of file)
+	memset(RateTable,0,sizeof(u32)*160);
 
- r=3;rs=1;rd=0;
+	r=3;
+	rs=1;
+	rd=0;
 
- for(i=32;i<160;i++)                                   // we start at pos 32 with the real values... everything before is 0
-  {
-   if(r<0x3FFFFFFF)
-    {
-     r+=rs;
-     rd++;if(rd==5) {rd=1;rs*=2;}
-    }
-   if(r>0x3FFFFFFF) r=0x3FFFFFFF;
+	// we start at pos 32 with the real values... everything before is 0
+	for(i=32; i<160; i++) {
+		if(r<0x3FFFFFFF) {
+			r+=rs;
+			rd++;
+			if(rd==5) {
+				rd=1;
+				rs*=2;
+			}
+		}
+		if(r>0x3FFFFFFF) {
+			r=0x3FFFFFFF;
+		}
 
-   RateTable[i]=r;
-  }
+		RateTable[i]=r;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-static INLINE void StartADSR(int ch)                          // MIX ADSR
+// MIX ADSR
+static INLINE void StartADSR(int ch)
 {
- s_chan[ch].ADSRX.lVolume=1;                           // and init some adsr vars
- s_chan[ch].ADSRX.State=0;
- s_chan[ch].ADSRX.EnvelopeVol=0;
+	// and init some adsr vars
+	s_chan[ch].ADSRX.lVolume=1;
+	s_chan[ch].ADSRX.State=0;
+	s_chan[ch].ADSRX.EnvelopeVol=0;
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-static INLINE int MixADSR(int ch)                             // MIX ADSR
-{    
- static const int sexytable[8]=
+// MIX ADSR
+static INLINE int MixADSR(int ch)
+{
+	static const int sexytable[8]=
 	{0,4,6,8,9,10,11,12};
 
- if(s_chan[ch].bStop)                                  // should be stopped:
-  {                                                    // do release
-   if(s_chan[ch].ADSRX.ReleaseModeExp)
-    {
-     s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.ReleaseRate^0x1F))-0x18+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
-    }
-   else
-    {
-     s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.ReleaseRate^0x1F))-0x0C + 32];
-    }
+  // should be stopped:
+	if(s_chan[ch].bStop) {
+		// do release
+		if(s_chan[ch].ADSRX.ReleaseModeExp) {
+			s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.ReleaseRate^0x1F))-0x18+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
+		} else {
+			s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.ReleaseRate^0x1F))-0x0C + 32];
+		}
 
-   if(s_chan[ch].ADSRX.EnvelopeVol<0) 
-    {
-     s_chan[ch].ADSRX.EnvelopeVol=0;
-     s_chan[ch].bOn=0;
-     s_chan[ch].bNoise=0;
-    }
+		if(s_chan[ch].ADSRX.EnvelopeVol<0) {
+			s_chan[ch].ADSRX.EnvelopeVol=0;
+			s_chan[ch].bOn=0;
+			s_chan[ch].bNoise=0;
+		}
 
-   s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
-   return s_chan[ch].ADSRX.lVolume;
-  }
- else                                                  // not stopped yet?
-  {
-   if(s_chan[ch].ADSRX.State==0)                       // -> attack
-    {
-     if(s_chan[ch].ADSRX.AttackModeExp)
-      {
-       if(s_chan[ch].ADSRX.EnvelopeVol<0x60000000) 
-        s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x10 + 32];
-       else
-        s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x18 + 32];
-      }
-     else
-      {
-       s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x10 + 32];
-      }
+		s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
+		return s_chan[ch].ADSRX.lVolume;
+	} else { // not stopped yet?
+		if(s_chan[ch].ADSRX.State==0) { // -> attack
+			if(s_chan[ch].ADSRX.AttackModeExp) {
+				if(s_chan[ch].ADSRX.EnvelopeVol<0x60000000) {
+					s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x10 + 32];
+				} else {
+					s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x18 + 32];
+				}
+			} else {
+				s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.AttackRate^0x7F)-0x10 + 32];
+			}
 
-     if(s_chan[ch].ADSRX.EnvelopeVol<0) 
-      {
-       s_chan[ch].ADSRX.EnvelopeVol=0x7FFFFFFF;
-       s_chan[ch].ADSRX.State=1;
-      }
+			if(s_chan[ch].ADSRX.EnvelopeVol<0) {
+				s_chan[ch].ADSRX.EnvelopeVol=0x7FFFFFFF;
+				s_chan[ch].ADSRX.State=1;
+			}
 
-     s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
-     return s_chan[ch].ADSRX.lVolume;
-    }
-   //--------------------------------------------------//
-   if(s_chan[ch].ADSRX.State==1)                       // -> decay
-    {
-     s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.DecayRate^0x1F))-0x18+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
+			s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
+			return s_chan[ch].ADSRX.lVolume;
+		}
+		//--------------------------------------------------//
+		if(s_chan[ch].ADSRX.State==1) {                     // -> decay
+			s_chan[ch].ADSRX.EnvelopeVol-=RateTable[(4*(s_chan[ch].ADSRX.DecayRate^0x1F))-0x18+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
 
-     if(s_chan[ch].ADSRX.EnvelopeVol<0) s_chan[ch].ADSRX.EnvelopeVol=0;
-     if(((s_chan[ch].ADSRX.EnvelopeVol>>27)&0xF) <= s_chan[ch].ADSRX.SustainLevel)
-      {
-       s_chan[ch].ADSRX.State=2;
-      }
+			if(s_chan[ch].ADSRX.EnvelopeVol<0) {
+				s_chan[ch].ADSRX.EnvelopeVol=0;
+			}
+			if(((s_chan[ch].ADSRX.EnvelopeVol>>27)&0xF) <= s_chan[ch].ADSRX.SustainLevel) {
+				s_chan[ch].ADSRX.State=2;
+			}
 
-     s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
-     return s_chan[ch].ADSRX.lVolume;
-    }
-   //--------------------------------------------------//
-   if(s_chan[ch].ADSRX.State==2)                       // -> sustain
-    {
-     if(s_chan[ch].ADSRX.SustainIncrease)
-      {
-       if(s_chan[ch].ADSRX.SustainModeExp)
-        {
-         if(s_chan[ch].ADSRX.EnvelopeVol<0x60000000) 
-          s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x10 + 32];
-         else
-          s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x18 + 32];
-        }
-       else
-        {
-         s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x10 + 32];
-        }
+			s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
+			return s_chan[ch].ADSRX.lVolume;
+		}
+		//--------------------------------------------------//
+		if(s_chan[ch].ADSRX.State==2) {                     // -> sustain
+			if(s_chan[ch].ADSRX.SustainIncrease) {
+				if(s_chan[ch].ADSRX.SustainModeExp) {
+					if(s_chan[ch].ADSRX.EnvelopeVol<0x60000000) {
+						s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x10 + 32];
+					} else {
+						s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x18 + 32];
+					}
+				} else {
+					s_chan[ch].ADSRX.EnvelopeVol+=RateTable[(s_chan[ch].ADSRX.SustainRate^0x7F)-0x10 + 32];
+				}
 
-       if(s_chan[ch].ADSRX.EnvelopeVol<0) 
-        {
-         s_chan[ch].ADSRX.EnvelopeVol=0x7FFFFFFF;
-        }
-      }
-     else
-      {
-       if(s_chan[ch].ADSRX.SustainModeExp)
-        s_chan[ch].ADSRX.EnvelopeVol-=RateTable[((s_chan[ch].ADSRX.SustainRate^0x7F))-0x1B+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
-       else
-        s_chan[ch].ADSRX.EnvelopeVol-=RateTable[((s_chan[ch].ADSRX.SustainRate^0x7F))-0x0F + 32];
+				if(s_chan[ch].ADSRX.EnvelopeVol<0) {
+					s_chan[ch].ADSRX.EnvelopeVol=0x7FFFFFFF;
+				}
+			} else {
+				if(s_chan[ch].ADSRX.SustainModeExp) {
+					s_chan[ch].ADSRX.EnvelopeVol-=RateTable[((s_chan[ch].ADSRX.SustainRate^0x7F))-0x1B+32+sexytable[(s_chan[ch].ADSRX.EnvelopeVol>>28)&0x7]];
+				} else {
+					s_chan[ch].ADSRX.EnvelopeVol-=RateTable[((s_chan[ch].ADSRX.SustainRate^0x7F))-0x0F + 32];
+				}
 
-       if(s_chan[ch].ADSRX.EnvelopeVol<0) 
-        {
-         s_chan[ch].ADSRX.EnvelopeVol=0;
-        }
-      }
-     s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
-     return s_chan[ch].ADSRX.lVolume;
-    }
-  }
- return 0;
+				if(s_chan[ch].ADSRX.EnvelopeVol<0) {
+					s_chan[ch].ADSRX.EnvelopeVol=0;
+				}
+			}
+			s_chan[ch].ADSRX.lVolume=s_chan[ch].ADSRX.EnvelopeVol>>21;
+			return s_chan[ch].ADSRX.lVolume;
+		}
+	}
+	return 0;
 }
 
 #endif
@@ -185,7 +182,7 @@ PSX SPU Envelope Timings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 First, here is an extract from doomed's SPU doc, which explains the basics
-of the SPU "volume envelope": 
+of the SPU "volume envelope":
 
 *** doomed doc extract start ***
 
@@ -259,7 +256,7 @@ ADSRvol           Returns the current envelope volume when
                   read.
 -- James' Note: return range: 0 -> 32767
 
-*** doomed doc extract end *** 
+*** doomed doc extract end ***
 
 By using a small PSX proggie to visualise the envelope as it was played,
 the following results for envelope timing were obtained:
@@ -315,7 +312,7 @@ the following results for envelope timing were obtained:
    Substituting, we get: k = 0.00146
 
    Further info on logarithmic nature:
-   frames to decay to sustain level 3  =  3 * frames to decay to 
+   frames to decay to sustain level 3  =  3 * frames to decay to
    sustain level 9
 
    Also no. of frames to 25% volume = roughly 1.85 * no. of frames to
@@ -377,7 +374,7 @@ the following results for envelope timing were obtained:
    ------------------------------------
 
 
-Other notes:   
+Other notes:
 
 Log stuff not figured out. You may get some clues from the "Decay rate"
 stuff above. For emu purposes it may not be important - use linear
@@ -415,7 +412,7 @@ every one millisecond
      lT=s_chan[ch].ADSR.lTime-                         // -> how much time is past?
         s_chan[ch].ADSR.ReleaseStartTime;
      l1=s_chan[ch].ADSR.ReleaseTime;
-                                                       
+
      if(lT<l1)                                         // -> we still have to release
       {
        v=v-((v*lT)/l1);                                // --> calc new volume
@@ -428,12 +425,12 @@ every one millisecond
      v=0;s_chan[ch].bOn=0;s_chan[ch].ADSR.ReleaseVol=0;s_chan[ch].bNoise=0;
     }
   }
- else                                               
+ else
   {//--------------------------------------------------// not in release phase:
    v=1024;
    lT=s_chan[ch].ADSR.lTime;
    l1=s_chan[ch].ADSR.AttackTime;
-                                                       
+
    if(lT<l1)                                           // attack
     {                                                  // no exp mode used (yet)
 //     if(s_chan[ch].ADSR.AttackModeExp)
@@ -479,13 +476,13 @@ every one millisecond
     }
   }
 
- //----------------------------------------------------// 
+ //----------------------------------------------------//
  // ok, done for this channel, so increase time
 
- s_chan[ch].ADSR.lTime+=1;                             // 1 = 1.020408f ms;      
+ s_chan[ch].ADSR.lTime+=1;                             // 1 = 1.020408f ms;
 
  if(v>1024)     v=1024;                                // adjust volume
- if(v<0)        v=0;                                  
+ if(v<0)        v=0;
  s_chan[ch].ADSR.lVolume=v;                            // store act volume
 
  return v;                                             // return the volume factor
