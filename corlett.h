@@ -33,5 +33,6 @@ typedef struct
 
 int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t **c);
 void corlett_length_set(uint32 length_ms, int32 fade_ms);
+uint32 corlett_sample_count(void);
 void corlett_sample_fade(int16 *l, int16 *r);
 uint32 psfTimeToMS(char *str);

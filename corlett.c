@@ -344,6 +344,11 @@ void corlett_length_set(uint32 length_ms, int32 fade_ms)
 	}
 }
 
+uint32 corlett_sample_count(void)
+{
+	return total_samples;
+}
+
 void corlett_sample_fade(int16 *l, int16 *r)
 {
 	if(total_samples >= decaybegin)
