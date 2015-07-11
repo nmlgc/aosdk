@@ -134,35 +134,23 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 dsf_gen(int16 *buffer, uint32 samples)
+int32 dsf_sample(int16 *l, int16 *r)
 {
-	int i;
-	int16 output[44100/30], output2[44100/30];
-	int16 *stereo[2];
-	int16 *outp = buffer;
-	int opos;
+	int16 *stereo[2] = {l, r};
 
-	opos = 0;
-	for (i = 0; i < samples; i++)
-	{
-		#if DK_CORE
-		ARM7_Execute((33000000 / 60 / 4) / 735);
-		#else
-		arm7_execute((33000000 / 60 / 4) / 735);
-		#endif
-		stereo[0] = &output[opos];
-		stereo[1] = &output2[opos];
-		AICA_Update(NULL, NULL, stereo, 1);
-		opos++;
-	}
+	#if DK_CORE
+	ARM7_Execute((33000000 / 60 / 4) / 735);
+	#else
+	arm7_execute((33000000 / 60 / 4) / 735);
+	#endif
+	AICA_Update(NULL, NULL, stereo, 1);
+	corlett_sample_fade(l, r);
 
-	for (i = 0; i < samples; i++)
-	{
-		corlett_sample_fade(&output[i], &output2[i]);
-		*outp++ = output[i];
-		*outp++ = output2[i];
-	}
+	return AO_SUCCESS;
+}
 
+int32 dsf_frame(void)
+{
 	return AO_SUCCESS;
 }
 

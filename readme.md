@@ -39,13 +39,17 @@ Entry points of an AO engine are as follows:
 	the file.  The return value is `AO_SUCCESS` if the engine properly
 	loaded the file and `AO_FAIL` if it didn't.
 
-* `int32 XXX_gen(int16 *, uint32)`
+* `int32 XXX_sample(int16 *, int16 *)`
 
-	This function actually plays the song and generates signed 16-bit
-	stereo samples at 44100 Hz.  The first parameter is a pointer to a
-	buffer in which to place the samples (stereo interleaved), and the
-	second is the number of stereo samples to generate (so the output
-	buffer size must be (number of samples) × 2 × 2 bytes in length).
+	This function actually plays the song and generates the next sample in
+	16-bit stereo format at 44100 Hz.  The two parameters are pointers to
+	the one int16 value that receives the sample value of the left and
+	right channel, respectively.
+
+* `int32 XXX_frame(void)`
+
+	This function is called once per frame and can be used to update the
+	internal state of the format engine if necessary.
 
 * `int32 XXX_stop(void)`
 

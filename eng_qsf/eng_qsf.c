@@ -238,66 +238,26 @@ static void timer_tick(void)
 	z80_set_irq_line(0, CLEAR_LINE);
 }
 
-int32 qsf_gen(int16 *buffer, uint32 samples)
+int32 qsf_sample(int16 *l, int16 *r)
 {
-	int16 output[44100/30], output2[44100/30];
-	int16 *stereo[2];
-	int16 *outp = buffer;
-	int32 i, opos, tickinc, loops;
+	int16 *stereo[2] = {l, r};
 
-	// our largest possible step is samples_per_tick or samples, whichever is smaller
-	if (samples_to_next_tick > samples)
+	z80_execute((8000000/44100));
+	qsound_update(0, stereo, 1);
+
+	samples_to_next_tick --;
+
+	if (samples_to_next_tick <= 0)
 	{
-		tickinc = samples;
-	}
-	else
-	{
-		tickinc = samples_to_next_tick;
+		timer_tick();
+		samples_to_next_tick = samples_per_tick;
 	}
 
-	loops = samples / tickinc;
-	opos = 0;
+	return AO_SUCCESS;
+}
 
-	for (i = 0; i < loops; i++)
-	{
-		z80_execute((8000000/44100)*tickinc);
-		stereo[0] = &output[opos];
-		stereo[1] = &output2[opos];
-		qsound_update(0, stereo, tickinc);
-
-		opos += tickinc;
-		samples_to_next_tick -= tickinc;
-
-		if (samples_to_next_tick <= 0)
-		{
-			timer_tick();
-			samples_to_next_tick = samples_per_tick;
-		}
-	}
-
-	// are there "leftovers"?
-	if (opos < samples)
-	{
-		z80_execute((8000000/44100)*(samples-opos));
-		stereo[0] = &output[opos];
-		stereo[1] = &output2[opos];
-		qsound_update(0, stereo, (samples-opos));
-
-		samples_to_next_tick -= (samples-opos);
-
-		if (samples_to_next_tick <= 0)
-		{
-			timer_tick();
-			samples_to_next_tick = samples_per_tick;
-		}
-	}
-
-	for (i = 0; i < samples; i++)
-	{
-		*outp++ = output[i];
-		*outp++ = output2[i];
-	}
-
+int32 qsf_frame(void)
+{
 	return AO_SUCCESS;
 }
 

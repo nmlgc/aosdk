@@ -209,39 +209,16 @@ static void spu_tick(void)
 	cur_tick++;
 }
 
-int32 spu_gen(int16 *buffer, uint32 samples)
+int32 spu_sample(int16 *l, int16 *r)
 {
-	int i, run = 1;
+	spu_tick();
+	SPUsample(l, r);
 
-	if (old_fmt)
-	{
-		if (cur_event >= num_events)
-		{
-			run = 0;
-		}
-	}
-	else
-	{
-		if (cur_tick >= end_tick)
-		{
-			run = 0;
-		}
-	}
+	return AO_SUCCESS;
+}
 
-	if (run)
-	{
-		for (i = 0; i < samples; i++)
-		{
-			spu_tick();
-			SPUsample(&buffer[0], &buffer[1]);
-			buffer += 2;
-		}
-	}
-	else
-	{
-		memset(buffer, 0, samples*2*sizeof(int16));
-	}
-
+int32 spu_frame(void)
+{
 	return AO_SUCCESS;
 }
 

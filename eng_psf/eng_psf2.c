@@ -580,17 +580,16 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 psf2_gen(int16 *buffer, uint32 samples)
+int32 psf2_sample(int16 *l, int16 *r)
 {
-	int i;
+	SPU2sample(l, r);
+	ps2_hw_slice();
 
-	for (i = 0; i < samples; i++)
-	{
-		SPU2sample(&buffer[0], &buffer[1]);
-		buffer += 2;
-		ps2_hw_slice();
-	}
+	return AO_SUCCESS;
+}
 
+int32 psf2_frame(void)
+{
 	ps2_hw_frame();
 
 	return AO_SUCCESS;

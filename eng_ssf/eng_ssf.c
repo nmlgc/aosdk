@@ -200,31 +200,19 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 ssf_gen(int16 *buffer, uint32 samples)
+int32 ssf_sample(int16 *l, int16 *r)
 {
-	int i;
-	int16 output[44100/30], output2[44100/30];
-	int16 *stereo[2];
-	int16 *outp = buffer;
-	int opos;
+	int16 *stereo[2] = {l, r};
 
-	opos = 0;
-	for (i = 0; i < samples; i++)
-	{
-		m68k_execute((11300000/60)/735);
-		stereo[0] = &output[opos];
-		stereo[1] = &output2[opos];
-		SCSP_Update(NULL, NULL, stereo, 1);
-		opos++;
-	}
+	m68k_execute((11300000/60)/735);
+	SCSP_Update(NULL, NULL, stereo, 1);
+	corlett_sample_fade(l, r);
 
-	for (i = 0; i < samples; i++)
-	{
-		corlett_sample_fade(&output[i], &output2[i]);
-		*outp++ = output[i];
-		*outp++ = output2[i];
-	}
+	return AO_SUCCESS;
+}
 
+int32 ssf_frame(void)
+{
 	return AO_SUCCESS;
 }
 

@@ -347,17 +347,16 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 psf_gen(int16 *buffer, uint32 samples)
+int32 psf_sample(int16 *l, int16 *r)
 {
-	int i;
+	psx_hw_slice();
+	SPUsample(l, r);
 
-	for (i = 0; i < samples; i++)
-	{
-		psx_hw_slice();
-		SPUsample(&buffer[0], &buffer[1]);
-		buffer += 2;
-	}
+	return AO_SUCCESS;
+}
 
+int32 psf_frame(void)
+{
 	psx_hw_frame();
 
 	return AO_SUCCESS;

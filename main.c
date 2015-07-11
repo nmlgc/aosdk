@@ -41,21 +41,22 @@ static struct
 	uint32 sig;
 	char *name;
 	int32 (*start)(uint8 *, uint32);
-	int32 (*gen)(int16 *, uint32);
+	int32 (*sample)(int16 *, int16 *);
+	int32 (*frame)(void);
 	int32 (*stop)(void);
 	int32 (*command)(int32, int32);
 	uint32 rate;
 	int32 (*fillinfo)(ao_display_info *);
 } types[] =
 {
-	{ 0x50534641, "Capcom QSound (.qsf)", qsf_start, qsf_gen, qsf_stop, qsf_command, 60, qsf_fill_info },
-	{ 0x50534611, "Sega Saturn (.ssf)", ssf_start, ssf_gen, ssf_stop, ssf_command, 60, ssf_fill_info },
-	{ 0x50534601, "Sony PlayStation (.psf)", psf_start, psf_gen, psf_stop, psf_command, 60, psf_fill_info },
-	{ 0x53505500, "Sony PlayStation (.spu)", spu_start, spu_gen, spu_stop, spu_command, 60, spu_fill_info },
-	{ 0x50534602, "Sony PlayStation 2 (.psf2)", psf2_start, psf2_gen, psf2_stop, psf2_command, 60, psf2_fill_info },
-	{ 0x50534612, "Sega Dreamcast (.dsf)", dsf_start, dsf_gen, dsf_stop, dsf_command, 60, dsf_fill_info },
+	{ 0x50534641, "Capcom QSound (.qsf)", qsf_start, qsf_sample, qsf_frame, qsf_stop, qsf_command, 60, qsf_fill_info },
+	{ 0x50534611, "Sega Saturn (.ssf)", ssf_start, ssf_sample, ssf_frame, ssf_stop, ssf_command, 60, ssf_fill_info },
+	{ 0x50534601, "Sony PlayStation (.psf)", psf_start, psf_sample, psf_frame, psf_stop, psf_command, 60, psf_fill_info },
+	{ 0x53505500, "Sony PlayStation (.spu)", spu_start, spu_sample, spu_frame, spu_stop, spu_command, 60, spu_fill_info },
+	{ 0x50534602, "Sony PlayStation 2 (.psf2)", psf2_start, psf2_sample, psf2_frame, psf2_stop, psf2_command, 60, psf2_fill_info },
+	{ 0x50534612, "Sega Dreamcast (.dsf)", dsf_start, dsf_sample, dsf_frame, dsf_stop, dsf_command, 60, dsf_fill_info },
 
-	{ 0xffffffff, "", NULL, NULL, NULL, NULL, 0, NULL }
+	{ 0xffffffff, "", NULL, NULL, NULL, NULL, NULL, 0, NULL }
 };
 
 /* redirect stubs to interface the Z80 core to the QSF engine */
@@ -122,7 +123,13 @@ int ao_get_lib(char *filename, uint8 **buffer, uint64 *length)
 
 static void do_frame(uint32 size, int16 *buffer)
 {
-	(*types[type].gen)(buffer, size);
+	uint32 i;
+	for (i = 0; i < size; i++)
+	{
+		(*types[type].sample)(&buffer[0], &buffer[1]);
+		buffer += 2;
+	}
+	(*types[type].frame)();
 }
 
 int main(int argv, char *argc[])
