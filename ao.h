@@ -183,4 +183,4 @@ int ao_get_lib(char *filename, uint8 **buffer, uint64 *length);
 
 #endif // AO_H
 
-extern ao_bool ao_song_done;
+extern volatile ao_bool ao_song_done;

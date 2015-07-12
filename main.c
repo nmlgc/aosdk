@@ -24,6 +24,7 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +35,7 @@
 /* file types */
 static uint32 type;
 
-ao_bool ao_song_done;
+volatile ao_bool ao_song_done;
 
 static struct
 {
@@ -132,6 +133,11 @@ static void do_frame(uint32 size, int16 *buffer)
 	(*types[type].frame)();
 }
 
+static void intr_handler(int sig)
+{
+	ao_song_done = 1;
+}
+
 int main(int argv, char *argc[])
 {
 	FILE *file;
@@ -212,12 +218,15 @@ int main(int argv, char *argc[])
 	m1sdr_SetCallback(do_frame);
 	m1sdr_PlayStart();
 
+	signal(SIGINT, intr_handler);
 	printf("\n\nPlaying.  Press CTRL-C to stop.\n");
 
 	while (!ao_song_done)
 	{
 		m1sdr_TimeCheck();
 	}
+
+	signal(SIGINT, SIG_IGN);
 
 	free(buffer);
 
