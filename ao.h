@@ -142,39 +142,40 @@ typedef unsigned long long	UINT64;
 #endif
 #endif
 
+static uint16 INLINE SWAP16(uint16 x)
+{
+	return (
+		((x & 0xFF00) >> 8) |
+		((x & 0x00FF) << 8)
+	);
+}
+
+static uint32 INLINE SWAP32(uint32 x)
+{
+	return (
+		((x & 0xFF000000) >> 24) |
+		((x & 0x00FF0000) >> 8) |
+		((x & 0x0000FF00) << 8) |
+		((x & 0x000000FF) << 24)
+	);
+}
+
 #if LSB_FIRST
+#define BE16(x) (SWAP16(x))
+#define BE32(x) (SWAP32(x))
 #define LE16(x) (x)
 #define LE32(x) (x)
 
 #ifndef __ENDIAN__ /* Mac OS X Endian header has this function in it */
-static unsigned long INLINE Endian32_Swap(unsigned long addr)
-{
-	unsigned long res = (((addr&0xff000000)>>24) |
-		 ((addr&0x00ff0000)>>8) |
-		 ((addr&0x0000ff00)<<8) |
-		 ((addr&0x000000ff)<<24));
-
-	return res;
-}
+#define Endian32_Swap(x) (SWAP32(res))
 #endif
 
 #else
 
-static unsigned short INLINE LE16(unsigned short x)
-{
-	unsigned short res = (((x & 0xFF00) >> 8) | ((x & 0xFF) << 8));
-	return res;
-}
-
-static unsigned long INLINE LE32(unsigned long addr)
-{
-	unsigned long res = (((addr&0xff000000)>>24) |
-		 ((addr&0x00ff0000)>>8) |
-		 ((addr&0x0000ff00)<<8) |
-		 ((addr&0x000000ff)<<24));
-
-	return res;
-}
+#define BE16(x) (x)
+#define BE32(x) (x)
+#define LE16(x) (SWAP16(x))
+#define LE32(x) (SWAP32(x))
 
 #endif
 
