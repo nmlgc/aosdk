@@ -218,113 +218,41 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		for (num_tags = 0; num_tags < MAX_UNKNOWN_TAGS; num_tags++)
 		{
 			// See if tag belongs in one of the special fields we have
-			if (!strcasecmp((*c)->tag_name[num_tags], "_lib"))
-			{
-				strcpy((*c)->lib, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib2", 5))
-			{
-				strcpy((*c)->libaux[0], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib3", 5))
-			{
-				strcpy((*c)->libaux[1], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib4", 5))
-			{
-				strcpy((*c)->libaux[2], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib5", 5))
-			{
-				strcpy((*c)->libaux[3], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib6", 5))
-			{
-				strcpy((*c)->libaux[4], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib7", 5))
-			{
-				strcpy((*c)->libaux[5], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib8", 5))
-			{
-				strcpy((*c)->libaux[6], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_lib9", 5))
-			{
-				strcpy((*c)->libaux[7], (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "_refresh", 8))
-			{
-				strcpy((*c)->inf_refresh, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "title", 5))
-			{
-				strcpy((*c)->inf_title, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "copyright", 9))
-			{
-				strcpy((*c)->inf_copy, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "artist", 6))
-			{
-				strcpy((*c)->inf_artist, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "game", 4))
-			{
-				strcpy((*c)->inf_game, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "year", 4))
-			{
-				strcpy((*c)->inf_year, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "length", 6))
-			{
-				strcpy((*c)->inf_length, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
-			}
-			else if (!strncmp((*c)->tag_name[num_tags], "fade", 4))
-			{
-				strcpy((*c)->inf_fade, (*c)->tag_data[num_tags]);
-				(*c)->tag_data[num_tags][0] = 0;
-				(*c)->tag_name[num_tags][0] = 0;
+			if (corlett_tag_recognize(*c, (*c)->lib, num_tags, "_lib")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[0], num_tags, "_lib2")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[1], num_tags, "_lib3")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[2], num_tags, "_lib4")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[3], num_tags, "_lib5")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[4], num_tags, "_lib6")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[5], num_tags, "_lib7")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[6], num_tags, "_lib8")) {
+			} else if (corlett_tag_recognize(*c, (*c)->libaux[7], num_tags, "_lib9")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_refresh, num_tags, "_refresh")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_title, num_tags, "title")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_copy, num_tags, "copyright")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_artist, num_tags, "artist")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_game, num_tags, "game")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_year, num_tags, "year")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_length, num_tags, "length")) {
+			} else if (corlett_tag_recognize(*c, (*c)->inf_fade, num_tags, "fade")) {
 			}
 		}
 	}
 
 	// Bingo
 	return AO_SUCCESS;
+}
+
+int corlett_tag_recognize(corlett_t *c, char *target_value, int tag_num, const char *key)
+{
+	if (!strcasecmp(c->tag_name[tag_num], key))
+	{
+		strcpy(target_value, c->tag_data[tag_num]);
+		c->tag_data[tag_num][0] = 0;
+		c->tag_name[tag_num][0] = 0;
+		return 1;
+	}
+	return 0;
 }
 
 void corlett_length_set(uint32 length_ms, int32 fade_ms)
