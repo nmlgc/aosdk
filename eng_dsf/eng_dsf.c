@@ -29,7 +29,6 @@
 #endif
 
 static corlett_t	*c = NULL;
-static char 		psfby[256];
 
 void *aica_start(const void *config);
 void AICA_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
@@ -96,17 +95,6 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	memcpy(&dc_ram[offset], file+4, file_len-4);
 
 	free(file);
-
-	// Finally, set psfby/ssfby tag
-	strcpy(psfby, "n/a");
-	if (c)
-	{
-		for (i = 0; i < MAX_UNKNOWN_TAGS; i++)
-		{
-			if ((!strcasecmp(c->tag_name[i], "psfby")) || (!strcasecmp(c->tag_name[i], "ssfby")))
-				strcpy(psfby, c->tag_data[i]);
-		}
-	}
 
 	#if DEBUG_LOADER && 1
 	{
@@ -195,9 +183,6 @@ int32 dsf_fill_info(ao_display_info *info)
 
 	strcpy(info->title[7], "Fade: ");
 	sprintf(info->info[7], "%s", c->inf_fade);
-
-	strcpy(info->title[8], "Ripper: ");
-	sprintf(info->info[8], "%s", psfby);
 
 	return AO_SUCCESS;
 }

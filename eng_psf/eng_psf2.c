@@ -68,7 +68,6 @@
 #define ELF32_R_TYPE(val)               ((val) & 0xff)
 
 static corlett_t	*c = NULL;
-static char 		psfby[256];
 
 // main RAM
 extern uint32 psx_ram[(2*1024*1024)/4];
@@ -680,9 +679,6 @@ int32 psf2_fill_info(ao_display_info *info)
 
 	strcpy(info->title[7], "Fade: ");
 	sprintf(info->info[7], "%s", c->inf_fade);
-
-	strcpy(info->title[8], "Ripper: ");
-	sprintf(info->info[8], "%s", psfby);
 
 	return AO_SUCCESS;
 }

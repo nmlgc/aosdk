@@ -45,7 +45,6 @@
 #define DEBUG_LOADER	(0)
 
 static corlett_t	*c = NULL;
-static char 		psfby[256];
 int			psf_refresh  = -1;
 
 
@@ -258,18 +257,6 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	free(file);
 //	free(lib_decoded);
 
-	// Finally, set psfby tag
-	strcpy(psfby, "n/a");
-	if (c)
-	{
-		int i;
-		for (i = 0; i < MAX_UNKNOWN_TAGS; i++)
-		{
-			if (!strcasecmp(c->tag_name[i], "psfby"))
-				strcpy(psfby, c->tag_data[i]);
-		}
-	}
-
 	mips_init();
 	mips_reset(NULL);
 
@@ -435,9 +422,6 @@ int32 psf_fill_info(ao_display_info *info)
 
 	strcpy(info->title[7], "Fade: ");
 	sprintf(info->info[7], "%s", c->inf_fade);
-
-	strcpy(info->title[8], "Ripper: ");
-	sprintf(info->info[8], "%s", psfby);
 
 	return AO_SUCCESS;
 }

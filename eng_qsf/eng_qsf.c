@@ -73,7 +73,6 @@ static int32 samples_per_tick = 44100/285;
 static int32 samples_to_next_tick = 44100/285;
 
 static corlett_t *c = NULL;
-static char qsfby[256];
 static uint32 skey1, skey2;
 static uint16 akey;
 static uint8  xkey;
@@ -210,20 +209,6 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 		cps1_decode((unsigned char *)Z80ROM, skey1, skey2, akey, xkey);
 	}
 
-	// set qsfby tag
-	strcpy(qsfby, "n/a");
-	if (c)
-	{
-		int i;
-		for (i = 0; i < MAX_UNKNOWN_TAGS; i++)
-		{
-			if (!strcasecmp(c->tag_name[i], "qsfby"))
-			{
-				strcpy(qsfby, c->tag_data[i]);
-			}
-		}
-	}
-
 	z80_reset(NULL);
 	z80_set_irq_callback(qsf_irq_cb);
 	qsintf.sample_rom = QSamples;
@@ -305,9 +290,6 @@ int32 qsf_fill_info(ao_display_info *info)
 
 	strcpy(info->title[7], "Fade: ");
 	sprintf(info->info[7], "%s", c->inf_fade);
-
-	strcpy(info->title[8], "Ripper: ");
-	sprintf(info->info[8], "%s", qsfby);
 
 	return AO_SUCCESS;
 }
