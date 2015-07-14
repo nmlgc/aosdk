@@ -122,8 +122,7 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		decomp_length = DECOMP_MAX_SIZE;
 		if (uncompress(decomp_dat, &decomp_length, (unsigned char *)&buf[4+(res_area/4)], comp_length) != Z_OK)
 		{
-			free(decomp_dat);
-			return AO_FAIL;
+			goto err_free;
 		}
 
 		// Resize memory buffer to what we actually need
@@ -139,8 +138,7 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 	*c = malloc(sizeof(corlett_t));
 	if (!(*c))
 	{
-		free(decomp_dat);
-		return AO_FAIL;
+		goto err_free;
 	}
 	memset(*c, 0, sizeof(corlett_t));
 	strcpy((*c)->inf_title, "n/a");
@@ -241,6 +239,10 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 
 	// Bingo
 	return AO_SUCCESS;
+
+err_free:
+	free(decomp_dat);
+	return AO_FAIL;
 }
 
 int corlett_tag_recognize(corlett_t *c, char *target_value, int tag_num, const char *key)
