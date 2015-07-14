@@ -88,7 +88,6 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	uint32 offset, plength, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length;
 	corlett_t *lib;
-	char *libfile;
 	int i;
 
 	// clear Saturn work RAM before we start scribbling in it
@@ -107,8 +106,8 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	// Get the library file, if any
 	for (i=0; i<9; i++)
 	{
-		libfile = i ? c->libaux[i-1] : c->lib;
-		if (libfile[0] != 0)
+		const char *libfile = i ? c->libaux[i-1] : c->lib;
+		if (libfile)
 		{
 			uint64 tmp_length;
 
@@ -141,7 +140,7 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 			memcpy(&sat_ram[offset], lib_decoded+4, lib_len-4);
 
 			// Dispose the corlett structure for the lib - we don't use it
-			free(lib);
+			corlett_free(lib);
 		}
 	}
 

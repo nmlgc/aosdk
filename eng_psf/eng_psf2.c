@@ -485,7 +485,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	fssize[0] = c->res_size;
 
 	// Get the library file, if any
-	if (c->lib[0] != 0)
+	if (c->lib)
 	{
 		uint64 tmp_length;
 
@@ -517,7 +517,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	#if 0
 	buf = (uint8 *)malloc(16*1024*1024);
 	dump_files(0, buf, 16*1024*1024);
-	if (c->lib[0] != 0)
+	if (c->lib)
 		dump_files(1, buf, 16*1024*1024);
 	free(buf);
 	#endif
@@ -597,11 +597,11 @@ int32 psf2_frame(void)
 int32 psf2_stop(void)
 {
 	SPU2close();
-	if (c->lib[0] != 0)
+	if (lib_raw_file)
 	{
 		free(lib_raw_file);
 	}
-	free(c);
+	corlett_free(c);
 
 	return AO_SUCCESS;
 }

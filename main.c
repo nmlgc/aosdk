@@ -87,7 +87,7 @@ void memory_writeport(uint16 addr, uint8 byte)
 }
 
 /* ao_get_lib: called to load secondary files */
-int ao_get_lib(char *filename, uint8 **buffer, uint64 *length)
+int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length)
 {
 	uint8 *filebuf;
 	uint32 size;

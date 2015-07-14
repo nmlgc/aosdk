@@ -100,13 +100,16 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	printf("refresh: [%s]\n", c->inf_refresh);
 	#endif
 
-	if (c->inf_refresh[0] == '5')
+	if (c->inf_refresh)
 	{
-		psf_refresh = 50;
-	}
-	if (c->inf_refresh[0] == '6')
-	{
-		psf_refresh = 60;
+		if (c->inf_refresh[0] == '5')
+		{
+			psf_refresh = 50;
+		}
+		if (c->inf_refresh[0] == '6')
+		{
+			psf_refresh = 60;
+		}
 	}
 
 	PC = file[0x10] | file[0x11]<<8 | file[0x12]<<16 | file[0x13]<<24;
@@ -118,7 +121,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	#endif
 
 	// Get the library file, if any
-	if (c->lib[0] != 0)
+	if (c->lib)
 	{
 		uint64 tmp_length;
 
@@ -143,7 +146,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		if (strncmp((char *)lib_decoded, "PS-X EXE", 8))
 		{
 			printf("Major error!  PSF was OK, but referenced library is not!\n");
-			free(lib);
+			corlett_free(lib);
 			return AO_FAIL;
 		}
 
@@ -157,7 +160,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		#endif
 
 		// if the original file had no refresh tag, give the lib a shot
-		if (psf_refresh == -1)
+		if (psf_refresh == -1 && lib->inf_refresh)
 		{
 			if (lib->inf_refresh[0] == '5')
 			{
@@ -187,7 +190,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		memcpy(&psx_ram[offset/4], lib_decoded+2048, plength);
 
 		// Dispose the corlett structure for the lib - we don't use it
-		free(lib);
+		corlett_free(lib);
 	}
 
 	// now patch the main file into RAM OVER the libraries (but not the aux lib)
@@ -205,7 +208,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	// load any auxiliary libraries now
 	for (i = 0; i < 8; i++)
 	{
-		if (c->libaux[i][0] != 0)
+		if (c->libaux[i])
 		{
 			uint64 tmp_length;
 
@@ -231,7 +234,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			if (strncmp((char *)alib_decoded, "PS-X EXE", 8))
 			{
 				printf("Major error!  PSF was OK, but referenced library is not!\n");
-				free(lib);
+				corlett_free(lib);
 				return AO_FAIL;
 			}
 
@@ -250,7 +253,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			memcpy(&psx_ram[offset/4], alib_decoded+2048, plength);
 
 			// Dispose the corlett structure for the lib - we don't use it
-			free(lib);
+			corlett_free(lib);
 		}
 	}
 
@@ -352,7 +355,7 @@ int32 psf_frame(void)
 int32 psf_stop(void)
 {
 	SPUclose();
-	free(c);
+	corlett_free(c);
 
 	return AO_SUCCESS;
 }

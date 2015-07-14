@@ -178,7 +178,7 @@ static uint32 INLINE SWAP32(uint32 x)
 
 #endif
 
-int ao_get_lib(char *filename, uint8 **buffer, uint64 *length);
+int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length);
 
 #endif // AO_H
 

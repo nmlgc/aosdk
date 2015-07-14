@@ -165,7 +165,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 	}
 
 	// Get the library file
-	if (c->lib[0] != 0)
+	if (c->lib)
 	{
 		uint64 tmp_length;
 
@@ -191,7 +191,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 		qsf_walktags(lib_decoded, lib_decoded+lib_len);
 
 		// Dispose the corlett structure for the lib - we don't use it
-		free(lib);
+		corlett_free(lib);
 	}
 
 	// now patch the file into RAM OVER the libraries
