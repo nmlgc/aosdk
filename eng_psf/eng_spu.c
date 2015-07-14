@@ -274,12 +274,12 @@ int32 spu_command(int32 command, int32 parameter)
 
 int32 spu_fill_info(ao_display_info *info)
 {
-	strcpy(info->title[1], "Game: ");
-	sprintf(info->info[1], "%.128s", name);
-	strcpy(info->title[2], "Song: ");
-	sprintf(info->info[2], "%.128s", song);
-	strcpy(info->title[3], "Company: ");
-	sprintf(info->info[3], "%.128s", company);
+	info->title[1] = "Game: ";
+	info->info[1] = name;
+	info->title[2] = "Song: ";
+	info->info[2] = song;
+	info->title[3] = "Company: ";
+	info->info[3] = company;
 
 	return AO_SUCCESS;
 }

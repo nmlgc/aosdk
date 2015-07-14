@@ -270,26 +270,26 @@ int32 qsf_fill_info(ao_display_info *info)
 	if (c == NULL)
 		return AO_FAIL;
 
-	strcpy(info->title[1], "Name: ");
-	sprintf(info->info[1], "%s", c->inf_title);
+	info->title[1] = "Name: ";
+	info->info[1] = c->inf_title;
 
-	strcpy(info->title[2], "Game: ");
-	sprintf(info->info[2], "%s", c->inf_game);
+	info->title[2] = "Game: ";
+	info->info[2] = c->inf_game;
 
-	strcpy(info->title[3], "Artist: ");
-	sprintf(info->info[3], "%s", c->inf_artist);
+	info->title[3] = "Artist: ";
+	info->info[3] = c->inf_artist;
 
-	strcpy(info->title[4], "Copyright: ");
-	sprintf(info->info[4], "%s", c->inf_copy);
+	info->title[4] = "Copyright: ";
+	info->info[4] = c->inf_copy;
 
-	strcpy(info->title[5], "Year: ");
-	sprintf(info->info[5], "%s", c->inf_year);
+	info->title[5] = "Year: ";
+	info->info[5] = c->inf_year;
 
-	strcpy(info->title[6], "Length: ");
-	sprintf(info->info[6], "%s", c->inf_length);
+	info->title[6] = "Length: ";
+	info->info[6] = c->inf_length;
 
-	strcpy(info->title[7], "Fade: ");
-	sprintf(info->info[7], "%s", c->inf_fade);
+	info->title[7] = "Fade: ";
+	info->info[7] = c->inf_fade;
 
 	return AO_SUCCESS;
 }

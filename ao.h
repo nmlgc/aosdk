@@ -11,7 +11,6 @@
 #define AO_FAIL						0
 #define AO_FAIL_DECOMPRESSION		-1
 
-#define MAX_DISP_INFO_LENGTH		256
 #define AUDIO_RATE					(44100)
 
 enum
@@ -87,8 +86,8 @@ typedef unsigned char ao_bool;
 
 typedef struct
 {
-	char title[9][MAX_DISP_INFO_LENGTH];
-	char info[9][MAX_DISP_INFO_LENGTH];
+	const char *title[9];
+	const char *info[9];
 } ao_display_info;
 
 typedef unsigned char		uint8;
