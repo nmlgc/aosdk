@@ -28,7 +28,7 @@
 #include "arm7core.h"
 #endif
 
-static corlett_t	*c = NULL;
+static corlett_t	c = {0};
 
 void *aica_start(const void *config);
 void AICA_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
@@ -38,7 +38,6 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	uint8 *file, *lib_decoded, *lib_raw_file;
 	uint32 offset, plength, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length;
-	corlett_t *lib;
 	int i;
 
 	// clear Dreamcast work RAM before we start scribbling in it
@@ -57,13 +56,14 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	// Get the library file, if any
 	for (i=0; i<9; i++)
 	{
-		const char *libfile = i ? c->libaux[i-1] : c->lib;
+		const char *libfile = i ? c.libaux[i-1] : c.lib;
 		if (libfile)
 		{
+			corlett_t lib;
 			uint64 tmp_length;
 
 			#if DEBUG_LOADER
-			printf("Loading library: %s\n", c->lib);
+			printf("Loading library: %s\n", c.lib);
 			#endif
 			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
 			{
@@ -85,7 +85,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 			memcpy(&dc_ram[offset], lib_decoded+4, lib_len-4);
 
 			// Dispose the corlett structure for the lib - we don't use it
-			corlett_free(lib);
+			corlett_free(&lib);
 		}
 	}
 
@@ -114,8 +114,8 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	dc_hw_init();
 
 	// now figure out the time in samples for the length/fade
-	lengthMS = psfTimeToMS(c->inf_length);
-	fadeMS = psfTimeToMS(c->inf_fade);
+	lengthMS = psfTimeToMS(c.inf_length);
+	fadeMS = psfTimeToMS(c.inf_fade);
 
 	corlett_length_set(lengthMS, fadeMS);
 	return AO_SUCCESS;
@@ -159,29 +159,26 @@ int32 dsf_command(int32 command, int32 parameter)
 
 int32 dsf_fill_info(ao_display_info *info)
 {
-	if (c == NULL)
-		return AO_FAIL;
-
 	info->title[1] = "Name: ";
-	info->info[1] = c->inf_title;
+	info->info[1] = c.inf_title;
 
 	info->title[2] = "Game: ";
-	info->info[2] = c->inf_game;
+	info->info[2] = c.inf_game;
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c->inf_artist;
+	info->info[3] = c.inf_artist;
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c->inf_copy;
+	info->info[4] = c.inf_copy;
 
 	info->title[5] = "Year: ";
-	info->info[5] = c->inf_year;
+	info->info[5] = c.inf_year;
 
 	info->title[6] = "Length: ";
-	info->info[6] = c->inf_length;
+	info->info[6] = c.inf_length;
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c->inf_fade;
+	info->info[7] = c.inf_fade;
 
 	return AO_SUCCESS;
 }

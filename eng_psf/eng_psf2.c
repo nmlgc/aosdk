@@ -67,7 +67,7 @@
 #define ELF32_R_SYM(val)                ((val) >> 8)
 #define ELF32_R_TYPE(val)               ((val) & 0xff)
 
-static corlett_t	*c = NULL;
+static corlett_t	c = {0};
 
 // main RAM
 extern uint32 psx_ram[(2*1024*1024)/4];
@@ -460,7 +460,6 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	uint64 file_len, lib_raw_length, lib_len;
 	uint8 *buf;
 	union cpuinfo mipsinfo;
-	corlett_t *lib;
 
 	loadAddr = 0x23f00;	// this value makes allocations work out similarly to how they would 
 				// in Highly Experimental (as per Shadow Hearts' hard-coded assumptions)
@@ -477,22 +476,23 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	if (file_len > 0) printf("ERROR: PSF2 can't have a program section!  ps %08x\n", file_len);
 
 	#if DEBUG_LOADER
-	printf("FS section: size %x\n", c->res_size);
+	printf("FS section: size %x\n", c.res_size);
 	#endif
 
 	num_fs = 1;
-	filesys[0] = (uint8 *)c->res_section;
-	fssize[0] = c->res_size;
+	filesys[0] = (uint8 *)c.res_section;
+	fssize[0] = c.res_size;
 
 	// Get the library file, if any
-	if (c->lib)
+	if (c.lib)
 	{
+		corlett_t lib;
 		uint64 tmp_length;
 
 		#if DEBUG_LOADER
-		printf("Loading library: %s\n", c->lib);
+		printf("Loading library: %s\n", c.lib);
 		#endif
-		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
+		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
 		{
 			return AO_FAIL;
 		}
@@ -505,19 +505,19 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 		}
 
 		#if DEBUG_LOADER
-		printf("Lib FS section: size %x bytes\n", lib->res_size);
+		printf("Lib FS section: size %x bytes\n", lib.res_size);
 		#endif
 
 		num_fs++;
-		filesys[1] = (uint8 *)lib->res_section;
-		fssize[1] = lib->res_size;
+		filesys[1] = (uint8 *)lib.res_section;
+		fssize[1] = lib.res_size;
 	}
 
 	// dump all files
 	#if 0
 	buf = (uint8 *)malloc(16*1024*1024);
 	dump_files(0, buf, 16*1024*1024);
-	if (c->lib)
+	if (c.lib)
 		dump_files(1, buf, 16*1024*1024);
 	free(buf);
 	#endif
@@ -538,8 +538,8 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-	lengthMS = psfTimeToMS(c->inf_length);
-	fadeMS = psfTimeToMS(c->inf_fade);
+	lengthMS = psfTimeToMS(c.inf_length);
+	fadeMS = psfTimeToMS(c.inf_fade);
 	corlett_length_set(lengthMS, fadeMS);
 
 	mips_init();
@@ -601,7 +601,7 @@ int32 psf2_stop(void)
 	{
 		free(lib_raw_file);
 	}
-	corlett_free(c);
+	corlett_free(&c);
 
 	return AO_SUCCESS;
 }
@@ -644,8 +644,8 @@ int32 psf2_command(int32 command, int32 parameter)
 
 			psx_hw_init();
 
-			lengthMS = psfTimeToMS(c->inf_length);
-			fadeMS = psfTimeToMS(c->inf_fade);
+			lengthMS = psfTimeToMS(c.inf_length);
+			fadeMS = psfTimeToMS(c.inf_fade);
 			corlett_length_set(lengthMS, fadeMS);
 
 			return AO_SUCCESS;
@@ -656,29 +656,26 @@ int32 psf2_command(int32 command, int32 parameter)
 
 int32 psf2_fill_info(ao_display_info *info)
 {
-	if (c == NULL)
-		return AO_FAIL;
-
 	info->title[1] = "Name: ";
-	info->info[1] = c->inf_title;
+	info->info[1] = c.inf_title;
 
 	info->title[2] = "Game: ";
-	info->info[2] = c->inf_game;
+	info->info[2] = c.inf_game;
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c->inf_artist;
+	info->info[3] = c.inf_artist;
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c->inf_copy;
+	info->info[4] = c.inf_copy;
 
 	info->title[5] = "Year: ";
-	info->info[5] = c->inf_year;
+	info->info[5] = c.inf_year;
 
 	info->title[6] = "Length: ";
-	info->info[6] = c->inf_length;
+	info->info[6] = c.inf_length;
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c->inf_fade;
+	info->info[7] = c.inf_fade;
 
 	return AO_SUCCESS;
 }

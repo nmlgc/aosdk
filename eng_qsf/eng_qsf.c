@@ -72,7 +72,7 @@ that no encryption is used.
 static int32 samples_per_tick = 44100/285;
 static int32 samples_to_next_tick = 44100/285;
 
-static corlett_t *c = NULL;
+static corlett_t c = {0};
 static uint32 skey1, skey2;
 static uint16 akey;
 static uint8  xkey;
@@ -143,7 +143,6 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
 	uint64 file_len, lib_len, lib_raw_length;
-	corlett_t *lib;
 
 	z80_init();
 
@@ -165,14 +164,15 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 	}
 
 	// Get the library file
-	if (c->lib)
+	if (c.lib)
 	{
+		corlett_t lib;
 		uint64 tmp_length;
 
 		#if DEBUG_LOADER
-		printf("Loading library: %s\n", c->lib);
+		printf("Loading library: %s\n", c.lib);
 		#endif
-		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
+		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
 		{
 			return AO_FAIL;
 		}
@@ -191,7 +191,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 		qsf_walktags(lib_decoded, lib_decoded+lib_len);
 
 		// Dispose the corlett structure for the lib - we don't use it
-		corlett_free(lib);
+		corlett_free(&lib);
 	}
 
 	// now patch the file into RAM OVER the libraries
@@ -267,29 +267,26 @@ int32 qsf_command(int32 command, int32 parameter)
 
 int32 qsf_fill_info(ao_display_info *info)
 {
-	if (c == NULL)
-		return AO_FAIL;
-
 	info->title[1] = "Name: ";
-	info->info[1] = c->inf_title;
+	info->info[1] = c.inf_title;
 
 	info->title[2] = "Game: ";
-	info->info[2] = c->inf_game;
+	info->info[2] = c.inf_game;
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c->inf_artist;
+	info->info[3] = c.inf_artist;
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c->inf_copy;
+	info->info[4] = c.inf_copy;
 
 	info->title[5] = "Year: ";
-	info->info[5] = c->inf_year;
+	info->info[5] = c.inf_year;
 
 	info->title[6] = "Length: ";
-	info->info[6] = c->inf_length;
+	info->info[6] = c.inf_length;
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c->inf_fade;
+	info->info[7] = c.inf_fade;
 
 	return AO_SUCCESS;
 }

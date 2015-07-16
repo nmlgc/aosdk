@@ -44,7 +44,7 @@
 
 #define DEBUG_LOADER	(0)
 
-static corlett_t	*c = NULL;
+static corlett_t	c = {0};
 int			psf_refresh  = -1;
 
 
@@ -68,7 +68,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	uint8 *file, *lib_decoded, *lib_raw_file, *alib_decoded;
 	uint32 offset, plength, PC, SP, GP, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length, alib_len;
-	corlett_t *lib;
+	corlett_t lib;
 	int i;
 	union cpuinfo mipsinfo;
 
@@ -83,7 +83,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-//	printf("file_len %d reserve %d\n", file_len, c->res_size);
+//	printf("file_len %d reserve %d\n", file_len, c.res_size);
 
 	// check for PSX EXE signature
 	if (strncmp((char *)file, "PS-X EXE", 8))
@@ -97,16 +97,16 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	offset = file[0x1c] | file[0x1d]<<8 | file[0x1e]<<16 | file[0x1f]<<24;
 	printf("Text section size: %x\n", offset);
 	printf("Region: [%s]\n", &file[0x4c]);
-	printf("refresh: [%s]\n", c->inf_refresh);
+	printf("refresh: [%s]\n", c.inf_refresh);
 	#endif
 
-	if (c->inf_refresh)
+	if (c.inf_refresh)
 	{
-		if (c->inf_refresh[0] == '5')
+		if (c.inf_refresh[0] == '5')
 		{
 			psf_refresh = 50;
 		}
-		if (c->inf_refresh[0] == '6')
+		if (c.inf_refresh[0] == '6')
 		{
 			psf_refresh = 60;
 		}
@@ -121,14 +121,14 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	#endif
 
 	// Get the library file, if any
-	if (c->lib)
+	if (c.lib)
 	{
 		uint64 tmp_length;
 
 		#if DEBUG_LOADER
-		printf("Loading library: %s\n", c->lib);
+		printf("Loading library: %s\n", c.lib);
 		#endif
-		if (ao_get_lib(c->lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
+		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
 		{
 			return AO_FAIL;
 		}
@@ -146,7 +146,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		if (strncmp((char *)lib_decoded, "PS-X EXE", 8))
 		{
 			printf("Major error!  PSF was OK, but referenced library is not!\n");
-			corlett_free(lib);
+			corlett_free(&lib);
 			return AO_FAIL;
 		}
 
@@ -156,17 +156,17 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		offset = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
 		printf("Text section size: %x\n", offset);
 		printf("Region: [%s]\n", &lib_decoded[0x4c]);
-		printf("refresh: [%s]\n", lib->inf_refresh);
+		printf("refresh: [%s]\n", lib.inf_refresh);
 		#endif
 
 		// if the original file had no refresh tag, give the lib a shot
-		if (psf_refresh == -1 && lib->inf_refresh)
+		if (psf_refresh == -1 && lib.inf_refresh)
 		{
-			if (lib->inf_refresh[0] == '5')
+			if (lib.inf_refresh[0] == '5')
 			{
 				psf_refresh = 50;
 			}
-			if (lib->inf_refresh[0] == '6')
+			if (lib.inf_refresh[0] == '6')
 			{
 				psf_refresh = 60;
 			}
@@ -190,7 +190,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		memcpy(&psx_ram[offset/4], lib_decoded+2048, plength);
 
 		// Dispose the corlett structure for the lib - we don't use it
-		corlett_free(lib);
+		corlett_free(&lib);
 	}
 
 	// now patch the main file into RAM OVER the libraries (but not the aux lib)
@@ -208,15 +208,15 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	// load any auxiliary libraries now
 	for (i = 0; i < 8; i++)
 	{
-		if (c->libaux[i])
+		if (c.libaux[i])
 		{
 			uint64 tmp_length;
 
 			#if DEBUG_LOADER
-			printf("Loading aux library: %s\n", c->libaux[i]);
+			printf("Loading aux library: %s\n", c.libaux[i]);
 			#endif
 
-			if (ao_get_lib(c->libaux[i], &lib_raw_file, &tmp_length) != AO_SUCCESS)
+			if (ao_get_lib(c.libaux[i], &lib_raw_file, &tmp_length) != AO_SUCCESS)
 			{
 				return AO_FAIL;
 			}
@@ -234,7 +234,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			if (strncmp((char *)alib_decoded, "PS-X EXE", 8))
 			{
 				printf("Major error!  PSF was OK, but referenced library is not!\n");
-				corlett_free(lib);
+				corlett_free(&lib);
 				return AO_FAIL;
 			}
 
@@ -253,7 +253,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			memcpy(&psx_ram[offset/4], alib_decoded+2048, plength);
 
 			// Dispose the corlett structure for the lib - we don't use it
-			corlett_free(lib);
+			corlett_free(&lib);
 		}
 	}
 
@@ -298,8 +298,8 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	SPUinit();
 	SPUopen();
 
-	lengthMS = psfTimeToMS(c->inf_length);
-	fadeMS = psfTimeToMS(c->inf_fade);
+	lengthMS = psfTimeToMS(c.inf_length);
+	fadeMS = psfTimeToMS(c.inf_fade);
 
 	#if DEBUG_LOADER
 	printf("length %d fade %d\n", lengthMS, fadeMS);
@@ -310,9 +310,9 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	// patch illegal Chocobo Dungeon 2 code - CaitSith2 put a jump in the delay slot from a BNE
 	// and rely on Highly Experimental's buggy-ass CPU to rescue them.  Verified on real hardware
 	// that the initial code is wrong.
-	if (c->inf_game)
+	if (c.inf_game)
 	{
-		if (!strcmp(c->inf_game, "Chocobo Dungeon 2"))
+		if (!strcmp(c.inf_game, "Chocobo Dungeon 2"))
 		{
 			if (psx_ram[0xbc090/4] == LE32(0x0802f040))
 			{
@@ -355,7 +355,7 @@ int32 psf_frame(void)
 int32 psf_stop(void)
 {
 	SPUclose();
-	corlett_free(c);
+	corlett_free(&c);
 
 	return AO_SUCCESS;
 }
@@ -379,8 +379,8 @@ int32 psf_command(int32 command, int32 parameter)
 			SPUinit();
 			SPUopen();
 
-			lengthMS = psfTimeToMS(c->inf_length);
-			fadeMS = psfTimeToMS(c->inf_fade);
+			lengthMS = psfTimeToMS(c.inf_length);
+			fadeMS = psfTimeToMS(c.inf_fade);
 
 			corlett_length_set(lengthMS, fadeMS);
 
@@ -402,29 +402,26 @@ int32 psf_command(int32 command, int32 parameter)
 
 int32 psf_fill_info(ao_display_info *info)
 {
-	if (c == NULL)
-		return AO_FAIL;
-
 	info->title[1] = "Name: ";
-	info->info[1] = c->inf_title;
+	info->info[1] = c.inf_title;
 
 	info->title[2] = "Game: ";
-	info->info[2] = c->inf_game;
+	info->info[2] = c.inf_game;
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c->inf_artist;
+	info->info[3] = c.inf_artist;
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c->inf_copy;
+	info->info[4] = c.inf_copy;
 
 	info->title[5] = "Year: ";
-	info->info[5] = c->inf_year;
+	info->info[5] = c.inf_year;
 
 	info->title[6] = "Length: ";
-	info->info[6] = c->inf_length;
+	info->info[6] = c.inf_length;
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c->inf_fade;
+	info->info[7] = c.inf_fade;
 
 	return AO_SUCCESS;
 }

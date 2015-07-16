@@ -85,7 +85,7 @@ uint32 total_samples;
 uint32 decaybegin;
 uint32 decayend;
 
-int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t **c)
+int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c)
 {
 	uint32 *buf;
 	uint32 res_area, comp_crc,  actual_crc;
@@ -134,17 +134,11 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		decomp_length =  0;
 	}
 
-	// Make structure
-	*c = malloc(sizeof(corlett_t));
-	if (!(*c))
-	{
-		goto err_free;
-	}
-	memset(*c, 0, sizeof(corlett_t));
+	memset(c, 0, sizeof(corlett_t));
 
 	// set reserved section pointer
-	(*c)->res_section = &buf[4];
-	(*c)->res_size = res_area;
+	c->res_section = &buf[4];
+	c->res_size = res_area;
 
 	// Return it
 	*output = decomp_dat;
@@ -167,16 +161,16 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		tag_dec += 5;
 		input_len -= 5;
 
-		(*c)->tag_buffer = malloc(input_len);
-		if (!(*c)->tag_buffer) {
+		c->tag_buffer = malloc(input_len);
+		if (!c->tag_buffer) {
 			goto err_free;
 		}
-		memcpy((*c)->tag_buffer, tag_dec, input_len);
+		memcpy(c->tag_buffer, tag_dec, input_len);
 
 		tag = 0;
 		data = false;
 		num_tags = 0;
-		p = (*c)->tag_buffer;
+		p = c->tag_buffer;
 		start = NULL;
 		while (input_len && (num_tags < MAX_UNKNOWN_TAGS))
 		{
@@ -186,12 +180,12 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 			if (!data)
 			{
 				set_condition = *p == '=';
-				set_str = &(*c)->tag_name[num_tags];
+				set_str = &c->tag_name[num_tags];
 			}
 			else
 			{
 				set_condition = (*p == '\n') || (*p == '\0');
-				set_str = &(*c)->tag_data[num_tags];
+				set_str = &c->tag_data[num_tags];
 			}
 
 			if (set_condition)
@@ -215,23 +209,23 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		for (num_tags = 0; num_tags < MAX_UNKNOWN_TAGS; num_tags++)
 		{
 			// See if tag belongs in one of the special fields we have
-			if (corlett_tag_recognize(*c, &(*c)->lib, num_tags, "_lib")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[0], num_tags, "_lib2")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[1], num_tags, "_lib3")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[2], num_tags, "_lib4")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[3], num_tags, "_lib5")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[4], num_tags, "_lib6")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[5], num_tags, "_lib7")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[6], num_tags, "_lib8")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->libaux[7], num_tags, "_lib9")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_refresh, num_tags, "_refresh")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_title, num_tags, "title")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_copy, num_tags, "copyright")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_artist, num_tags, "artist")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_game, num_tags, "game")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_year, num_tags, "year")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_length, num_tags, "length")) {
-			} else if (corlett_tag_recognize(*c, &(*c)->inf_fade, num_tags, "fade")) {
+			if (corlett_tag_recognize(c, &c->lib, num_tags, "_lib")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[0], num_tags, "_lib2")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[1], num_tags, "_lib3")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[2], num_tags, "_lib4")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[3], num_tags, "_lib5")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[4], num_tags, "_lib6")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[5], num_tags, "_lib7")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[6], num_tags, "_lib8")) {
+			} else if (corlett_tag_recognize(c, &c->libaux[7], num_tags, "_lib9")) {
+			} else if (corlett_tag_recognize(c, &c->inf_refresh, num_tags, "_refresh")) {
+			} else if (corlett_tag_recognize(c, &c->inf_title, num_tags, "title")) {
+			} else if (corlett_tag_recognize(c, &c->inf_copy, num_tags, "copyright")) {
+			} else if (corlett_tag_recognize(c, &c->inf_artist, num_tags, "artist")) {
+			} else if (corlett_tag_recognize(c, &c->inf_game, num_tags, "game")) {
+			} else if (corlett_tag_recognize(c, &c->inf_year, num_tags, "year")) {
+			} else if (corlett_tag_recognize(c, &c->inf_length, num_tags, "length")) {
+			} else if (corlett_tag_recognize(c, &c->inf_fade, num_tags, "fade")) {
 			}
 		}
 	}
