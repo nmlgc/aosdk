@@ -371,7 +371,6 @@ void qsound_set_command(int data, int value)
 			break;
 		 case 9:
 			qsound_channel[ch].reg9=value;
-/*
 #ifdef MAME_DEBUG
 			{
 				char baf[40];
@@ -379,7 +378,6 @@ void qsound_set_command(int data, int value)
 				usrintf_showmessage(baf);
 			}
 #endif
-*/
 			break;
 	}
 #if LOG_QSOUND

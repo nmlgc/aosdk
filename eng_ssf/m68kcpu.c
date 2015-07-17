@@ -2,7 +2,6 @@
 /* ========================= LICENSING & COPYRIGHT ======================== */
 /* ======================================================================== */
 
-#if 0
 static const char* copyright_notice =
 "MUSASHI\n"
 "Version 3.3 (2001-01-29)\n"
@@ -19,7 +18,6 @@ static const char* copyright_notice =
 "The latest version of this code can be obtained at:\n"
 "http://kstenerud.cjb.net\n"
 ;
-#endif
 
 
 /* ======================================================================== */

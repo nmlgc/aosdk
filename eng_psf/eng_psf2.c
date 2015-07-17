@@ -362,7 +362,6 @@ static uint32 load_file(int fs, char *file, uint8 *buf, uint32 buflen)
 	return load_file_ex(filesys[fs], filesys[fs], fssize[fs], file, buf, buflen);
 }
 
-#if 0
 static dump_files(int fs, uint8 *buf, uint32 buflen)
 {
 	int32 numfiles, i, j;
@@ -433,7 +432,6 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 
 	return 0xffffffff;
 }
-#endif
 
 // find a file on our filesystems
 uint32 psf2_load_file(char *file, uint8 *buf, uint32 buflen)
