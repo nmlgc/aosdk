@@ -14,13 +14,19 @@ Audio Overload project.
 You may use this code to play the formats on systems we don't support or
 inside of applications other than AO.
 
-Configurables in the makefile:
+##### Compilation
+On Windows, either MinGW or Cygwin are required to build the code through the
+Makefile.
 
-- Uncomment the line that defines `LONG_IS_64BIT` for compilation on 64-bit
-  Linux, *BSD, and other operating systems using the AMD64 recommended ABI
-  (not 64-bit Windows).
+On Linux, set the environment variable `OSTYPE` to `linux` before you run
+`make`:
 
-- Change `LSB_FIRST=1` to `=0` for big-endian platforms.
+```
+	OSTYPE=linux make
+```
+
+To build on a big-endian platform, change `LSB_FIRST=1` to `=0` in the
+Makefile.
 
 New in Release 1.4.8
 - Guard against invalid data sometimes created by makessf.py (fixes crashing

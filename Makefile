@@ -31,8 +31,6 @@ CC   = gcc
 LD   = gcc
 CPP  = g++
 CFLAGS = -c -O3 -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
-# set for Linux 64-bit
-#CFLAGS += -DLONG_IS_64BIT=1
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
 
@@ -46,6 +44,9 @@ OBJS = main.o corlett.o
 
 # port objects
 ifeq ($(OSTYPE),linux)
+ifeq ($(shell uname -m),x86_64)
+CFLAGS += -DLONG_IS_64BIT=1
+endif
 OBJS += oss.o
 else
 OBJS += dsnd.o
