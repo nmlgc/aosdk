@@ -114,7 +114,7 @@ INLINE void FeedXA(xa_decode_t *xap)
 	if(iPlace==0) {
 		return; // no place at all
 	}
-  
+
 	//----------------------------------------------------//
 	// pitch change option?
 	if(iXAPitch) {

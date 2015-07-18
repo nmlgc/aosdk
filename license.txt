@@ -54,10 +54,10 @@ Too long to include here.
 
 See eng_psf/peops/License.txt or eng_psf/peops2/License.txt for the complete text.
 
-While legally combining GPL with BSD and MAME licensed software is unclear, Pete Bernert 
+While legally combining GPL with BSD and MAME licensed software is unclear, Pete Bernert
 will probably be OK with anything you do as long as you distribute the source for your
 AOSDK based creations.
-										  
+
 =====================================================================================
 
 ZLIB license:
@@ -93,17 +93,17 @@ ZLIB license:
 List of files and their licenses:
 
 ao.h			BSD
-corlett.c		BSD 
-corlett.h		BSD 
-cpuintrf.h		BSD 
-dsnd.c			BSD 
-eng_protos.h		BSD 
-main.c			BSD 
-Makefile		BSD 
-mem.h			BSD 
+corlett.c		BSD
+corlett.h		BSD
+cpuintrf.h		BSD
+dsnd.c			BSD
+eng_protos.h		BSD
+main.c			BSD
+Makefile		BSD
+mem.h			BSD
 osd_cpu.h		MAME
-oss.c			BSD 
-oss.h			BSD 
+oss.c			BSD
+oss.h			BSD
 
 eng_dsf:
 

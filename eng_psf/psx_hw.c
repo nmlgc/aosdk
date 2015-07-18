@@ -1921,7 +1921,7 @@ void psx_hw_runcounters(void)
 						call_irq_routine(iop_timers[i].handler, iop_timers[i].hparam);
 
 						timerexp = 1;
-					} 
+					}
 				}
 			}
 		}
@@ -2179,7 +2179,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				mname += (a0 & 3);
 
 				iop_sprintf(out, mname, CPUINFO_INT_REGISTER + MIPS_R5);	// a1 is first parm
-				
+
 			/*	if (out[strlen(out)-1] != '\n')
 				{
 					strcat(out, "\n");
@@ -3510,10 +3510,10 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 					// (NOTE: we get called in the delay slot!)
 					#if DEBUG_HLE_IOP
 					printf("IOP: Calling %s (%d) service %d => %08x (parms %08x %08x %08x %08x) (PC=%x)\n",
-							 reglibs[lib].name, 
+							 reglibs[lib].name,
 							 lib,
-							 callnum, 
-							 (uint32)mipsinfo.i, 
+							 callnum,
+							 (uint32)mipsinfo.i,
 							 a0, a1, a2, a3, PC);
 					#endif
 

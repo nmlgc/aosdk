@@ -521,7 +521,7 @@ EXPORT_GCC int CALLBACK SPU2sample(s16 *l, s16 *r)
 
 							// PETE: if we don't check exactly for 3, loop hang ups will happen (DQ4, for example)
 							// and checking if pLoop is set avoids crashes, yeah
-							if(flags!=3 || s_chan[ch].pLoop==NULL) { 
+							if(flags!=3 || s_chan[ch].pLoop==NULL) {
 								start = (unsigned char*)-1;
 							} else {
 								start = s_chan[ch].pLoop;

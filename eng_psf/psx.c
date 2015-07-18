@@ -416,7 +416,7 @@ int mips_execute( int cycles )
 //		CALL_MAME_DEBUG;
 
 //		psx_hw_runcounters();
-	
+
 		mipscpu.op = cpu_readop32( mipscpu.pc );
 
 #if 0
@@ -433,7 +433,7 @@ int mips_execute( int cycles )
 		if (( mipscpu.delayr == 0 ) || ((mipscpu.delayr != 0) && (mipscpu.op != 0)))
 		{
 			mipscpu.prevpc = mipscpu.pc;
-		}	
+		}
 #endif
 #if 0
 		if (1) //psxcpu_verbose)
@@ -2760,7 +2760,7 @@ void mips_set_info(UINT32 state, union cpuinfo *info)
 		case CPUINFO_INT_REGISTER + MIPS_CP2CR29:		mipscpu.cp2cr[ 29 ].d = info->i;		break;
 		case CPUINFO_INT_REGISTER + MIPS_CP2CR30:		mipscpu.cp2cr[ 30 ].d = info->i;		break;
 		case CPUINFO_INT_REGISTER + MIPS_CP2CR31:		mipscpu.cp2cr[ 31 ].d = info->i;		break;
-		
+
 		/* --- the following bits of info are set as pointers to data or functions --- */
 		case CPUINFO_PTR_IRQ_CALLBACK:					mipscpu.irq_callback = info->irqcallback;			break;
 	}
@@ -2786,7 +2786,7 @@ void mips_get_info(UINT32 state, union cpuinfo *info)
 		case CPUINFO_INT_MAX_INSTRUCTION_BYTES:			info->i = 4;							break;
 		case CPUINFO_INT_MIN_CYCLES:					info->i = 1;							break;
 		case CPUINFO_INT_MAX_CYCLES:					info->i = 40;							break;
-		
+
 		case CPUINFO_INT_DATABUS_WIDTH + ADDRESS_SPACE_PROGRAM:	info->i = 32;					break;
 		case CPUINFO_INT_ADDRBUS_WIDTH + ADDRESS_SPACE_PROGRAM: info->i = 32;					break;
 		case CPUINFO_INT_ADDRBUS_SHIFT + ADDRESS_SPACE_PROGRAM: info->i = 0;					break;

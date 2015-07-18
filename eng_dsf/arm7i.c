@@ -47,7 +47,7 @@
 
   //--------------------------------------------------------------------------
   // private functions
-	   
+
   /** Condition EQ. */
 static int R_WEQ (void);
   /** Condition NE. */
@@ -525,7 +525,7 @@ void R_G00x ()
 	{
 		ARM7_SetCPSR(ARM7.Rx[ARM7_CPSR] | ARM7_CPSR_T);
 	}
-       
+
 	ARM7.Rx[ARM7_PC] = Rn & ~1;
   #endif
   }
@@ -543,7 +543,7 @@ void R_G00x ()
   {
 //    logerror("G00x / Multiply long\n");
   }
-  // 6 constant bits	 
+  // 6 constant bits
   else if ((ARM7.kod & 0x0e400090) == 0x00400090)
     R_HSDT ();
   // 2 constant bits

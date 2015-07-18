@@ -459,7 +459,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	uint8 *buf;
 	union cpuinfo mipsinfo;
 
-	loadAddr = 0x23f00;	// this value makes allocations work out similarly to how they would 
+	loadAddr = 0x23f00;	// this value makes allocations work out similarly to how they would
 				// in Highly Experimental (as per Shadow Hearts' hard-coded assumptions)
 
 	// clear IOP work RAM before we start scribbling in it

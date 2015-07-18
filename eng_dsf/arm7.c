@@ -181,7 +181,7 @@ void ARM7_CheckIRQ ()
 
   // clear all interrupt flags
   ARM7.flagi &= ~(ARM7_FL_FIQ | ARM7_FL_IRQ);
-  
+
   // check for pending interrupts we can switch to
   // (FIQ can interrupt IRQ, but not the other way around)
   if (ARM7.fiq)

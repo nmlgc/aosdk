@@ -10,7 +10,7 @@ software.
 ----
 
 This SDK opens up some of the music file format engines developed for the
-Audio Overload project. 
+Audio Overload project.
 You may use this code to play the formats on systems we don't support or
 inside of applications other than AO.
 
@@ -64,13 +64,13 @@ Entry points of an AO engine are as follows:
 
 	* `COMMAND_PREV` (parameter ignored) - for file formats which have
 	  more than one song in a file (NSF), this moves back one song.
-	  
+
 	* `COMMAND_NEXT` (parameter ignored) - for file formats which have
 	  more than one song in a file (NSF), this moves forward one song.
-	  
+
 	* `COMMAND_RESTART` (parameter ignored) - Restarts the current song
 	  from the beginning.  Not supported by all engines.
-	  
+
 	* `COMMAND_HAS_PREV` (parameter ignored) - for file formats which have
 	  more than one song in a file (NSF), this checks if moving backwards
 	  from the current song is a valid operation.  (Returns `AO_FAIL` if
