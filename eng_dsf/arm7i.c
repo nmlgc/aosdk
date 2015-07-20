@@ -111,9 +111,9 @@ static void R_FlagiDP (ARM7_REG w);
   /** Single data transfer. */
 static void R_SDT (void);
   /** Rozkaz "Undefined". */
-static void R_Und ();
+static void R_Und (void);
   /** Block Data Transfer. */
-static void R_BDT ();
+static void R_BDT (void);
   /** Block load instructions. */
 static void R_LDM (int Rn, UINT32 adres);
   /** Block store instructions. */
@@ -1013,7 +1013,7 @@ void R_SDT (void)
 
   //--------------------------------------------------------------------------
   /** Undefined. */
-void R_Und ()
+void R_Und (void)
   {
   UINT32 sr = ARM7.Rx [ARM7_CPSR];
   ARM7_SetCPSR (ARM7_CPSR_MX (sr, ARM7_CPSR_M_und) | ARM7_CPSR_I);
@@ -1027,7 +1027,7 @@ void R_Und ()
 #define BIT_S (ARM7.kod & (1 << 22))
   //--------------------------------------------------------------------------
   /** Block Data Transfer. */
-void R_BDT ()
+void R_BDT (void)
   {
   int Rn, usr = FALSE;
   UINT32 adres;
