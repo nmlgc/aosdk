@@ -79,9 +79,6 @@ Sega driver commands:
 
 static corlett_t	c = {0};
 
-void *scsp_start(const void *config);
-void SCSP_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
-
 int32 ssf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
@@ -189,10 +186,8 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 
 int32 ssf_sample(int16 *l, int16 *r)
 {
-	int16 *stereo[2] = {l, r};
-
 	m68k_execute((11300000/60)/735);
-	SCSP_Update(NULL, NULL, stereo, 1);
+	SCSP_Update(NULL, NULL, l, r);
 	corlett_sample_fade(l, r);
 
 	return AO_SUCCESS;

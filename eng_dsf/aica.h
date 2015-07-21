@@ -24,9 +24,8 @@ struct AICAinterface
 	void (*irq_callback[MAX_AICA])(int state);	/* irq callback */
 };
 
-int AICA_sh_start(struct AICAinterface *intf);
-void AICA_sh_stop(void);
-void scsp_stop(void);
+void *aica_start(const void *config);
+void AICA_Update(void *param, INT16 **inputs, INT16 *l, INT16 *r);
 
 #define READ16_HANDLER(name)	data16_t name(offs_t offset, data16_t mem_mask)
 #define WRITE16_HANDLER(name)	void     name(offs_t offset, data16_t data, data16_t mem_mask)

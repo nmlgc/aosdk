@@ -227,11 +227,6 @@ static void dma_scsp(struct _SCSP *SCSP); 		/*SCSP DMA transfer function*/
 
 static const float SDLT[8]={-1000000.0,-36.0,-30.0,-24.0,-18.0,-12.0,-6.0,0.0};
 
-static INT16 *bufferl;
-static INT16 *bufferr;
-
-static int length;
-
 static signed short *RBUFDST;	//this points to where the sample will be stored in the RingBuf
 
 static unsigned char DecodeSCI(struct _SCSP *SCSP,unsigned char irq)
@@ -1008,75 +1003,67 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	return sample;
 }
 
-static void SCSP_DoMasterSamples(struct _SCSP *SCSP, int nsamples)
+static void SCSP_DoMasterSample(struct _SCSP *SCSP, INT16 *l, INT16 *r)
 {
-	INT16 *bufr,*bufl;
-	int sl, s, i;
+	int sl, i;
 
-	bufr=bufferr;
-	bufl=bufferl;
+	INT32 smpl, smpr;
 
-	for(s=0; s<nsamples; ++s)
+	smpl = smpr = 0;
+
+	for(sl=0; sl<32; ++sl)
 	{
-		INT32 smpl, smpr;
-
-		smpl = smpr = 0;
-
-		for(sl=0; sl<32; ++sl)
+		#if FM_DELAY
+		RBUFDST=SCSP->DELAYBUF+SCSP->DELAYPTR;
+		#else
+		RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
+		#endif
+		if(SCSP->Slots[sl].active)
 		{
-			#if FM_DELAY
-			RBUFDST=SCSP->DELAYBUF+SCSP->DELAYPTR;
-			#else
-			RBUFDST=SCSP->RINGBUF+SCSP->BUFPTR;
-			#endif
-			if(SCSP->Slots[sl].active)
+			struct _SLOT *slot=SCSP->Slots+sl;
+			unsigned short Enc;
+			signed int sample;
+
+			sample=SCSP_UpdateSlot(SCSP, slot);
+
+			Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
+			SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
+			Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 			{
-				struct _SLOT *slot=SCSP->Slots+sl;
-				unsigned short Enc;
-				signed int sample;
-
-				sample=SCSP_UpdateSlot(SCSP, slot);
-
-				Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
-				SCSPDSP_SetSample(&SCSP->DSP,(sample*SCSP->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
-				Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
-				{
-					smpl+=(sample*SCSP->LPANTABLE[Enc])>>SHIFT;
-					smpr+=(sample*SCSP->RPANTABLE[Enc])>>SHIFT;
-				}
-			}
-
-			#if FM_DELAY
-			SCSP->RINGBUF[(SCSP->BUFPTR+64-(FM_DELAY-1))&63] = SCSP->DELAYBUF[(SCSP->DELAYPTR+FM_DELAY-(FM_DELAY-1))%FM_DELAY];
-			#endif
-			++SCSP->BUFPTR;
-			SCSP->BUFPTR&=63;
-			#if FM_DELAY
-			++SCSP->DELAYPTR;
-			if(SCSP->DELAYPTR>FM_DELAY-1) SCSP->DELAYPTR=0;
-			#endif
-		}
-
-		SCSPDSP_Step(&SCSP->DSP);
-
-		for(i=0; i<16; ++i)
-		{
-			struct _SLOT *slot=SCSP->Slots+i;
-			if(EFSDL(slot))
-			{
-				unsigned short Enc=((EFPAN(slot))<<0x8)|((EFSDL(slot))<<0xd);
-				smpl+=(SCSP->DSP.EFREG[i]*SCSP->LPANTABLE[Enc])>>SHIFT;
-				smpr+=(SCSP->DSP.EFREG[i]*SCSP->RPANTABLE[Enc])>>SHIFT;
+				smpl+=(sample*SCSP->LPANTABLE[Enc])>>SHIFT;
+				smpr+=(sample*SCSP->RPANTABLE[Enc])>>SHIFT;
 			}
 		}
 
-		*bufl++ = ICLIP16(smpl>>2);
-		*bufr++ = ICLIP16(smpr>>2);
-
-		SCSP_TimersAddTicks(SCSP, 1);
-		CheckPendingIRQ(SCSP);
+		#if FM_DELAY
+		SCSP->RINGBUF[(SCSP->BUFPTR+64-(FM_DELAY-1))&63] = SCSP->DELAYBUF[(SCSP->DELAYPTR+FM_DELAY-(FM_DELAY-1))%FM_DELAY];
+		#endif
+		++SCSP->BUFPTR;
+		SCSP->BUFPTR&=63;
+		#if FM_DELAY
+		++SCSP->DELAYPTR;
+		if(SCSP->DELAYPTR>FM_DELAY-1) SCSP->DELAYPTR=0;
+		#endif
 	}
 
+	SCSPDSP_Step(&SCSP->DSP);
+
+	for(i=0; i<16; ++i)
+	{
+		struct _SLOT *slot=SCSP->Slots+i;
+		if(EFSDL(slot))
+		{
+			unsigned short Enc=((EFPAN(slot))<<0x8)|((EFSDL(slot))<<0xd);
+			smpl+=(SCSP->DSP.EFREG[i]*SCSP->LPANTABLE[Enc])>>SHIFT;
+			smpr+=(SCSP->DSP.EFREG[i]*SCSP->RPANTABLE[Enc])>>SHIFT;
+		}
+	}
+
+	*l = ICLIP16(smpl>>2);
+	*r = ICLIP16(smpr>>2);
+
+	SCSP_TimersAddTicks(SCSP, 1);
+	CheckPendingIRQ(SCSP);
 }
 
 static void dma_scsp(struct _SCSP *SCSP)
@@ -1136,13 +1123,9 @@ int SCSP_IRQCB(void *param)
 	return -1;
 }
 
-void SCSP_Update(void *param, INT16 **inputs, INT16 **buf, int samples)
+void SCSP_Update(void *param, INT16 **inputs, INT16 *l, INT16 *r)
 {
-	struct _SCSP *SCSP = AllocedSCSP;
-	bufferl = buf[0];
-	bufferr = buf[1];
-	length = samples;
-	SCSP_DoMasterSamples(SCSP, samples);
+	SCSP_DoMasterSample(AllocedSCSP, l, r);
 }
 
 void *scsp_start(const void *config)

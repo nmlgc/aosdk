@@ -30,9 +30,6 @@
 
 static corlett_t	c = {0};
 
-void *aica_start(const void *config);
-void AICA_Update(void *param, INT16 **inputs, INT16 **buf, int samples);
-
 int32 dsf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
@@ -123,14 +120,12 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 
 int32 dsf_sample(int16 *l, int16 *r)
 {
-	int16 *stereo[2] = {l, r};
-
 	#if DK_CORE
 	ARM7_Execute((33000000 / 60 / 4) / 735);
 	#else
 	arm7_execute((33000000 / 60 / 4) / 735);
 	#endif
-	AICA_Update(NULL, NULL, stereo, 1);
+	AICA_Update(NULL, NULL, l, r);
 	corlett_sample_fade(l, r);
 
 	return AO_SUCCESS;

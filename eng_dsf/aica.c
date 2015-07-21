@@ -217,11 +217,6 @@ static void aica_exec_dma(struct _AICA *aica);       /*state DMA transfer functi
 
 static const float SDLT[16]={-1000000.0,-42.0,-39.0,-36.0,-33.0,-30.0,-27.0,-24.0,-21.0,-18.0,-15.0,-12.0,-9.0,-6.0,-3.0,0.0};
 
-static INT16 *bufferl;
-static INT16 *bufferr;
-
-static int length;
-
 static signed short *RBUFDST;	//this points to where the sample will be stored in the RingBuf
 
 static unsigned char DecodeSCI(struct _AICA *AICA, unsigned char irq)
@@ -1220,64 +1215,56 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 	return sample;
 }
 
-static void AICA_DoMasterSamples(struct _AICA *AICA, int nsamples)
+static void AICA_DoMasterSample(struct _AICA *AICA, INT16 *l, INT16 *r)
 {
-	INT16 *bufr,*bufl;
-	int sl, s, i;
+	int sl, i;
+	INT32 smpl, smpr;
 
-	bufr=bufferr;
-	bufl=bufferl;
+	smpl = smpr = 0;
 
-	for(s=0; s<nsamples; ++s)
+	// mix slots' direct output
+	for(sl=0; sl<64; ++sl)
 	{
-		INT32 smpl, smpr;
-
-		smpl = smpr = 0;
-
-		// mix slots' direct output
-		for(sl=0; sl<64; ++sl)
+		struct _SLOT *slot=AICA->Slots+sl;
+		RBUFDST=AICA->RINGBUF+AICA->BUFPTR;
+		if(AICA->Slots[sl].active)
 		{
-			struct _SLOT *slot=AICA->Slots+sl;
-			RBUFDST=AICA->RINGBUF+AICA->BUFPTR;
-			if(AICA->Slots[sl].active)
+			unsigned int Enc;
+			signed int sample;
+
+			sample=AICA_UpdateSlot(AICA, slot);
+
+			Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
+			AICADSP_SetSample(&AICA->DSP,(sample*AICA->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
+			Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
 			{
-				unsigned int Enc;
-				signed int sample;
-
-				sample=AICA_UpdateSlot(AICA, slot);
-
-				Enc=((TL(slot))<<0x0)|((IMXL(slot))<<0xd);
-				AICADSP_SetSample(&AICA->DSP,(sample*AICA->LPANTABLE[Enc])>>(SHIFT-2),ISEL(slot),IMXL(slot));
-				Enc=((TL(slot))<<0x0)|((DIPAN(slot))<<0x8)|((DISDL(slot))<<0xd);
-				{
-					smpl+=(sample*AICA->LPANTABLE[Enc])>>SHIFT;
-					smpr+=(sample*AICA->RPANTABLE[Enc])>>SHIFT;
-				}
-			}
-
-			AICA->BUFPTR&=63;
-		}
-
-		// process the DSP
-		AICADSP_Step(&AICA->DSP);
-
-		// mix DSP output
-		for(i=0; i<16; ++i)
-		{
-			if(EFSDL(i))
-			{
-				unsigned int Enc=((EFPAN(i))<<0x8)|((EFSDL(i))<<0xd);
-				smpl+=(AICA->DSP.EFREG[i]*AICA->LPANTABLE[Enc])>>SHIFT;
-				smpr+=(AICA->DSP.EFREG[i]*AICA->RPANTABLE[Enc])>>SHIFT;
+				smpl+=(sample*AICA->LPANTABLE[Enc])>>SHIFT;
+				smpr+=(sample*AICA->RPANTABLE[Enc])>>SHIFT;
 			}
 		}
 
-		*bufl++ = ICLIP16(smpl>>3);
-		*bufr++ = ICLIP16(smpr>>3);
-
-		AICA_TimersAddTicks(AICA, 1);
-		CheckPendingIRQ(AICA);
+		AICA->BUFPTR&=63;
 	}
+
+	// process the DSP
+	AICADSP_Step(&AICA->DSP);
+
+	// mix DSP output
+	for(i=0; i<16; ++i)
+	{
+		if(EFSDL(i))
+		{
+			unsigned int Enc=((EFPAN(i))<<0x8)|((EFSDL(i))<<0xd);
+			smpl+=(AICA->DSP.EFREG[i]*AICA->LPANTABLE[Enc])>>SHIFT;
+			smpr+=(AICA->DSP.EFREG[i]*AICA->RPANTABLE[Enc])>>SHIFT;
+		}
+	}
+
+	*l = ICLIP16(smpl>>3);
+	*r = ICLIP16(smpr>>3);
+
+	AICA_TimersAddTicks(AICA, 1);
+	CheckPendingIRQ(AICA);
 }
 
 /* TODO: this needs to be timer-ized */
@@ -1367,13 +1354,9 @@ int AICA_IRQCB(void *param)
 	return -1;
 }
 
-void AICA_Update(void *param, INT16 **inputs, INT16 **buf, int samples)
+void AICA_Update(void *param, INT16 **inputs, INT16 *l, INT16 *r)
 {
-	struct _AICA *AICA = AllocedAICA;
-	bufferl = buf[0];
-	bufferr = buf[1];
-	length = samples;
-	AICA_DoMasterSamples(AICA, samples);
+	AICA_DoMasterSample(AllocedAICA, l, r);
 }
 
 void *aica_start(const void *config)
