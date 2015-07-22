@@ -122,7 +122,6 @@ static FILE *fpRawDataR;
 #endif
 
 /* Function prototypes */
-void qsound_update( int num, INT16 **buffer, int length );
 void qsound_set_command(int data, int value);
 
 #if QSOUND_DRIVER2
@@ -389,65 +388,54 @@ void qsound_set_command(int data, int value)
 
 /* Driver 1 - based on the Amuse source */
 
-void qsound_update( int num, INT16 **buffer, int length )
+void qsound_update( int num, INT16 *l, INT16 *r )
 {
-	int i,j;
+	int i;
 	int rvol, lvol, count;
 	struct QSOUND_CHANNEL *pC=&qsound_channel[0];
 	QSOUND_SRC_SAMPLE * pST;
-	QSOUND_SAMPLE  *datap[2];
 
-	datap[0] = buffer[0];
-	datap[1] = buffer[1];
-	memset( datap[0], 0x00, length * sizeof(QSOUND_SAMPLE) );
-	memset( datap[1], 0x00, length * sizeof(QSOUND_SAMPLE) );
-
+	*l = 0;
+	*r = 0;
 
 	for (i=0; i<QSOUND_CHANNELS; i++)
 	{
 		if (pC->key)
 		{
-			QSOUND_SAMPLE *pOutL=datap[0];
-			QSOUND_SAMPLE *pOutR=datap[1];
 			pST=qsound_sample_rom+pC->bank;
 
 			rvol=(pC->rvol*pC->vol)>>(8*LENGTH_DIV);
 			lvol=(pC->lvol*pC->vol)>>(8*LENGTH_DIV);
 
-			for (j=length-1; j>=0; j--)
+			count=(pC->offset)>>16;
+			pC->offset &= 0xffff;
+			if (count)
 			{
-				count=(pC->offset)>>16;
-				pC->offset &= 0xffff;
-				if (count)
+				pC->address += count;
+				if (pC->address >= pC->end)
 				{
-					pC->address += count;
-					if (pC->address >= pC->end)
+					if (!pC->loop)
 					{
-						if (!pC->loop)
-						{
-							/* Reached the end of a non-looped sample */
-							pC->key=0;
-							break;
-						}
-						/* Reached the end, restart the loop */
-						pC->address = (pC->end - pC->loop) & 0xffff;
+						/* Reached the end of a non-looped sample */
+						pC->key=0;
+						break;
 					}
-					pC->lastdt = pST[pC->address];
+					/* Reached the end, restart the loop */
+					pC->address = (pC->end - pC->loop) & 0xffff;
 				}
-
-				(*pOutL) += ((pC->lastdt * lvol) >> 6);
-				(*pOutR) += ((pC->lastdt * rvol) >> 6);
-				pOutL++;
-				pOutR++;
-				pC->offset += pC->pitch;
+				pC->lastdt = pST[pC->address];
 			}
+
+			*l += ((pC->lastdt * lvol) >> 6);
+			*r += ((pC->lastdt * rvol) >> 6);
+			pC->offset += pC->pitch;
 		}
 		pC++;
 	}
 
 #if LOG_WAVE
-	fwrite(datap[0], length*sizeof(QSOUND_SAMPLE), 1, fpRawDataL);
-	fwrite(datap[1], length*sizeof(QSOUND_SAMPLE), 1, fpRawDataR);
+	fwrite(l, sizeof(INT16), 1, fpRawDataL);
+	fwrite(r, sizeof(INT16), 1, fpRawDataR);
 #endif
 }
 

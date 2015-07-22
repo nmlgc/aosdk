@@ -225,10 +225,8 @@ static void timer_tick(void)
 
 int32 qsf_sample(int16 *l, int16 *r)
 {
-	int16 *stereo[2] = {l, r};
-
 	z80_execute((8000000/44100));
-	qsound_update(0, stereo, 1);
+	qsound_update(0, l, r);
 
 	samples_to_next_tick --;
 

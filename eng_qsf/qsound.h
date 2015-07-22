@@ -22,6 +22,6 @@ void qsound_data_h_w(int data);
 void qsound_data_l_w(int data);
 void qsound_cmd_w(int data);
 int qsound_status_r(void);
-void qsound_update( int num, INT16 **buffer, int length );
+void qsound_update( int num, INT16 *l, INT16 *r );
 
 #endif /* __QSOUND_H__ */
