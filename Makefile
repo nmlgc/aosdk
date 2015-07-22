@@ -30,7 +30,7 @@
 CC   = gcc
 LD   = gcc
 CPP  = g++
-CFLAGS = -c -O3 -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
+CFLAGS = -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
 
@@ -78,6 +78,15 @@ OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.
 
 SRCS=$(OBJS:.o=.c)
 
+all: release
+.PHONY: debug release
+
+debug: CFLAGS += -g
+debug: $(EXE)
+
+release: CFLAGS += -O3
+release: $(EXE)
+
 %.o: %.c
 	@echo Compiling $<...
 	@$(CC) $(CFLAGS) $< -o $@
@@ -85,8 +94,6 @@ SRCS=$(OBJS:.o=.c)
 %.o: %.cpp
 	@echo Compiling $<...
 	@$(CPP) $(CFLAGS) $< -o $@
-
-all: $(EXE)
 
 $(EXE): $(OBJS)
 	@echo Linking $(EXE)...

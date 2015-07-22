@@ -28,6 +28,14 @@ On Linux, set the environment variable `OSTYPE` to `linux` before you run
 To build on a big-endian platform, change `LSB_FIRST=1` to `=0` in the
 Makefile.
 
+By default, the code is compiled with optimizations using the `release` make
+target. Use the `debug` target to generate debugging information and disable
+optimizations:
+
+```
+	make debug
+```
+
 New in Release 1.4.8
 - Guard against invalid data sometimes created by makessf.py (fixes crashing
   Pebble Beach ST-V rips)
