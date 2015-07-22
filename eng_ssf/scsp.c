@@ -1003,7 +1003,7 @@ INLINE INT32 SCSP_UpdateSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	return sample;
 }
 
-static void SCSP_DoMasterSample(struct _SCSP *SCSP, INT16 *l, INT16 *r)
+static void SCSP_DoMasterSample(struct _SCSP *SCSP, stereo_sample_t *sample)
 {
 	int sl, i;
 
@@ -1059,8 +1059,8 @@ static void SCSP_DoMasterSample(struct _SCSP *SCSP, INT16 *l, INT16 *r)
 		}
 	}
 
-	*l = ICLIP16(smpl>>2);
-	*r = ICLIP16(smpr>>2);
+	sample->l = ICLIP16(smpl>>2);
+	sample->r = ICLIP16(smpr>>2);
 
 	SCSP_TimersAddTicks(SCSP, 1);
 	CheckPendingIRQ(SCSP);
@@ -1123,9 +1123,9 @@ int SCSP_IRQCB(void *param)
 	return -1;
 }
 
-void SCSP_Update(void *param, INT16 **inputs, INT16 *l, INT16 *r)
+void SCSP_Update(void *param, INT16 **inputs, stereo_sample_t *sample)
 {
-	SCSP_DoMasterSample(AllocedSCSP, l, r);
+	SCSP_DoMasterSample(AllocedSCSP, sample);
 }
 
 void *scsp_start(const void *config)

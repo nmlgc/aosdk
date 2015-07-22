@@ -118,15 +118,15 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 dsf_sample(int16 *l, int16 *r)
+int32 dsf_sample(stereo_sample_t *sample)
 {
 	#if DK_CORE
 	ARM7_Execute((33000000 / 60 / 4) / 735);
 	#else
 	arm7_execute((33000000 / 60 / 4) / 735);
 	#endif
-	AICA_Update(NULL, NULL, l, r);
-	corlett_sample_fade(l, r);
+	AICA_Update(NULL, NULL, sample);
+	corlett_sample_fade(sample);
 
 	return AO_SUCCESS;
 }

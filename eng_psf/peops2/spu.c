@@ -340,7 +340,7 @@ INLINE void StartSound(int ch)
 
 ////////////////////////////////////////////////////////////////////////
 
-EXPORT_GCC int CALLBACK SPU2sample(s16 *l, s16 *r)
+EXPORT_GCC int CALLBACK SPU2sample(stereo_sample_t *sample)
 {
 	int s_1,s_2,fa,voldiv=iVolume;
 	unsigned char * start;
@@ -765,9 +765,9 @@ ENDX:
 			d2=32767;
 		}
 
-		corlett_sample_fade(&d, &d2);
-		*l=d;
-		*r=d2;
+		sample->l=d;
+		sample->r=d2;
+		corlett_sample_fade(sample);
 
 		InitREVERB();
 	// }

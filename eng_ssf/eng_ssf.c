@@ -184,11 +184,11 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 ssf_sample(int16 *l, int16 *r)
+int32 ssf_sample(stereo_sample_t *sample)
 {
 	m68k_execute((11300000/60)/735);
-	SCSP_Update(NULL, NULL, l, r);
-	corlett_sample_fade(l, r);
+	SCSP_Update(NULL, NULL, sample);
+	corlett_sample_fade(sample);
 
 	return AO_SUCCESS;
 }

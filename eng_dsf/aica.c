@@ -1215,7 +1215,7 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 	return sample;
 }
 
-static void AICA_DoMasterSample(struct _AICA *AICA, INT16 *l, INT16 *r)
+static void AICA_DoMasterSample(struct _AICA *AICA, stereo_sample_t *sample)
 {
 	int sl, i;
 	INT32 smpl, smpr;
@@ -1260,8 +1260,8 @@ static void AICA_DoMasterSample(struct _AICA *AICA, INT16 *l, INT16 *r)
 		}
 	}
 
-	*l = ICLIP16(smpl>>3);
-	*r = ICLIP16(smpr>>3);
+	sample->l = ICLIP16(smpl>>3);
+	sample->r = ICLIP16(smpr>>3);
 
 	AICA_TimersAddTicks(AICA, 1);
 	CheckPendingIRQ(AICA);
@@ -1354,9 +1354,9 @@ int AICA_IRQCB(void *param)
 	return -1;
 }
 
-void AICA_Update(void *param, INT16 **inputs, INT16 *l, INT16 *r)
+void AICA_Update(void *param, INT16 **inputs, stereo_sample_t *sample)
 {
-	AICA_DoMasterSample(AllocedAICA, l, r);
+	AICA_DoMasterSample(AllocedAICA, sample);
 }
 
 void *aica_start(const void *config)

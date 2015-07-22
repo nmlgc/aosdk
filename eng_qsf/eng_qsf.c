@@ -223,10 +223,10 @@ static void timer_tick(void)
 	z80_set_irq_line(0, CLEAR_LINE);
 }
 
-int32 qsf_sample(int16 *l, int16 *r)
+int32 qsf_sample(stereo_sample_t *sample)
 {
 	z80_execute((8000000/44100));
-	qsound_update(0, l, r);
+	qsound_update(0, sample);
 
 	samples_to_next_tick --;
 

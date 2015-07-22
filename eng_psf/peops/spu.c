@@ -181,7 +181,7 @@ static INLINE void StartSound(int ch)
 ////////////////////////////////////////////////////////////////////////
 
 #define CLIP(_x) {if(_x>32767) _x=32767; if(_x<-32767) _x=-32767;}
-int SPUsample(s16 *l, s16 *r)
+int SPUsample(stereo_sample_t *sample)
 {
 	int volmul=iVolume;
 
@@ -421,7 +421,6 @@ ENDX:
 	///////////////////////////////////////////////////////
 	// mix all channels (including reverb) into one buffer
 	MixREVERBLeftRight(&sl,&sr,revLeft,revRight);
-	corlett_sample_fade(&sl,&sr);
 	sl=(sl*volmul)>>8;
 	sr=(sr*volmul)>>8;
 
@@ -452,8 +451,9 @@ ENDX:
 		sr=-32767;
 	}
 
-	*l=sl;
-	*r=sr;
+	sample->l=sl;
+	sample->r=sr;
+	corlett_sample_fade(sample);
 
 	return(1);
 }

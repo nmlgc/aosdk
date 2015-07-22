@@ -577,9 +577,9 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 psf2_sample(int16 *l, int16 *r)
+int32 psf2_sample(stereo_sample_t *sample)
 {
-	SPU2sample(l, r);
+	SPU2sample(sample);
 	ps2_hw_slice();
 
 	return AO_SUCCESS;

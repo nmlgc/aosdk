@@ -388,15 +388,15 @@ void qsound_set_command(int data, int value)
 
 /* Driver 1 - based on the Amuse source */
 
-void qsound_update( int num, INT16 *l, INT16 *r )
+void qsound_update( int num, stereo_sample_t *sample )
 {
 	int i;
 	int rvol, lvol, count;
 	struct QSOUND_CHANNEL *pC=&qsound_channel[0];
 	QSOUND_SRC_SAMPLE * pST;
 
-	*l = 0;
-	*r = 0;
+	sample->l = 0;
+	sample->r = 0;
 
 	for (i=0; i<QSOUND_CHANNELS; i++)
 	{
@@ -426,8 +426,8 @@ void qsound_update( int num, INT16 *l, INT16 *r )
 				pC->lastdt = pST[pC->address];
 			}
 
-			*l += ((pC->lastdt * lvol) >> 6);
-			*r += ((pC->lastdt * rvol) >> 6);
+			sample->l += ((pC->lastdt * lvol) >> 6);
+			sample->r += ((pC->lastdt * rvol) >> 6);
 			pC->offset += pC->pitch;
 		}
 		pC++;

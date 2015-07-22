@@ -281,7 +281,7 @@ uint32 corlett_sample_count(void)
 	return total_samples;
 }
 
-void corlett_sample_fade(int16 *l, int16 *r)
+void corlett_sample_fade(stereo_sample_t *sample)
 {
 	if(total_samples >= decaybegin)
 	{
@@ -289,14 +289,14 @@ void corlett_sample_fade(int16 *l, int16 *r)
 		if(total_samples >= decayend)
 		{
 			ao_song_done = 1;
-			*l = 0;
-			*r = 0;
+			sample->l = 0;
+			sample->r = 0;
 		}
 		else
 		{
 			fader = 256 - (256 * (total_samples - decaybegin) / (decayend - decaybegin));
-			*l = (*l * fader) >> 8;
-			*r = (*r * fader) >> 8;
+			sample->l = (sample->l * fader) >> 8;
+			sample->r = (sample->r * fader) >> 8;
 		}
 	}
 	total_samples++;

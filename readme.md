@@ -45,12 +45,11 @@ Entry points of an AO engine are as follows:
 	the file.  The return value is `AO_SUCCESS` if the engine properly
 	loaded the file and `AO_FAIL` if it didn't.
 
-* `int32 XXX_sample(int16 *, int16 *)`
+* `int32 XXX_sample(stereo_sample_t *)`
 
-	This function actually plays the song and generates the next sample in
-	16-bit stereo format at 44100 Hz.  The two parameters are pointers to
-	the one int16 value that receives the sample value of the left and
-	right channel, respectively.
+	This function actually plays the song, generates the next sample in
+	16-bit stereo format at 44100 Hz, and returns it through the given
+	pointer.
 
 * `int32 XXX_frame(void)`
 

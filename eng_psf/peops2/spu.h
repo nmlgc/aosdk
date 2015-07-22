@@ -34,6 +34,6 @@ EXPORT_GCC void CALLBACK SPU2playADPCMchannel(xa_decode_t *xap);
 
 EXPORT_GCC long CALLBACK SPU2init(void);
 EXPORT_GCC long CALLBACK SPU2open(void *pDsp);
-EXPORT_GCC int CALLBACK SPU2async(s16 *l, s16 *r);
+EXPORT_GCC int CALLBACK SPU2sample(stereo_sample_t *sample);
 EXPORT_GCC void CALLBACK SPU2close(void);
 

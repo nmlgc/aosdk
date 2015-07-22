@@ -178,6 +178,11 @@ static uint32 INLINE SWAP32(uint32 x)
 
 #endif
 
+typedef struct {
+	int16 l;
+	int16 r;
+} stereo_sample_t;
+
 int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length);
 
 #endif // AO_H

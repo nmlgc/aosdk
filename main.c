@@ -42,7 +42,7 @@ static struct
 	uint32 sig;
 	char *name;
 	int32 (*start)(uint8 *, uint32);
-	int32 (*sample)(int16 *, int16 *);
+	int32 (*sample)(stereo_sample_t *);
 	int32 (*frame)(void);
 	int32 (*stop)(void);
 	int32 (*command)(int32, int32);
@@ -122,13 +122,13 @@ int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length)
 	return AO_SUCCESS;
 }
 
-static void do_frame(uint32 size, int16 *buffer)
+static void do_frame(uint32 size, stereo_sample_t *buffer)
 {
 	uint32 i;
 	for (i = 0; i < size; i++)
 	{
-		(*types[type].sample)(&buffer[0], &buffer[1]);
-		buffer += 2;
+		(*types[type].sample)(buffer);
+		buffer++;
 	}
 	(*types[type].frame)();
 }

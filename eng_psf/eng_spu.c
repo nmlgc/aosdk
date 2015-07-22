@@ -115,7 +115,7 @@ int32 spu_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-extern int SPUsample(int16 *l, int16 *r);
+extern int SPUsample(stereo_sample_t *);
 
 static void spu_tick(void)
 {
@@ -209,10 +209,10 @@ static void spu_tick(void)
 	cur_tick++;
 }
 
-int32 spu_sample(int16 *l, int16 *r)
+int32 spu_sample(stereo_sample_t *sample)
 {
 	spu_tick();
-	SPUsample(l, r);
+	SPUsample(sample);
 
 	return AO_SUCCESS;
 }

@@ -337,10 +337,10 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	return AO_SUCCESS;
 }
 
-int32 psf_sample(int16 *l, int16 *r)
+int32 psf_sample(stereo_sample_t *sample)
 {
 	psx_hw_slice();
-	SPUsample(l, r);
+	SPUsample(sample);
 
 	return AO_SUCCESS;
 }

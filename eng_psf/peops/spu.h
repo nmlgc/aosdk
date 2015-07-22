@@ -26,7 +26,7 @@
 
 void sexyd_update(unsigned char* pSound,long lBytes);
 
-int SPUsample(s16 *l, s16 *r);
+int SPUsample(stereo_sample_t *sample);
 int SPUinit(void);
 int SPUopen(void);
 int SPUclose(void);
