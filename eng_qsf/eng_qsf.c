@@ -96,7 +96,7 @@ static void qsf_walktags(uint8 *buffer, uint8 *end)
 	while (cbuf < end)
 	{
 		#ifdef DEBUG
-		printf("cbuf: %08x end: %08x\n", (uint32)cbuf, (uint32)end);
+		printf("cbuf: %p end: %p\n", cbuf, end);
 		#endif
 		offset = cbuf[3] | cbuf[4]<<8 | cbuf[5]<<16 | cbuf[6]<<24;
 		length = cbuf[7] | cbuf[8]<<8 | cbuf[9]<<16 | cbuf[10]<<24;
