@@ -42,8 +42,6 @@
 
 #include "corlett.h"
 
-#define DEBUG_LOADER	(0)
-
 static corlett_t	c = {0};
 int			psf_refresh  = -1;
 
@@ -91,7 +89,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	offset = file[0x18] | file[0x19]<<8 | file[0x1a]<<16 | file[0x1b]<<24;
 	printf("Text section start: %x\n", offset);
 	offset = file[0x1c] | file[0x1d]<<8 | file[0x1e]<<16 | file[0x1f]<<24;
@@ -116,7 +114,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	GP = file[0x14] | file[0x15]<<8 | file[0x16]<<16 | file[0x17]<<24;
 	SP = file[0x30] | file[0x31]<<8 | file[0x32]<<16 | file[0x33]<<24;
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("Top level: PC %x GP %x SP %x\n", PC, GP, SP);
 	#endif
 
@@ -125,7 +123,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	{
 		uint64 tmp_length;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Loading library: %s\n", c.lib);
 		#endif
 		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -150,7 +148,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			return AO_FAIL;
 		}
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		offset = lib_decoded[0x18] | lib_decoded[0x19]<<8 | lib_decoded[0x1a]<<16 | lib_decoded[0x1b]<<24;
 		printf("Text section start: %x\n", offset);
 		offset = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
@@ -176,7 +174,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		GP = lib_decoded[0x14] | lib_decoded[0x15]<<8 | lib_decoded[0x16]<<16 | lib_decoded[0x17]<<24;
 		SP = lib_decoded[0x30] | lib_decoded[0x31]<<8 | lib_decoded[0x32]<<16 | lib_decoded[0x33]<<24;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Library: PC %x GP %x SP %x\n", PC, GP, SP);
 		#endif
 
@@ -184,7 +182,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		offset = lib_decoded[0x18] | lib_decoded[0x19]<<8 | lib_decoded[0x1a]<<16 | lib_decoded[0x1b]<<24;
 		offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
 		plength = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("library offset: %x plength: %d\n", offset, plength);
 		#endif
 		memcpy(&psx_ram[offset/4], lib_decoded+2048, plength);
@@ -212,7 +210,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		{
 			uint64 tmp_length;
 
-			#if DEBUG_LOADER
+			#ifdef DEBUG
 			printf("Loading aux library: %s\n", c.libaux[i]);
 			#endif
 
@@ -238,7 +236,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 				return AO_FAIL;
 			}
 
-			#if DEBUG_LOADER
+			#ifdef DEBUG
 			offset = alib_decoded[0x18] | alib_decoded[0x19]<<8 | alib_decoded[0x1a]<<16 | alib_decoded[0x1b]<<24;
 			printf("Text section start: %x\n", offset);
 			offset = alib_decoded[0x1c] | alib_decoded[0x1d]<<8 | alib_decoded[0x1e]<<16 | alib_decoded[0x1f]<<24;
@@ -264,7 +262,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	mips_reset(NULL);
 
 	// set the initial PC, SP, GP
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("Initial PC %x, GP %x, SP %x\n", PC, GP, SP);
 	printf("Refresh = %d\n", psf_refresh);
 	#endif
@@ -284,7 +282,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	mipsinfo.i = GP;
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_R28, &mipsinfo);
 
-	#if DEBUG_LOADER && 1
+	#ifdef DEBUG
 	{
 		FILE *f;
 
@@ -301,7 +299,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	lengthMS = psfTimeToMS(c.inf_length);
 	fadeMS = psfTimeToMS(c.inf_fade);
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("length %d fade %d\n", lengthMS, fadeMS);
 	#endif
 

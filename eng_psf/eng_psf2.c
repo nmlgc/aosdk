@@ -60,7 +60,6 @@
 
 #include "corlett.h"
 
-#define DEBUG_LOADER	(0)
 #define MAX_FS		(32)	// maximum # of filesystems (libs and subdirectories)
 
 // ELF relocation helpers
@@ -117,7 +116,7 @@ static void do_iopmod(uint8 *start, uint32 offset)
 	vers2 = start[offset+24] | start[offset+25]<<8;
 
 //	printf("nameoffs %08x saddr %08x heap %08x tsize %08x dsize %08x bsize %08x\n", nameoffs, saddr, heap, tsize, dsize, bsize);
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("vers: %04x name [%s]\n", vers2, &start[offset+26]);
 	#endif
 }
@@ -136,7 +135,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 		loadAddr += 4;
 	}
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("psf2_load_elf: starting at %08x\n", loadAddr | 0x80000000);
 	#endif
 
@@ -260,7 +259,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 				break;
 
 			default:
-				#if DEBUG_LOADER
+				#ifdef DEBUG
 				printf("Unhandled ELF section type %d\n", type);
 				#endif
 				break;
@@ -273,7 +272,7 @@ uint32 psf2_load_elf(uint8 *start, uint32 len)
 	entry |= 0x80000000;
 	loadAddr += totallen;
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("psf2_load_elf: entry PC %08x\n", entry);
 	#endif
 	return entry;
@@ -309,7 +308,7 @@ static uint32 load_file_ex(uint8 *top, uint8 *start, uint32 len, char *file, uin
 		uncomp = cptr[40] | cptr[41]<<8 | cptr[42]<<16 | cptr[43]<<24;
 		bsize = cptr[44] | cptr[45]<<8 | cptr[46]<<16 | cptr[47]<<24;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("[%s vs %s]: ofs %08x uncomp %08x bsize %08x\n", cptr, matchname, offs, uncomp, bsize);
 		#endif
 
@@ -317,7 +316,7 @@ static uint32 load_file_ex(uint8 *top, uint8 *start, uint32 len, char *file, uin
 		{
 			if ((uncomp == 0) && (bsize == 0))
 			{
-				#if DEBUG_LOADER
+				#ifdef DEBUG
 				printf("Drilling into subdirectory [%s] with [%s] at offset %x\n", matchname, remainder, offs);
 				#endif
 				return load_file_ex(top, &top[offs], len-offs, remainder, buf, buflen);
@@ -473,7 +472,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 
 	if (file_len > 0) printf("ERROR: PSF2 can't have a program section!  ps %08x\n", file_len);
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("FS section: size %x\n", c.res_size);
 	#endif
 
@@ -487,7 +486,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 		corlett_t lib;
 		uint64 tmp_length;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Loading library: %s\n", c.lib);
 		#endif
 		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -502,7 +501,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 			return AO_FAIL;
 		}
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Lib FS section: size %x bytes\n", lib.res_size);
 		#endif
 
@@ -512,7 +511,7 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	}
 
 	// dump all files
-	#if 0
+	#ifdef DEBUG
 	buf = (uint8 *)malloc(16*1024*1024);
 	dump_files(0, buf, 16*1024*1024);
 	if (c.lib)

@@ -75,8 +75,6 @@ Sega driver commands:
 #include "sat_hw.h"
 #include "scsp.h"
 
-#define DEBUG_LOADER	(0)
-
 static corlett_t	c = {0};
 
 int32 ssf_start(uint8 *buffer, uint32 length)
@@ -95,7 +93,7 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("%d bytes decoded\n", file_len);
 	#endif
 
@@ -108,7 +106,7 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 			corlett_t lib;
 			uint64 tmp_length;
 
-			#if DEBUG_LOADER
+			#ifdef DEBUG
 			printf("Loading library: %s\n", c.lib);
 			#endif
 			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -154,7 +152,7 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 
 	free(file);
 
-	#if DEBUG_LOADER && 1
+	#ifdef DEBUG
 	{
 		FILE *f;
 

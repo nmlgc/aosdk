@@ -81,10 +81,10 @@ SRCS=$(OBJS:.o=.c)
 all: release
 .PHONY: debug release
 
-debug: CFLAGS += -g
+debug: CFLAGS += -g -DDEBUG
 debug: $(EXE)
 
-release: CFLAGS += -O3
+release: CFLAGS += -O3 -DNDEBUG
 release: $(EXE)
 
 %.o: %.c

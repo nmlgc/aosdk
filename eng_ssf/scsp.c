@@ -418,8 +418,10 @@ static void SCSP_StartSlot(struct _SCSP *SCSP, struct _SLOT *slot)
 	slot->Prev=0;
 	Compute_LFO(slot);
 
-//	printf("StartSlot: SA %x PCM8B %x LPCTL %x ALFOS %x STWINH %x TL %x EFSDL %x\n", SA(slot), PCM8B(slot), LPCTL(slot), ALFOS(slot), STWINH(slot), TL(slot), EFSDL(slot));
-//	printf("           AR %x D1R %x D2R %x RR %x DL %x KRS %x EGHOLD %x LPSLNK %x\n", AR(slot), D1R(slot), D2R(slot), RR(slot), DL(slot), KRS(slot), EGHOLD(slot), LPSLNK(slot));
+#ifdef DEBUG
+	printf("StartSlot: SA %x PCM8B %x LPCTL %x ALFOS %x STWINH %x TL %x EFSDL %x\n", SA(slot), PCM8B(slot), LPCTL(slot), ALFOS(slot), STWINH(slot), TL(slot), EFSDL(slot));
+	printf("           AR %x D1R %x D2R %x RR %x DL %x KRS %x EGHOLD %x LPSLNK %x\n", AR(slot), D1R(slot), D2R(slot), RR(slot), DL(slot), KRS(slot), EGHOLD(slot), LPSLNK(slot));
+#endif
 }
 
 static void SCSP_StopSlot(struct _SLOT *slot,int keyoff)

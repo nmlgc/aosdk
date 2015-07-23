@@ -19,7 +19,6 @@
 #include "dc_hw.h"
 #include "aica.h"
 
-#define DEBUG_LOADER	(0)
 #define DK_CORE	(1)
 
 #if DK_CORE
@@ -46,7 +45,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-	#if DEBUG_LOADER
+	#ifdef DEBUG
 	printf("%d bytes decoded\n", file_len);
 	#endif
 
@@ -59,7 +58,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 			corlett_t lib;
 			uint64 tmp_length;
 
-			#if DEBUG_LOADER
+			#ifdef DEBUG
 			printf("Loading library: %s\n", c.lib);
 			#endif
 			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -92,7 +91,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 
 	free(file);
 
-	#if DEBUG_LOADER && 1
+	#ifdef DEBUG
 	{
 		FILE *f;
 

@@ -66,8 +66,6 @@ that no encryption is used.
 
 #include "corlett.h"
 
-#define DEBUG_LOADER	(0)
-
 // timer rate is 285 Hz
 static int32 samples_per_tick = 44100/285;
 static int32 samples_to_next_tick = 44100/285;
@@ -97,13 +95,13 @@ static void qsf_walktags(uint8 *buffer, uint8 *end)
 
 	while (cbuf < end)
 	{
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("cbuf: %08x end: %08x\n", (uint32)cbuf, (uint32)end);
 		#endif
 		offset = cbuf[3] | cbuf[4]<<8 | cbuf[5]<<16 | cbuf[6]<<24;
 		length = cbuf[7] | cbuf[8]<<8 | cbuf[9]<<16 | cbuf[10]<<24;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Tag: %c%c%c @ %08x, length %08x\n", cbuf[0], cbuf[1], cbuf[2], offset, length);
 		#endif
 
@@ -169,7 +167,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 		corlett_t lib;
 		uint64 tmp_length;
 
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Loading library: %s\n", c.lib);
 		#endif
 		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
@@ -201,7 +199,7 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 
 	if ((skey1 != 0) && (skey2 != 0))
 	{
-		#if DEBUG_LOADER
+		#ifdef DEBUG
 		printf("Decoding Kabuki: skey1 %08x skey2 %08x akey %04x xkey %02x\n", skey1, skey2, akey, xkey);
 		#endif
 

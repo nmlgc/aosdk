@@ -3221,7 +3221,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				printf("KTTY: %s [PC=%x]\n", out, mipsinfo.i);
 				#endif
 
-				#if 0
+				#ifdef DEBUG
 				{
 					FILE *f;
 					f = fopen("psxram.bin", "wb");
