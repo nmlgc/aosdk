@@ -2,7 +2,7 @@
 #define _OSS_H_
 
 extern int audiofd;
-extern void (*m1sdr_Callback)(unsigned long dwUser, signed short *smp);
+extern m1sdr_callback_t *m1sdr_Callback;
 
 // function protos
 
@@ -12,7 +12,7 @@ void m1sdr_PlayStart(void);
 void m1sdr_PlayStop(void);
 void m1sdr_TimeCheck(void);
 void m1sdr_SetSamplesPerTick(UINT32 spf);
-void m1sdr_SetCallback(void *fn);
+void m1sdr_SetCallback(m1sdr_callback_t *fn);
 INT32 m1sdr_HwPresent(void);
 void m1sdr_FlushAudio(void);
 void m1sdr_Pause(int);

@@ -30,12 +30,13 @@
 #include <dsound.h>
 
 #include "cpuintrf.h"
+#include "m1sdr.h"
 #include "oss.h"
 #include "ao.h"
 
-static INT16 samples[44100*4];	// make sure we reserve enough for worst-case scenario
+static stereo_sample_t samples[44100*2];	// make sure we reserve enough for worst-case scenario
 
-void (*m1sdr_Callback)(unsigned long dwSamples, short *samples);
+m1sdr_callback_t *m1sdr_Callback;
 static int hw_present;
 
 LPDIRECTSOUND lpDS;			// DirectSound COM object
@@ -307,14 +308,14 @@ INT32 m1sdr_HwPresent(void)
 	return hw_present;
 }
 
-void m1sdr_SetCallback(void *fn)
+void m1sdr_SetCallback(m1sdr_callback_t *fn)
 {
 	if (fn == (void *)NULL)
 	{
 		printf("ERROR: NULL CALLBACK!\n");
 	}
 
-	m1sdr_Callback = (void (*)(unsigned long, signed short *))fn;
+	m1sdr_Callback = fn;
 }
 
 void m1sdr_FlushAudio(void)

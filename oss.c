@@ -35,6 +35,7 @@
 #include <sys/soundcard.h>
 
 #include "ao.h"
+#include "m1sdr.h"
 #include "oss.h"
 
 #define LOG_WAVE 	(0)
@@ -47,7 +48,7 @@ static INT32 num_frags;
 
 // local variables
 
-void  (*m1sdr_Callback)(unsigned long dwNumSamples, signed short *data);
+m1sdr_callback_t *m1sdr_Callback;
 
 static int hw_present;
 
@@ -60,7 +61,7 @@ int audiofd;
 FILE *logfil;
 #endif
 
-static INT16 samples[44100*2];
+static stereo_sample_t samples[44100];
 
 
 // set # of samples per update
@@ -78,7 +79,7 @@ void m1sdr_Update(void)
 
 	if (m1sdr_Callback)
 	{
-		m1sdr_Callback(nDSoundSegLen, (INT16 *)samples);
+		m1sdr_Callback(nDSoundSegLen, samples);
 	}
 }
 // checks the play position to see if we should trigger another update
@@ -140,7 +141,7 @@ INT16 m1sdr_Init(int sample_rate)
 
 	nDSoundSegLen = sample_rate / 60;
 
-	memset(samples, 0, 44100*4);	// zero out samples
+	memset(samples, 0, sizeof(samples));	// zero out samples
 
 	m1sdr_Callback = NULL;
 
@@ -219,7 +220,7 @@ void m1sdr_Exit(void)
 	#endif
 }
 
-void m1sdr_SetCallback(void *fn)
+void m1sdr_SetCallback(m1sdr_callback_t *fn)
 {
 	if (fn == (void *)NULL)
 	{
@@ -227,7 +228,7 @@ void m1sdr_SetCallback(void *fn)
 	}
 
 //	printf("m1sdr_SetCallback: aok!\n");
-	m1sdr_Callback = (void (*)(unsigned long, signed short *))fn;
+	m1sdr_Callback = fn;
 }
 
 INT32 m1sdr_HwPresent(void)

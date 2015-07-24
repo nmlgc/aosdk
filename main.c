@@ -122,10 +122,10 @@ int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length)
 	return AO_SUCCESS;
 }
 
-static void do_frame(uint32 size, stereo_sample_t *buffer)
+static void do_frame(unsigned long sample_count, stereo_sample_t *buffer)
 {
-	uint32 i;
-	for (i = 0; i < size; i++)
+	unsigned long i;
+	for (i = 0; i < sample_count; i++)
 	{
 		(*types[type].sample)(buffer);
 		buffer++;
