@@ -30,14 +30,12 @@
 CC   = gcc
 LD   = gcc
 CPP  = g++
-CFLAGS = -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
+CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
 
-LDFLAGS =
-
 EXE  = aosdk
-LIBS = -lm
+LIBS += -lm
 
 # main objects
 OBJS = main.o corlett.o
