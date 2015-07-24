@@ -36,9 +36,7 @@
 static INT16 samples[44100*4];	// make sure we reserve enough for worst-case scenario
 
 void (*m1sdr_Callback)(unsigned long dwSamples, short *samples);
-unsigned long cbUserData;
-
-static int hw_present, playtime;
+static int hw_present;
 
 LPDIRECTSOUND lpDS;			// DirectSound COM object
 LPDIRECTSOUNDBUFFER lpPDSB;	// Primary DirectSound buffer
@@ -115,7 +113,6 @@ void m1sdr_TimeCheck(void)
 		if (m1sdr_Callback)
 		{
 			m1sdr_Callback(nDSoundSegLen, samples);
-			playtime++;
 		}
 		else
 		{
@@ -260,8 +257,6 @@ void m1sdr_PlayStart(void)
 
 	IDirectSoundBuffer_SetCurrentPosition(lpSecB, 0);
 	IDirectSoundBuffer_Play(lpSecB, 0, 0, DSBPLAY_LOOPING);
-
-	playtime = 0;
 }
 
 void m1sdr_PlayStop(void)
@@ -312,21 +307,6 @@ INT32 m1sdr_HwPresent(void)
 	return hw_present;
 }
 
-INT16 m1sdr_IsThere(void)
-{
-	if(DS_OK == DirectSoundCreate(NULL, &lpDS, NULL))
-	{
-		IDirectSound_Release(lpDS);
-		hw_present = 1;
-		return(1);
-	}
-	else
-	{
-		hw_present = 0;
-		return(0);
-	}
-}
-
 void m1sdr_SetCallback(void *fn)
 {
 	if (fn == (void *)NULL)
@@ -345,24 +325,4 @@ void m1sdr_FlushAudio(void)
 	m1sdr_TimeCheck();
 	m1sdr_TimeCheck();
 	m1sdr_TimeCheck();
-}
-
-short *m1sdr_GetSamples(void)
-{
-	return samples;
-}
-
-int m1sdr_GetPlayTime(void)
-{
-	int rv;
-	int fps = nDSoundFps / 10;
-
-	rv = playtime / fps;
-
-	return rv;		// total seconds
-}
-
-int m1sdr_GetPlayTimeTicks(void)
-{
-	return playtime;
 }

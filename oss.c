@@ -48,7 +48,6 @@ static INT32 num_frags;
 // local variables
 
 void  (*m1sdr_Callback)(unsigned long dwNumSamples, signed short *data);
-unsigned long cbUserData;
 
 static int hw_present;
 
@@ -60,8 +59,6 @@ int audiofd;
 #if LOG_WAVE
 FILE *logfil;
 #endif
-
-static int playtime = 0;
 
 static INT16 samples[44100*2];
 
@@ -100,7 +97,6 @@ void m1sdr_TimeCheck(void)
 		int err;
 
 		m1sdr_Update();
-		playtime++;
 
 		// output the generated samples
 		err = write(audiofd, samples, nDSoundSegLen * 4);
@@ -118,7 +114,6 @@ void m1sdr_TimeCheck(void)
 		while (info.bytes >= (nDSoundSegLen * 4))
 		{
 			m1sdr_Update();
-			playtime++;
 
 			// output the generated samples
 			write(audiofd, samples, nDSoundSegLen * 4);
@@ -235,22 +230,6 @@ void m1sdr_SetCallback(void *fn)
 	m1sdr_Callback = (void (*)(unsigned long, signed short *))fn;
 }
 
-INT16 m1sdr_IsThere(void)
-{
-	audiofd = open("/dev/dsp", O_WRONLY, 0);
-
-	if (audiofd == -1)
-	{
-		printf("Error accessing soundcard, sound will be disabled\n");
-		hw_present = 0;
-		return(0);
-	}
-
-	close(audiofd);
-	hw_present = 1;
-	return (1);
-}
-
 INT32 m1sdr_HwPresent(void)
 {
 	return hw_present;
@@ -259,7 +238,6 @@ INT32 m1sdr_HwPresent(void)
 // unused stubs for this driver, but the Win32 driver needs them
 void m1sdr_PlayStart(void)
 {
-	playtime = 0;
 }
 
 void m1sdr_PlayStop(void)
@@ -276,15 +254,5 @@ void m1sdr_FlushAudio(void)
 void m1sdr_SetNoWait(int nw)
 {
 	oss_nw = nw;
-}
-
-short *m1sdr_GetSamples(void)
-{
-	return samples;
-}
-
-int m1sdr_GetPlayTime(void)
-{
-	return playtime;
 }
 
