@@ -138,7 +138,7 @@ static void intr_handler(int sig)
 	ao_song_done = 1;
 }
 
-int main(int argv, char *argc[])
+int main(int argc, char *argv[])
 {
 	FILE *file;
 	uint8 *buffer;
@@ -147,17 +147,17 @@ int main(int argv, char *argc[])
 	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.4.8]\nCopyright (c) 2007-2009 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
 
 	// check if an argument was given
-	if (argv < 2)
+	if (argc < 2)
 	{
 		printf("Error: must specify a filename!\n");
 		return -1;
 	}
 
-	file = fopen(argc[1], "rb");
+	file = fopen(argv[1], "rb");
 
 	if (!file)
 	{
-		printf("ERROR: could not open file %s\n", argc[1]);
+		printf("ERROR: could not open file %s\n", argv[1]);
 		return -1;
 	}
 
