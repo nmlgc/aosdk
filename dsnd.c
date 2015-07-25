@@ -31,13 +31,9 @@
 
 #include "cpuintrf.h"
 #include "m1sdr.h"
-#include "oss.h"
 #include "ao.h"
 
 static stereo_sample_t samples[44100*2];	// make sure we reserve enough for worst-case scenario
-
-m1sdr_callback_t *m1sdr_Callback;
-static int hw_present;
 
 LPDIRECTSOUND lpDS;			// DirectSound COM object
 LPDIRECTSOUNDBUFFER lpPDSB;	// Primary DirectSound buffer
@@ -300,22 +296,6 @@ void m1sdr_PlayStop(void)
 		ZeroMemory(ptr, len);
 		IDirectSoundBuffer_Unlock(lpSecB, ptr, len, 0, 0);
 	}
-}
-
-
-INT32 m1sdr_HwPresent(void)
-{
-	return hw_present;
-}
-
-void m1sdr_SetCallback(m1sdr_callback_t *fn)
-{
-	if (fn == (void *)NULL)
-	{
-		printf("ERROR: NULL CALLBACK!\n");
-	}
-
-	m1sdr_Callback = fn;
 }
 
 void m1sdr_FlushAudio(void)

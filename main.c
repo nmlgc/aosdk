@@ -31,6 +31,7 @@
 
 #include "ao.h"
 #include "eng_protos.h"
+#include "m1sdr.h"
 
 /* file types */
 static uint32 type;

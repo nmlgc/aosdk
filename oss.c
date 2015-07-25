@@ -36,7 +36,6 @@
 
 #include "ao.h"
 #include "m1sdr.h"
-#include "oss.h"
 
 #define LOG_WAVE 	(0)
 #define VALGRIND 	(0)
@@ -47,11 +46,6 @@ static INT32 num_frags;
 #define OSS_FRAGMENT (0x000D | (num_frags<<16));  // 16k fragments (2 * 2^14).
 
 // local variables
-
-m1sdr_callback_t *m1sdr_Callback;
-
-static int hw_present;
-
 static INT32 is_broken_driver;
 int nDSoundSegLen = 0;
 int oss_nw = 0;
@@ -143,8 +137,6 @@ INT16 m1sdr_Init(int sample_rate)
 
 	memset(samples, 0, sizeof(samples));	// zero out samples
 
-	m1sdr_Callback = NULL;
-
 	audiofd = open("/dev/dsp", O_WRONLY, 0);
 	if (audiofd == -1)
 	{
@@ -218,22 +210,6 @@ void m1sdr_Exit(void)
 	#if LOG_WAVE
 	fclose(logfil);
 	#endif
-}
-
-void m1sdr_SetCallback(m1sdr_callback_t *fn)
-{
-	if (fn == (void *)NULL)
-	{
-		printf("ERROR: NULL CALLBACK!\n");
-	}
-
-//	printf("m1sdr_SetCallback: aok!\n");
-	m1sdr_Callback = fn;
-}
-
-INT32 m1sdr_HwPresent(void)
-{
-	return hw_present;
 }
 
 // unused stubs for this driver, but the Win32 driver needs them

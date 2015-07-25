@@ -38,7 +38,7 @@ EXE  = aosdk
 LIBS += -lm
 
 # main objects
-OBJS = main.o corlett.o
+OBJS = main.o corlett.o m1sdr.o
 
 # port objects
 ifeq ($(OSTYPE),linux)
