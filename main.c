@@ -32,10 +32,11 @@
 #include "ao.h"
 #include "eng_protos.h"
 #include "m1sdr.h"
+#include "wavedump.h"
 
 /* file types */
 static uint32 type;
-
+static wavedump_t song_dump;
 volatile ao_bool ao_song_done;
 
 static struct
@@ -126,11 +127,13 @@ int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length)
 static void do_frame(unsigned long sample_count, stereo_sample_t *buffer)
 {
 	unsigned long i;
+	stereo_sample_t *p = buffer;
 	for (i = 0; i < sample_count; i++)
 	{
-		(*types[type].sample)(buffer);
-		buffer++;
+		(*types[type].sample)(p);
+		p++;
 	}
+	wavedump_stream_append(&song_dump, sample_count, buffer);
 	(*types[type].frame)();
 }
 
@@ -219,8 +222,15 @@ int main(int argc, char *argv[])
 	m1sdr_SetCallback(do_frame);
 	m1sdr_PlayStart();
 
+	printf("\n\n");
+
+	if(wavedump_stream_open(&song_dump, argv[1]))
+	{
+		printf("Dumping to %s%s.\n", argv[1], ".wav");
+	}
+
 	signal(SIGINT, intr_handler);
-	printf("\n\nPlaying.  Press CTRL-C to stop.\n");
+	printf("Playing.  Press CTRL-C to stop.\n");
 
 	while (!ao_song_done)
 	{
@@ -228,6 +238,7 @@ int main(int argc, char *argv[])
 	}
 
 	signal(SIGINT, SIG_IGN);
+	wavedump_stream_finish(&song_dump, 44100);
 
 	free(buffer);
 
