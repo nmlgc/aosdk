@@ -37,7 +37,6 @@
 #include "ao.h"
 #include "m1sdr.h"
 
-#define LOG_WAVE 	(0)
 #define VALGRIND 	(0)
 
 #define NUM_FRAGS_BROKEN    (8)
@@ -51,9 +50,6 @@ int nDSoundSegLen = 0;
 int oss_nw = 0;
 
 int audiofd;
-#if LOG_WAVE
-FILE *logfil;
-#endif
 
 static stereo_sample_t samples[44100];
 
@@ -99,10 +95,6 @@ void m1sdr_TimeCheck(void)
 		{
 			perror("write\n");
 		}
-
-		#if LOG_WAVE
-		fwrite(samples, nDSoundSegLen*4, 1, logfil);
-		#endif
 	}
 	else
 	{
@@ -112,10 +104,6 @@ void m1sdr_TimeCheck(void)
 
 			// output the generated samples
 			write(audiofd, samples, nDSoundSegLen * 4);
-
-			#if LOG_WAVE
-			fwrite(samples, nDSoundSegLen*4, 1, logfil);
-			#endif
 
 			ioctl(audiofd, SNDCTL_DSP_GETOSPACE, &info);
 		}
@@ -195,10 +183,6 @@ INT16 m1sdr_Init(int sample_rate)
 
 	hw_present = 1;
 
-	#if LOG_WAVE
-	logfil = fopen("log.bin", "wb");
-	#endif
-
 	return (1);
 }
 
@@ -207,9 +191,6 @@ void m1sdr_Exit(void)
 	if (!hw_present) return;
 
 	close(audiofd);
-	#if LOG_WAVE
-	fclose(logfil);
-	#endif
 }
 
 // unused stubs for this driver, but the Win32 driver needs them

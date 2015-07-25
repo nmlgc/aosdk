@@ -51,7 +51,6 @@ to be modified to work with non-intel machines.
 /*
 Debug defines
 */
-#define LOG_WAVE	0
 #define LOG_QSOUND  0
 
 /* Typedefs & defines */
@@ -116,11 +115,6 @@ static int qsound_pan_table[33];		 /* Pan volume table */
 static float qsound_frq_ratio;		   /* Frequency ratio */
 #endif
 
-#if LOG_WAVE
-static FILE *fpRawDataL;
-static FILE *fpRawDataR;
-#endif
-
 /* Function prototypes */
 void qsound_set_command(int data, int value);
 
@@ -182,30 +176,12 @@ int  qsound_sh_start( struct QSound_interface *qsintf )
 			qsound_update );
 	}
 #endif
-#if LOG_WAVE
-	fpRawDataR=fopen("qsoundr.raw", "w+b");
-	fpRawDataL=fopen("qsoundl.raw", "w+b");
-	if (!fpRawDataR || !fpRawDataL)
-	{
-		return 1;
-	}
-#endif
 
 	return 0;
 }
 
 void qsound_sh_stop (void)
 {
-#if LOG_WAVE
-	if (fpRawDataR)
-	{
-		fclose(fpRawDataR);
-	}
-	if (fpRawDataL)
-	{
-		fclose(fpRawDataL);
-	}
-#endif
 }
 
 void qsound_data_h_w(int data)
@@ -432,11 +408,6 @@ void qsound_update( int num, stereo_sample_t *sample )
 		}
 		pC++;
 	}
-
-#if LOG_WAVE
-	fwrite(l, sizeof(INT16), 1, fpRawDataL);
-	fwrite(r, sizeof(INT16), 1, fpRawDataR);
-#endif
 }
 
 #else
