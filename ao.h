@@ -41,10 +41,6 @@ typedef unsigned char ao_bool;
 #include <stddef.h>	// get NULL
 #include <stdbool.h>
 
-#ifndef nil
-#define nil NULL
-#endif
-
 #ifndef TRUE
 #define TRUE  (1)
 #endif
@@ -52,17 +48,10 @@ typedef unsigned char ao_bool;
 #define FALSE (0)
 #endif
 
-#define xmalloc(a) malloc(a)
-
 #endif
 
 #ifdef _MSC_VER
 #include <stddef.h>	// get NULL
-#include <wchar.h> // for off_t
-
-#ifndef nil
-#define nil NULL
-#endif
 
 #ifndef TRUE
 #define TRUE  (1)
@@ -73,8 +62,6 @@ typedef unsigned char ao_bool;
 
 #define true (1)
 #define false (0)
-
-#define xmalloc(a) malloc(a)
 
 #define strcasecmp _strcmpi
 
