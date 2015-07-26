@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "argparse/argparse.h"
 #include "ao.h"
 #include "eng_protos.h"
 #include "m1sdr.h"
@@ -142,26 +143,47 @@ static void intr_handler(int sig)
 	ao_song_done = 1;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
 	FILE *file;
 	uint8 *buffer;
 	uint32 size, filesig;
 
-	printf("AOSDK test program v1.0 by R. Belmont [AOSDK release 1.4.8]\nCopyright (c) 2007-2009 R. Belmont and Richard Bannister - please read license.txt for license details\n\n");
+	const char *const usages[] =
+	{
+		"aosdk filename",
+		NULL
+	};
+
+	struct argparse_option options[] =
+	{
+		OPT_HELP(),
+		OPT_END()
+	};
+
+	struct argparse argparse;
+	argparse_init(&argparse, options, usages, 0);
+	argparse_describe(&argparse,
+		"\n"
+		"AOSDK test program v1.0 by R. Belmont [AOSDK release 1.4.8]\n"
+		"Copyright (c) 2007-2009 R. Belmont and Richard Bannister - please read license.txt for license details",
+		NULL
+	);
+
+	argc = argparse_parse(&argparse, argc, argv);
 
 	// check if an argument was given
-	if (argc < 2)
+	if (argc < 1)
 	{
-		printf("Error: must specify a filename!\n");
+		argparse_usage(&argparse);
 		return -1;
 	}
 
-	file = fopen(argv[1], "rb");
+	file = fopen(argv[0], "rb");
 
 	if (!file)
 	{
-		printf("ERROR: could not open file %s\n", argv[1]);
+		printf("ERROR: could not open file %s\n", argv[0]);
 		return -1;
 	}
 
@@ -222,11 +244,9 @@ int main(int argc, char *argv[])
 	m1sdr_SetCallback(do_frame);
 	m1sdr_PlayStart();
 
-	printf("\n\n");
-
-	if(wavedump_stream_open(&song_dump, argv[1]))
+	if(wavedump_stream_open(&song_dump, argv[0]))
 	{
-		printf("Dumping to %s%s.\n", argv[1], ".wav");
+		printf("Dumping to %s%s.\n", argv[0], ".wav");
 	}
 
 	signal(SIGINT, intr_handler);

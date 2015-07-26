@@ -15,6 +15,11 @@ You may use this code to play the formats on systems we don't support or
 inside of applications other than AO.
 
 ##### Compilation
+Make sure that you've pulled all Git submodules together with this repo:
+```
+	git clone --recursive https://github.com/nmlgc/aosdk.git
+```
+
 On Windows, either MinGW or Cygwin are required to build the code through the
 Makefile.
 
