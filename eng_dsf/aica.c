@@ -119,7 +119,6 @@ struct _SLOT
 	UINT32 step;		//pitch step (24.8)
 	UINT8 Backwards;	//the wave is playing backwards
 	struct _EG EG;			//Envelope
-	struct _EG FEG;			//filter envelope
 	struct _LFO PLFO;		//Phase LFO
 	struct _LFO ALFO;		//Amplitude LFO
 	int slot;
@@ -173,8 +172,6 @@ struct _AICA
 	UINT16 IRQL, IRQR;
 	UINT16 EFSPAN[0x48];
 	struct _SLOT Slots[64];
-	signed short RINGBUF[64];
-	unsigned char BUFPTR;
 	unsigned char *AICARAM;
 	UINT32 AICARAM_LENGTH, RAM_MASK, RAM_MASK16;
 	char Master;
@@ -216,8 +213,6 @@ static struct _AICA *AllocedAICA;
 static void aica_exec_dma(struct _AICA *aica);       /*state DMA transfer function*/
 
 static const float SDLT[16]={-1000000.0,-42.0,-39.0,-36.0,-33.0,-30.0,-27.0,-24.0,-21.0,-18.0,-15.0,-12.0,-9.0,-6.0,-3.0,0.0};
-
-static signed short *RBUFDST;	//this points to where the sample will be stored in the RingBuf
 
 static unsigned char DecodeSCI(struct _AICA *AICA, unsigned char irq)
 {
@@ -1023,8 +1018,6 @@ static unsigned short AICA_r16(struct _AICA *AICA, unsigned int addr)
 		else if(addr<0x45c8)
 			v = *((unsigned short *) (AICA->DSP.EXTS+(addr-0x45c0)/2));
 	}
-//	else if (addr<0x700)
-//		v=AICA->RINGBUF[(addr-0x600)/2];
 	return v;
 }
 
@@ -1226,7 +1219,6 @@ static void AICA_DoMasterSample(struct _AICA *AICA, stereo_sample_t *sample)
 	for(sl=0; sl<64; ++sl)
 	{
 		struct _SLOT *slot=AICA->Slots+sl;
-		RBUFDST=AICA->RINGBUF+AICA->BUFPTR;
 		if(AICA->Slots[sl].active)
 		{
 			unsigned int Enc;
@@ -1242,8 +1234,6 @@ static void AICA_DoMasterSample(struct _AICA *AICA, stereo_sample_t *sample)
 				smpr+=(sample*AICA->RPANTABLE[Enc])>>SHIFT;
 			}
 		}
-
-		AICA->BUFPTR&=63;
 	}
 
 	// process the DSP
