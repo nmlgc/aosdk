@@ -148,6 +148,7 @@ int main(int argc, const char *argv[])
 	FILE *file;
 	uint8 *buffer;
 	uint32 size, filesig;
+	int noplay = false;
 
 	const char *const usages[] =
 	{
@@ -158,6 +159,7 @@ int main(int argc, const char *argv[])
 	struct argparse_option options[] =
 	{
 		OPT_HELP(),
+		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
 		OPT_END()
 	};
 
@@ -240,21 +242,32 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	m1sdr_Init(44100);
-	m1sdr_SetCallback(do_frame);
-	m1sdr_PlayStart();
-
 	if(wavedump_stream_open(&song_dump, argv[0]))
 	{
 		printf("Dumping to %s%s.\n", argv[0], ".wav");
 	}
 
 	signal(SIGINT, intr_handler);
-	printf("Playing.  Press CTRL-C to stop.\n");
+	if(!noplay)
+	{
+		m1sdr_Init(44100);
+		m1sdr_SetCallback(do_frame);
+		m1sdr_PlayStart();
+		printf("Playing.  ");
+	}
+	printf("Press CTRL-C to stop.\n");
 
 	while (!ao_song_done)
 	{
-		m1sdr_TimeCheck();
+		if(!noplay)
+		{
+			m1sdr_TimeCheck();
+		}
+		else
+		{
+			stereo_sample_t buffer[44100 / 60];
+			do_frame(sizeof(buffer) / sizeof(stereo_sample_t), buffer);
+		}
 	}
 
 	signal(SIGINT, SIG_IGN);
