@@ -154,20 +154,24 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 	tag_dec = input + (comp_length + res_area + 16);
 	if ((tag_dec[0] == '[') && (tag_dec[1] == 'T') && (tag_dec[2] == 'A') && (tag_dec[3] == 'G') && (tag_dec[4] == ']'))
 	{
-		int tag, num_tags, data;
+		int num_tags, data;
 		char *p, *start;
 
 		// Tags found!
 		tag_dec += 5;
 		input_len -= 5;
 
-		c->tag_buffer = malloc(input_len);
+		// Add 1 more byte to the end to easily support cases
+		// in which the data of the last tag ends directly at EOF,
+		// without being terminated by a '\n' or '\0' before.
+		c->tag_buffer = malloc(input_len + 1);
 		if (!c->tag_buffer) {
 			goto err_free;
 		}
 		memcpy(c->tag_buffer, tag_dec, input_len);
+		c->tag_buffer[input_len] = 0;
 
-		tag = 0;
+		input_len++;
 		data = false;
 		num_tags = 0;
 		p = c->tag_buffer;
