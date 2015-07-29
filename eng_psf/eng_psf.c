@@ -61,13 +61,69 @@ extern void psx_hw_init(void);
 extern void psx_hw_slice(void);
 extern void psx_hw_frame(void);
 
+int psf_lib(int libnum, uint8 *lib, uint64 size, const corlett_t *c)
+{
+	uint32 offset, plength;
+
+	if (strncmp((char *)lib, "PS-X EXE", 8))
+	{
+		printf("Major error!  PSF was OK, but referenced library is not!\n");
+		return AO_FAIL;
+	}
+
+	#ifdef DEBUG
+	offset = lib[0x18] | lib[0x19]<<8 | lib[0x1a]<<16 | lib[0x1b]<<24;
+	printf("Text section start: %x\n", offset);
+	offset = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
+	printf("Text section size: %x\n", offset);
+	printf("Region: [%s]\n", &lib[0x4c]);
+	printf("refresh: [%s]\n", c->inf_refresh);
+	#endif
+
+	// if the original file had no refresh tag, give the lib a shot
+	if (psf_refresh == -1 && c->inf_refresh)
+	{
+		if (c->inf_refresh[0] == '5')
+		{
+			psf_refresh = 50;
+		}
+		if (c->inf_refresh[0] == '6')
+		{
+			psf_refresh = 60;
+		}
+	}
+
+	if(libnum < 2)
+	{
+		initialPC = lib[0x10] | lib[0x11]<<8 | lib[0x12]<<16 | lib[0x13]<<24;
+		initialGP = lib[0x14] | lib[0x15]<<8 | lib[0x16]<<16 | lib[0x17]<<24;
+		initialSP = lib[0x30] | lib[0x31]<<8 | lib[0x32]<<16 | lib[0x33]<<24;
+
+		#ifdef DEBUG
+		printf("Library: PC %x GP %x SP %x\n", initialPC, initialGP, initialSP);
+		#endif
+	}
+
+	// now patch the file into RAM
+	offset = lib[0x18] | lib[0x19]<<8 | lib[0x1a]<<16 | lib[0x1b]<<24;
+	offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
+	plength = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
+	#ifdef DEBUG
+	printf("library offset: %x plength: %d\n", offset, plength);
+	#endif
+	memcpy(&psx_ram[offset/4], lib+2048, plength);
+
+	return AO_SUCCESS;
+}
+
 int32 psf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file, *alib_decoded;
-	uint32 offset, plength, PC, SP, GP, lengthMS, fadeMS;
+	uint32 offset, plength, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length, alib_len;
 	corlett_t lib;
 	int i;
+	int32 ret;
 	union cpuinfo mipsinfo;
 
 	// clear PSX work RAM before we start scribbling in it
@@ -110,12 +166,12 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		}
 	}
 
-	PC = file[0x10] | file[0x11]<<8 | file[0x12]<<16 | file[0x13]<<24;
-	GP = file[0x14] | file[0x15]<<8 | file[0x16]<<16 | file[0x17]<<24;
-	SP = file[0x30] | file[0x31]<<8 | file[0x32]<<16 | file[0x33]<<24;
+	initialPC = file[0x10] | file[0x11]<<8 | file[0x12]<<16 | file[0x13]<<24;
+	initialGP = file[0x14] | file[0x15]<<8 | file[0x16]<<16 | file[0x17]<<24;
+	initialSP = file[0x30] | file[0x31]<<8 | file[0x32]<<16 | file[0x33]<<24;
 
 	#ifdef DEBUG
-	printf("Top level: PC %x GP %x SP %x\n", PC, GP, SP);
+	printf("Top level: PC %x GP %x SP %x\n", initialPC, initialGP, initialSP);
 	#endif
 
 	// Get the library file, if any
@@ -141,51 +197,11 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		// Free up raw file
 		free(lib_raw_file);
 
-		if (strncmp((char *)lib_decoded, "PS-X EXE", 8))
+		ret = psf_lib(1, lib_decoded, lib_len, &lib);
+		if (ret != AO_SUCCESS)
 		{
-			printf("Major error!  PSF was OK, but referenced library is not!\n");
-			corlett_free(&lib);
-			return AO_FAIL;
+			return ret;
 		}
-
-		#ifdef DEBUG
-		offset = lib_decoded[0x18] | lib_decoded[0x19]<<8 | lib_decoded[0x1a]<<16 | lib_decoded[0x1b]<<24;
-		printf("Text section start: %x\n", offset);
-		offset = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
-		printf("Text section size: %x\n", offset);
-		printf("Region: [%s]\n", &lib_decoded[0x4c]);
-		printf("refresh: [%s]\n", lib.inf_refresh);
-		#endif
-
-		// if the original file had no refresh tag, give the lib a shot
-		if (psf_refresh == -1 && lib.inf_refresh)
-		{
-			if (lib.inf_refresh[0] == '5')
-			{
-				psf_refresh = 50;
-			}
-			if (lib.inf_refresh[0] == '6')
-			{
-				psf_refresh = 60;
-			}
-		}
-
-		PC = lib_decoded[0x10] | lib_decoded[0x11]<<8 | lib_decoded[0x12]<<16 | lib_decoded[0x13]<<24;
-		GP = lib_decoded[0x14] | lib_decoded[0x15]<<8 | lib_decoded[0x16]<<16 | lib_decoded[0x17]<<24;
-		SP = lib_decoded[0x30] | lib_decoded[0x31]<<8 | lib_decoded[0x32]<<16 | lib_decoded[0x33]<<24;
-
-		#ifdef DEBUG
-		printf("Library: PC %x GP %x SP %x\n", PC, GP, SP);
-		#endif
-
-		// now patch the file into RAM
-		offset = lib_decoded[0x18] | lib_decoded[0x19]<<8 | lib_decoded[0x1a]<<16 | lib_decoded[0x1b]<<24;
-		offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
-		plength = lib_decoded[0x1c] | lib_decoded[0x1d]<<8 | lib_decoded[0x1e]<<16 | lib_decoded[0x1f]<<24;
-		#ifdef DEBUG
-		printf("library offset: %x plength: %d\n", offset, plength);
-		#endif
-		memcpy(&psx_ram[offset/4], lib_decoded+2048, plength);
 
 		// Dispose the corlett structure for the lib - we don't use it
 		corlett_free(&lib);
@@ -229,26 +245,11 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			// Free up raw file
 			free(lib_raw_file);
 
-			if (strncmp((char *)alib_decoded, "PS-X EXE", 8))
+			ret = psf_lib(2 + i, alib_decoded, alib_len, &lib);
+			if (ret != AO_SUCCESS)
 			{
-				printf("Major error!  PSF was OK, but referenced library is not!\n");
-				corlett_free(&lib);
-				return AO_FAIL;
+				return ret;
 			}
-
-			#ifdef DEBUG
-			offset = alib_decoded[0x18] | alib_decoded[0x19]<<8 | alib_decoded[0x1a]<<16 | alib_decoded[0x1b]<<24;
-			printf("Text section start: %x\n", offset);
-			offset = alib_decoded[0x1c] | alib_decoded[0x1d]<<8 | alib_decoded[0x1e]<<16 | alib_decoded[0x1f]<<24;
-			printf("Text section size: %x\n", offset);
-			printf("Region: [%s]\n", &alib_decoded[0x4c]);
-			#endif
-
-			// now patch the file into RAM
-			offset = alib_decoded[0x18] | alib_decoded[0x19]<<8 | alib_decoded[0x1a]<<16 | alib_decoded[0x1b]<<24;
-			offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
-			plength = alib_decoded[0x1c] | alib_decoded[0x1d]<<8 | alib_decoded[0x1e]<<16 | alib_decoded[0x1f]<<24;
-			memcpy(&psx_ram[offset/4], alib_decoded+2048, plength);
 
 			// Dispose the corlett structure for the lib - we don't use it
 			corlett_free(&lib);
@@ -263,23 +264,23 @@ int32 psf_start(uint8 *buffer, uint32 length)
 
 	// set the initial PC, SP, GP
 	#ifdef DEBUG
-	printf("Initial PC %x, GP %x, SP %x\n", PC, GP, SP);
+	printf("Initial PC %x, GP %x, SP %x\n", initialPC, initialGP, initialSP);
 	printf("Refresh = %d\n", psf_refresh);
 	#endif
-	mipsinfo.i = PC;
+	mipsinfo.i = initialPC;
 	mips_set_info(CPUINFO_INT_PC, &mipsinfo);
 
 	// set some reasonable default for the stack
-	if (SP == 0)
+	if (initialSP == 0)
 	{
-		SP = 0x801fff00;
+		initialSP = 0x801fff00;
 	}
 
-	mipsinfo.i = SP;
+	mipsinfo.i = initialSP;
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_R29, &mipsinfo);
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_R30, &mipsinfo);
 
-	mipsinfo.i = GP;
+	mipsinfo.i = initialGP;
 	mips_set_info(CPUINFO_INT_REGISTER + MIPS_R28, &mipsinfo);
 
 	#ifdef DEBUG
@@ -326,9 +327,6 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	// backup the initial state for restart
 	memcpy(initial_ram, psx_ram, 2*1024*1024);
 	memcpy(initial_scratch, psx_scratch, 0x400);
-	initialPC = PC;
-	initialGP = GP;
-	initialSP = SP;
 
 	mips_execute(5000);
 

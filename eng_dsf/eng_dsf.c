@@ -29,10 +29,19 @@
 
 static corlett_t	c = {0};
 
+int dsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
+{
+	// patch the file into ram
+	uint32 offset = lib[0] | lib[1]<<8 | lib[2]<<16 | lib[3]<<24;
+	memcpy(&dc_ram[offset], lib+4, size-4);
+
+	return AO_SUCCESS;
+}
+
 int32 dsf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
-	uint32 offset, plength, lengthMS, fadeMS;
+	uint32 offset, lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length;
 	int i;
 
@@ -73,12 +82,10 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 				return AO_FAIL;
 			}
 
+			dsf_lib(1 + i, lib_decoded, lib_len, &lib);
+
 			// Free up raw file
 			free(lib_raw_file);
-
-			// patch the file into ram
-			offset = lib_decoded[0] | lib_decoded[1]<<8 | lib_decoded[2]<<16 | lib_decoded[3]<<24;
-			memcpy(&dc_ram[offset], lib_decoded+4, lib_len-4);
 
 			// Dispose the corlett structure for the lib - we don't use it
 			corlett_free(&lib);
@@ -86,8 +93,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	}
 
 	// now patch the file into RAM over the libraries
-	offset = file[3]<<24 | file[2]<<16 | file[1]<<8 | file[0];
-	memcpy(&dc_ram[offset], file+4, file_len-4);
+	dsf_lib(0, file, file_len, &c);
 
 	free(file);
 

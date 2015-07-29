@@ -137,6 +137,14 @@ static int32 qsf_irq_cb(int param)
 	return 0x000000ff;	// RST_38
 }
 
+int qsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
+{
+	// use the contents
+	qsf_walktags(lib, lib+size);
+
+	return AO_SUCCESS;
+}
+
 int32 qsf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file;
@@ -185,15 +193,14 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 		// Free up raw file
 		free(lib_raw_file);
 
-		// use the contents
-		qsf_walktags(lib_decoded, lib_decoded+lib_len);
+		qsf_lib(1, lib_decoded, lib_len, &lib);
 
 		// Dispose the corlett structure for the lib - we don't use it
 		corlett_free(&lib);
 	}
 
 	// now patch the file into RAM OVER the libraries
-	qsf_walktags(file, file+file_len);
+	qsf_lib(0, file, file_len, &c);
 
 	free(file);
 
