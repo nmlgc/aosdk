@@ -61,27 +61,9 @@ extern void psx_hw_init(void);
 extern void psx_hw_slice(void);
 extern void psx_hw_frame(void);
 
-int psf_lib(int libnum, uint8 *lib, uint64 size, const corlett_t *c)
+static void psf_lib_set_refresh(int libnum, const corlett_t *c)
 {
-	uint32 offset, plength;
-
-	if (strncmp((char *)lib, "PS-X EXE", 8))
-	{
-		printf("Major error!  PSF was OK, but referenced library is not!\n");
-		return AO_FAIL;
-	}
-
-	#ifdef DEBUG
-	offset = lib[0x18] | lib[0x19]<<8 | lib[0x1a]<<16 | lib[0x1b]<<24;
-	printf("Text section start: %x\n", offset);
-	offset = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
-	printf("Text section size: %x\n", offset);
-	printf("Region: [%s]\n", &lib[0x4c]);
-	printf("refresh: [%s]\n", c->inf_refresh);
-	#endif
-
-	// if the original file had no refresh tag, give the lib a shot
-	if (psf_refresh == -1 && c->inf_refresh)
+	if (c != NULL && psf_refresh == -1 && c->inf_refresh)
 	{
 		if (c->inf_refresh[0] == '5')
 		{
@@ -92,26 +74,100 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, const corlett_t *c)
 			psf_refresh = 60;
 		}
 	}
+}
 
-	if(libnum < 2)
+static void psf_lib_set_registers(int libnum, const uint8 *lib)
+{
+	if (lib == NULL)
 	{
-		initialPC = lib[0x10] | lib[0x11]<<8 | lib[0x12]<<16 | lib[0x13]<<24;
-		initialGP = lib[0x14] | lib[0x15]<<8 | lib[0x16]<<16 | lib[0x17]<<24;
-		initialSP = lib[0x30] | lib[0x31]<<8 | lib[0x32]<<16 | lib[0x33]<<24;
-
-		#ifdef DEBUG
-		printf("Library: PC %x GP %x SP %x\n", initialPC, initialGP, initialSP);
-		#endif
+		return;
 	}
 
-	// now patch the file into RAM
+	initialPC = lib[0x10] | lib[0x11]<<8 | lib[0x12]<<16 | lib[0x13]<<24;
+	initialGP = lib[0x14] | lib[0x15]<<8 | lib[0x16]<<16 | lib[0x17]<<24;
+	initialSP = lib[0x30] | lib[0x31]<<8 | lib[0x32]<<16 | lib[0x33]<<24;
+
+	#ifdef DEBUG
+	printf("Library #%d: PC %x GP %x SP %x\n", libnum, initialPC, initialGP, initialSP);
+	#endif
+}
+
+static void psf_lib_patch(int libnum, uint8 *lib, uint64 size)
+{
+	uint32 offset, plength;
+
+	if (lib == NULL || size == 0)
+	{
+		return;
+	}
+
 	offset = lib[0x18] | lib[0x19]<<8 | lib[0x1a]<<16 | lib[0x1b]<<24;
 	offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
 	plength = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
+
+	// Philosoma has an illegal "plength".  *sigh*
+	if (plength > (size-2048))
+	{
+		plength = size-2048;
+	}
+
 	#ifdef DEBUG
-	printf("library offset: %x plength: %d\n", offset, plength);
+	printf("Library #%d: offset: %x plength: %d\n", libnum, offset, plength);
 	#endif
 	memcpy(&psx_ram[offset/4], lib+2048, plength);
+}
+
+int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
+{
+	static struct
+	{
+		uint8 *lib;
+		uint64 size;
+		corlett_t *tags;
+	} cache[10] = {{0}};
+
+	if (strncmp((char *)lib, "PS-X EXE", 8))
+	{
+		printf("Major error!  Library %d was not OK!\n", libnum);
+		return AO_FAIL;
+	}
+
+	#ifdef DEBUG
+	{
+		uint32 offset;
+
+		offset = lib[0x18] | lib[0x19]<<8 | lib[0x1a]<<16 | lib[0x1b]<<24;
+		printf("Library #%d: Text section start: %x\n", libnum, offset);
+		offset = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
+		printf("Library #%d: Text section size: %x\n", libnum, offset);
+		printf("Library #%d: Region: [%s]\n", libnum, &lib[0x4c]);
+		printf("Library #%d: refresh: [%s]\n", libnum, c->inf_refresh);
+	}
+	#endif
+
+	cache[libnum].lib = lib;
+	cache[libnum].size = size;
+	cache[libnum].tags = c;
+
+	// now reconstruct the braindead original initialization order
+	if (libnum == 0)
+	{
+		int i;
+
+		psf_lib_set_registers(0, cache[0].lib);
+		psf_lib_set_registers(1, cache[1].lib);
+		psf_lib_set_refresh(0, cache[0].tags);
+		psf_lib_set_refresh(1, cache[1].tags);
+		psf_lib_patch(1, cache[1].lib, cache[1].size);
+		psf_lib_patch(0, cache[0].lib, cache[0].size);
+
+		for (i = 2; i < 10; i++)
+		{
+			psf_lib_patch(i, cache[i].lib, cache[i].size);
+		}
+
+		memset(cache, 0, sizeof(cache));
+	}
 
 	return AO_SUCCESS;
 }
@@ -119,7 +175,7 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, const corlett_t *c)
 int32 psf_start(uint8 *buffer, uint32 length)
 {
 	uint8 *file, *lib_decoded, *lib_raw_file, *alib_decoded;
-	uint32 offset, plength, lengthMS, fadeMS;
+	uint32 lengthMS, fadeMS;
 	uint64 file_len, lib_len, lib_raw_length, alib_len;
 	corlett_t lib;
 	int i;
@@ -138,41 +194,6 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	}
 
 //	printf("file_len %d reserve %d\n", file_len, c.res_size);
-
-	// check for PSX EXE signature
-	if (strncmp((char *)file, "PS-X EXE", 8))
-	{
-		return AO_FAIL;
-	}
-
-	#ifdef DEBUG
-	offset = file[0x18] | file[0x19]<<8 | file[0x1a]<<16 | file[0x1b]<<24;
-	printf("Text section start: %x\n", offset);
-	offset = file[0x1c] | file[0x1d]<<8 | file[0x1e]<<16 | file[0x1f]<<24;
-	printf("Text section size: %x\n", offset);
-	printf("Region: [%s]\n", &file[0x4c]);
-	printf("refresh: [%s]\n", c.inf_refresh);
-	#endif
-
-	if (c.inf_refresh)
-	{
-		if (c.inf_refresh[0] == '5')
-		{
-			psf_refresh = 50;
-		}
-		if (c.inf_refresh[0] == '6')
-		{
-			psf_refresh = 60;
-		}
-	}
-
-	initialPC = file[0x10] | file[0x11]<<8 | file[0x12]<<16 | file[0x13]<<24;
-	initialGP = file[0x14] | file[0x15]<<8 | file[0x16]<<16 | file[0x17]<<24;
-	initialSP = file[0x30] | file[0x31]<<8 | file[0x32]<<16 | file[0x33]<<24;
-
-	#ifdef DEBUG
-	printf("Top level: PC %x GP %x SP %x\n", initialPC, initialGP, initialSP);
-	#endif
 
 	// Get the library file, if any
 	if (c.lib)
@@ -202,22 +223,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 		{
 			return ret;
 		}
-
-		// Dispose the corlett structure for the lib - we don't use it
-		corlett_free(&lib);
 	}
-
-	// now patch the main file into RAM OVER the libraries (but not the aux lib)
-	offset = file[0x18] | file[0x19]<<8 | file[0x1a]<<16 | file[0x1b]<<24;
-	offset &= 0x3fffffff;	// kill any MIPS cache segment indicators
-	plength = file[0x1c] | file[0x1d]<<8 | file[0x1e]<<16 | file[0x1f]<<24;
-
-	// Philosoma has an illegal "plength".  *sigh*
-	if (plength > (file_len-2048))
-	{
-		plength = file_len-2048;
-	}
-	memcpy(&psx_ram[offset/4], file+2048, plength);
 
 	// load any auxiliary libraries now
 	for (i = 0; i < 8; i++)
@@ -250,10 +256,13 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			{
 				return ret;
 			}
-
-			// Dispose the corlett structure for the lib - we don't use it
-			corlett_free(&lib);
 		}
+	}
+
+	ret = psf_lib(0, file, file_len, &c);
+	if (ret != AO_SUCCESS)
+	{
+		return ret;
 	}
 
 	free(file);
