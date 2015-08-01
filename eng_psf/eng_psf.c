@@ -174,9 +174,9 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 psf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file, *lib_decoded, *lib_raw_file, *alib_decoded;
+	uint8 *file, *lib_decoded, *lib_raw_file;
 	uint32 lengthMS, fadeMS;
-	uint64 file_len, lib_len, lib_raw_length, alib_len;
+	uint64 file_len, lib_len, lib_raw_length;
 	corlett_t lib;
 	int i;
 	int32 ret;
@@ -195,54 +195,24 @@ int32 psf_start(uint8 *buffer, uint32 length)
 
 //	printf("file_len %d reserve %d\n", file_len, c.res_size);
 
-	// Get the library file, if any
-	if (c.lib)
+	// load the library file, if any
+	for (i = 0; i < 9; i++)
 	{
-		uint64 tmp_length;
-
-		#ifdef DEBUG
-		printf("Loading library: %s\n", c.lib);
-		#endif
-		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
-		{
-			return AO_FAIL;
-		}
-		lib_raw_length = tmp_length;
-
-		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
-		{
-			free(lib_raw_file);
-			return AO_FAIL;
-		}
-
-		// Free up raw file
-		free(lib_raw_file);
-
-		ret = psf_lib(1, lib_decoded, lib_len, &lib);
-		if (ret != AO_SUCCESS)
-		{
-			return ret;
-		}
-	}
-
-	// load any auxiliary libraries now
-	for (i = 0; i < 8; i++)
-	{
-		if (c.libaux[i])
+		const char *libfile = i ? c.libaux[i-1] : c.lib;
+		if (libfile)
 		{
 			uint64 tmp_length;
 
 			#ifdef DEBUG
-			printf("Loading aux library: %s\n", c.libaux[i]);
+			printf("Loading library #%d: %s\n", 1 + i, libfile);
 			#endif
-
-			if (ao_get_lib(c.libaux[i], &lib_raw_file, &tmp_length) != AO_SUCCESS)
+			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
 			{
 				return AO_FAIL;
 			}
 			lib_raw_length = tmp_length;
 
-			if (corlett_decode(lib_raw_file, lib_raw_length, &alib_decoded, &alib_len, &lib) != AO_SUCCESS)
+			if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
 			{
 				free(lib_raw_file);
 				return AO_FAIL;
@@ -251,7 +221,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 			// Free up raw file
 			free(lib_raw_file);
 
-			ret = psf_lib(2 + i, alib_decoded, alib_len, &lib);
+			ret = psf_lib(1 + i, lib_decoded, lib_len, &lib);
 			if (ret != AO_SUCCESS)
 			{
 				return ret;
