@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <zlib.h>
 
 #include "ao.h"
@@ -376,6 +377,7 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 
 	printf("Dumping FS %d\n", fs);
 
+	mkdir("iopfiles", 0777);
 	start = filesys[fs];
 	len = fssize[fs];
 
@@ -418,8 +420,11 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 
 			sprintf(tfn, "iopfiles/%s", cptr);
 			f = fopen(tfn, "wb");
-			fwrite(buf, uncomp, 1, f);
-			fclose(f);
+			if (f)
+			{
+				fwrite(buf, uncomp, 1, f);
+				fclose(f);
+			}
 		}
 		else
 		{
