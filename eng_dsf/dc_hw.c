@@ -47,7 +47,7 @@ static struct AICAinterface aica_interface =
 	{ aica_irq, },
 };
 
-uint8 dc_read8(int addr)
+uint8 dc_read8(uint32 addr)
 {
 	if (addr < 0x800000)
 	{
@@ -72,7 +72,7 @@ uint8 dc_read8(int addr)
 	return -1;
 }
 
-uint16 dc_read16(int addr)
+uint16 dc_read16(uint32 addr)
 {
 	if (addr < 0x800000)
 	{
@@ -88,7 +88,7 @@ uint16 dc_read16(int addr)
 	return -1;
 }
 
-uint32 dc_read32(int addr)
+uint32 dc_read32(uint32 addr)
 {
 	if (addr < 0x800000)
 	{
@@ -105,7 +105,7 @@ uint32 dc_read32(int addr)
 	return 0;
 }
 
-void dc_write8(int addr, uint8 data)
+void dc_write8(uint32 addr, uint8 data)
 {
 	if (addr < 0x800000)
 	{
@@ -126,7 +126,7 @@ void dc_write8(int addr, uint8 data)
 	printf("W8 %x @ %x\n", data, addr);
 }
 
-void dc_write16(int addr, uint16 data)
+void dc_write16(uint32 addr, uint16 data)
 {
 	if (addr < 0x800000)
 	{
@@ -144,7 +144,7 @@ void dc_write16(int addr, uint16 data)
 	printf("W16 %x @ %x\n", data, addr);
 }
 
-void dc_write32(int addr, uint32 data)
+void dc_write32(uint32 addr, uint32 data)
 {
 	if (addr < 0x800000)
 	{

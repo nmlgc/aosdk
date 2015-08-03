@@ -1,5 +1,7 @@
 // memory inline functions shared by ARM and THUMB modes
 
+#include "dc_hw.h"
+
 static INLINE void arm7_write_32(UINT32 addr, UINT32 data )
 {
 	addr &= ~3;

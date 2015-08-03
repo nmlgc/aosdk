@@ -74,6 +74,7 @@ Sega driver commands:
 #include "corlett.h"
 #include "sat_hw.h"
 #include "scsp.h"
+#include "m68k.h"
 
 static corlett_t	c = {0};
 

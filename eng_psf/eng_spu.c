@@ -36,9 +36,14 @@
 #include <stdlib.h>
 
 #include "ao.h"
+#include "corlett.h"
 #include "eng_protos.h"
 #include "cpuintrf.h"
 #include "psx.h"
+
+#include "peops/externals.h"
+#include "peops/regs.h"
+#include "peops/spu.h"
 
 extern int SPUinit(void);
 extern int SPUopen(void);
