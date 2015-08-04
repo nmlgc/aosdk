@@ -72,12 +72,12 @@ The following data is optional and may be omitted:
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "ao.h"
 #include "corlett.h"
 
 #include <zlib.h>
-#include <stdlib.h>
 
 #define DECOMP_MAX_SIZE		((32 * 1024 * 1024) + 12)
 
@@ -85,80 +85,18 @@ uint32 total_samples;
 uint32 decaybegin;
 uint32 decayend;
 
-int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c)
+static int corlett_decode_tags(corlett_t *c, uint8 *input, uint32 input_len)
 {
-	uint32 *buf;
-	uint32 res_area, comp_crc,  actual_crc;
-	uint8 *decomp_dat, *tag_dec;
-	uLongf decomp_length, comp_length;
-
-	// 32-bit pointer to data
-	buf = (uint32 *)input;
-
-	// Check we have a PSF format file.
-	if ((input[0] != 'P') || (input[1] != 'S') || (input[2] != 'F'))
-	{
-		return AO_FAIL;
-	}
-
-	// Get our values
-	res_area = LE32(buf[1]);
-	comp_length = LE32(buf[2]);
-	comp_crc = LE32(buf[3]);
-
-	if (comp_length > 0)
-	{
-		// Check length
-		if (input_len < comp_length + 16)
-			return AO_FAIL;
-
-		// Check CRC is correct
-		actual_crc = crc32(0, (unsigned char *)&buf[4+(res_area/4)], comp_length);
-		if (actual_crc != comp_crc)
-			return AO_FAIL;
-
-		// Decompress data if any
-		decomp_dat = malloc(DECOMP_MAX_SIZE);
-		decomp_length = DECOMP_MAX_SIZE;
-		if (uncompress(decomp_dat, &decomp_length, (unsigned char *)&buf[4+(res_area/4)], comp_length) != Z_OK)
-		{
-			goto err_free;
-		}
-
-		// Resize memory buffer to what we actually need
-		decomp_dat = realloc(decomp_dat, (size_t)decomp_length + 1);
-	}
-	else
-	{
-		decomp_dat = NULL;
-		decomp_length =  0;
-	}
-
-	memset(c, 0, sizeof(corlett_t));
-
-	// set reserved section pointer
-	c->res_section = &buf[4];
-	c->res_size = res_area;
-
-	// Return it
-	*output = decomp_dat;
-	*size = decomp_length;
-
-	// Next check for tags
-	input_len -= (comp_length + 16 + res_area);
 	if (input_len < 5)
 		return AO_SUCCESS;
 
-//	printf("\n\nNew corlett: input len %d\n", input_len);
-
-	tag_dec = input + (comp_length + res_area + 16);
-	if ((tag_dec[0] == '[') && (tag_dec[1] == 'T') && (tag_dec[2] == 'A') && (tag_dec[3] == 'G') && (tag_dec[4] == ']'))
+	if ((input[0] == '[') && (input[1] == 'T') && (input[2] == 'A') && (input[3] == 'G') && (input[4] == ']'))
 	{
 		int num_tags, data;
 		char *p, *start;
 
 		// Tags found!
-		tag_dec += 5;
+		input += 5;
 		input_len -= 5;
 
 		// Add 1 more byte to the end to easily support cases
@@ -166,9 +104,9 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		// without being terminated by a '\n' or '\0' before.
 		c->tag_buffer = malloc(input_len + 1);
 		if (!c->tag_buffer) {
-			goto err_free;
+			return AO_FAIL;
 		}
-		memcpy(c->tag_buffer, tag_dec, input_len);
+		memcpy(c->tag_buffer, input, input_len);
 		c->tag_buffer[input_len] = 0;
 
 		input_len++;
@@ -233,9 +171,80 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 			}
 		}
 	}
+	return true;
+}
 
-	// Bingo
-	return AO_SUCCESS;
+int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c)
+{
+	uint32 *buf;
+	uint32 res_area, comp_crc,  actual_crc;
+	uint8 *decomp_dat;
+	uLongf decomp_length, comp_length;
+
+	// 32-bit pointer to data
+	buf = (uint32 *)input;
+
+	// Check we have a PSF format file.
+	if ((input[0] != 'P') || (input[1] != 'S') || (input[2] != 'F'))
+	{
+		return AO_FAIL;
+	}
+
+	// Get our values
+	res_area = LE32(buf[1]);
+	comp_length = LE32(buf[2]);
+	comp_crc = LE32(buf[3]);
+
+	if (comp_length > 0)
+	{
+		// Check length
+		if (input_len < comp_length + 16)
+			return AO_FAIL;
+
+		// Check CRC is correct
+		actual_crc = crc32(0, (unsigned char *)&buf[4+(res_area/4)], comp_length);
+		if (actual_crc != comp_crc)
+			return AO_FAIL;
+
+		// Decompress data if any
+		decomp_dat = malloc(DECOMP_MAX_SIZE);
+		decomp_length = DECOMP_MAX_SIZE;
+		if (uncompress(decomp_dat, &decomp_length, (unsigned char *)&buf[4+(res_area/4)], comp_length) != Z_OK)
+		{
+			goto err_free;
+		}
+
+		// Resize memory buffer to what we actually need
+		decomp_dat = realloc(decomp_dat, (size_t)decomp_length + 1);
+	}
+	else
+	{
+		decomp_dat = NULL;
+		decomp_length =  0;
+	}
+
+	memset(c, 0, sizeof(corlett_t));
+
+	// set reserved section pointer
+	c->res_section = &buf[4];
+	c->res_size = res_area;
+
+	// Return it
+	*output = decomp_dat;
+	*size = decomp_length;
+
+	// Next check for tags
+	input_len -= (comp_length + 16 + res_area);
+	input += (comp_length + res_area + 16);
+
+	#ifdef DEBUG
+	printf("New corlett: input len %d\n", input_len);
+	#endif
+
+	if (corlett_decode_tags(c, input, input_len) == AO_SUCCESS)
+	{
+		return AO_SUCCESS;
+	}
 
 err_free:
 	free(decomp_dat);
