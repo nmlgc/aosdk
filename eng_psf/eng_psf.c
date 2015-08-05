@@ -174,12 +174,9 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 psf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file, *lib_decoded, *lib_raw_file;
+	uint8 *file;
 	uint32 lengthMS, fadeMS;
-	uint64 file_len, lib_len, lib_raw_length;
-	corlett_t lib;
-	int i;
-	int32 ret;
+	uint64 file_len;
 	union cpuinfo mipsinfo;
 
 	// clear PSX work RAM before we start scribbling in it
@@ -188,55 +185,12 @@ int32 psf_start(uint8 *buffer, uint32 length)
 //	printf("Length = %d\n", length);
 
 	// Decode the current GSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &file, &file_len, &c, psf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
 
-//	printf("file_len %d reserve %d\n", file_len, c.res_size);
-
-	// load the library file, if any
-	for (i = 0; i < 9; i++)
-	{
-		const char *libfile = i ? c.libaux[i-1] : c.lib;
-		if (libfile)
-		{
-			uint64 tmp_length;
-
-			#ifdef DEBUG
-			printf("Loading library #%d: %s\n", 1 + i, libfile);
-			#endif
-			if (ao_get_lib(libfile, &lib_raw_file, &tmp_length) != AO_SUCCESS)
-			{
-				return AO_FAIL;
-			}
-			lib_raw_length = tmp_length;
-
-			if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
-			{
-				free(lib_raw_file);
-				return AO_FAIL;
-			}
-
-			// Free up raw file
-			free(lib_raw_file);
-
-			ret = psf_lib(1 + i, lib_decoded, lib_len, &lib);
-			if (ret != AO_SUCCESS)
-			{
-				return ret;
-			}
-		}
-	}
-
-	ret = psf_lib(0, file, file_len, &c);
-	if (ret != AO_SUCCESS)
-	{
-		return ret;
-	}
-
 	free(file);
-//	free(lib_decoded);
 
 	mips_init();
 	mips_reset(NULL);

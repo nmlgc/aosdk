@@ -147,8 +147,8 @@ int qsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 qsf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file, *lib_decoded, *lib_raw_file;
-	uint64 file_len, lib_len, lib_raw_length;
+	uint8 *file;
+	uint64 file_len;
 
 	z80_init();
 
@@ -164,43 +164,10 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 	memset(RAM2, 0, 0x1000);
 
 	// Decode the current QSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &file, &file_len, &c, qsf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	// Get the library file
-	if (c.lib)
-	{
-		corlett_t lib;
-		uint64 tmp_length;
-
-		#ifdef DEBUG
-		printf("Loading library: %s\n", c.lib);
-		#endif
-		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
-		{
-			return AO_FAIL;
-		}
-		lib_raw_length = tmp_length;
-
-		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
-		{
-			free(lib_raw_file);
-			return AO_FAIL;
-		}
-
-		// Free up raw file
-		free(lib_raw_file);
-
-		qsf_lib(1, lib_decoded, lib_len, &lib);
-
-		// Dispose the corlett structure for the lib - we don't use it
-		corlett_free(&lib);
-	}
-
-	// now patch the file into RAM OVER the libraries
-	qsf_lib(0, file, file_len, &c);
 
 	free(file);
 

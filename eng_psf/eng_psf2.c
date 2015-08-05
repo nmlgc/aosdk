@@ -461,18 +461,23 @@ int psf2_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 	printf("Lib #%d FS section: size %x bytes\n", libnum, c->res_size);
 	#endif
 
-	num_fs = libnum + 1;
-	filesys[libnum] = (uint8 *)c->res_section;
+	num_fs = max(num_fs, libnum + 1);
+	filesys[libnum] = malloc(c->res_size);
+	if (!filesys[libnum])
+	{
+		return AO_FAIL;
+	}
 	fssize[libnum] = c->res_size;
+	memcpy(filesys[libnum], c->res_section, c->res_size);
 
 	return AO_SUCCESS;
 }
 
 int32 psf2_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file, *lib_decoded;
+	uint8 *file;
 	uint32 irx_len;
-	uint64 file_len, lib_raw_length, lib_len;
+	uint64 file_len;
 	uint8 *buf;
 	union cpuinfo mipsinfo;
 
@@ -483,38 +488,12 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	memset(psx_ram, 0, 2*1024*1024);
 
 	// Decode the current PSF2
-	if (corlett_decode(buffer, length, &file, &file_len, &c) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &file, &file_len, &c, psf2_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
 
 	if (file_len > 0) printf("ERROR: PSF2 can't have a program section!  ps %08x\n", file_len);
-
-	psf2_lib(0, file, file_len, &c);
-
-	// Get the library file, if any
-	if (c.lib)
-	{
-		corlett_t lib;
-		uint64 tmp_length;
-
-		#ifdef DEBUG
-		printf("Loading library: %s\n", c.lib);
-		#endif
-		if (ao_get_lib(c.lib, &lib_raw_file, &tmp_length) != AO_SUCCESS)
-		{
-			return AO_FAIL;
-		}
-		lib_raw_length = tmp_length;
-
-		if (corlett_decode(lib_raw_file, lib_raw_length, &lib_decoded, &lib_len, &lib) != AO_SUCCESS)
-		{
-			free(lib_raw_file);
-			return AO_FAIL;
-		}
-
-		psf2_lib(1, lib_decoded, lib_len, &lib);
-	}
 
 	// dump all files
 	#ifdef DEBUG
@@ -599,10 +578,20 @@ int32 psf2_frame(void)
 
 int32 psf2_stop(void)
 {
+	int i;
+
 	SPU2close();
 	if (lib_raw_file)
 	{
 		free(lib_raw_file);
+	}
+	for (i = 0; i < MAX_FS; i++)
+	{
+		if (filesys[i])
+		{
+			free(filesys[i]);
+			filesys[i] = NULL;
+		}
 	}
 	corlett_free(&c);
 
