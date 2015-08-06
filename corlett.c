@@ -174,7 +174,7 @@ static int corlett_decode_tags(corlett_t *c, uint8 *input, uint32 input_len)
 	return true;
 }
 
-int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
+static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
 {
 	int i;
 	int ret = AO_SUCCESS;
@@ -277,13 +277,13 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 		#endif
 
 		BREAK_ON_ERR(ao_get_lib(libfile, &lib_raw[i], &lib_raw_length));
-		BREAK_ON_ERR(corlett_decode(lib_raw[i], lib_raw_length, &lib_data[i], &lib_len, &lib_tags[i], NULL));
+		BREAK_ON_ERR(corlett_decode_lib(1 + i, lib_raw[i], lib_raw_length, &lib_data[i], &lib_len, &lib_tags[i], NULL));
 		BREAK_ON_ERR(lib_callback(1 + i, lib_data[i], lib_len, &lib_tags[i]));
 	}
 
 	if (ret == AO_SUCCESS)
 	{
-		ret = lib_callback(0, decomp_dat, decomp_length, c);
+		ret = lib_callback(libnum, decomp_dat, decomp_length, c);
 	}
 
 	for (i = 0; i < 9; i++)
@@ -304,6 +304,11 @@ int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size,
 err_free:
 	free(decomp_dat);
 	return AO_FAIL;
+}
+
+int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
+{
+	return corlett_decode_lib(0, input, input_len, output, size, c, lib_callback);
 }
 
 void corlett_free(corlett_t *c)
