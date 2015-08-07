@@ -149,6 +149,7 @@ int main(int argc, const char *argv[])
 	uint8 *buffer;
 	uint32 size, filesig;
 	int noplay = false;
+	int nowave = false;
 
 	const char *const usages[] =
 	{
@@ -160,6 +161,7 @@ int main(int argc, const char *argv[])
 	{
 		OPT_HELP(),
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
+		OPT_BOOLEAN('w', "nowave", &nowave, "don't dump the song to a .wav file"),
 		OPT_END()
 	};
 
@@ -242,7 +244,7 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	if(wavedump_stream_open(&song_dump, argv[0]))
+	if(!nowave && wavedump_stream_open(&song_dump, argv[0]))
 	{
 		printf("Dumping to %s%s.\n", argv[0], ".wav");
 	}
