@@ -176,15 +176,11 @@ static int corlett_decode_tags(corlett_t *c, uint8 *input, uint32 input_len)
 
 static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
 {
-	int i;
 	int ret = AO_SUCCESS;
 	uint32 *buf;
 	uint32 res_area, comp_crc,  actual_crc;
 	uint8 *decomp_dat;
 	uLongf decomp_length, comp_length;
-	uint8 *lib_raw[9] = {0};
-	uint8 *lib_data[9] = {0};
-	corlett_t lib_tags[9] = {{0}};
 
 	// 32-bit pointer to data
 	buf = (uint32 *)input;
@@ -252,51 +248,57 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 	}
 
 	// Fully recursive loading of libraries is probably a bad idea anyway.
-	if (!lib_callback)
+	if (libnum == 0)
 	{
-		return ret;
-	}
+		int i;
+		uint8 *lib_raw[9] = {0};
+		uint8 *lib_data[9] = {0};
+		corlett_t lib_tags[9] = {{0}};
 
-	for(i = 0; i < 9; i++) {
-		#define BREAK_ON_ERR(call) \
-			ret = call; \
-			if(ret != AO_SUCCESS) { \
-				break; \
+		for(i = 0; i < 9; i++) {
+			#define BREAK_ON_ERR(call) \
+				ret = call; \
+				if(ret != AO_SUCCESS) { \
+					break; \
 			}
 
-		uint64 lib_len, lib_raw_length;
+			uint64 lib_len, lib_raw_length;
 
-		const char *libfile = i ? c->libaux[i-1] : c->lib;
-		if (!libfile)
-		{
-			continue;
+			const char *libfile = i ? c->libaux[i - 1] : c->lib;
+			if(!libfile)
+			{
+				continue;
+			}
+
+			#ifdef DEBUG
+			printf("Loading library #%d: %s\n", 1 + i, libfile);
+			#endif
+
+			BREAK_ON_ERR(ao_get_lib(libfile, &lib_raw[i], &lib_raw_length));
+			BREAK_ON_ERR(corlett_decode_lib(1 + i, lib_raw[i], lib_raw_length, &lib_data[i], &lib_len, &lib_tags[i], lib_callback));
 		}
 
-		#ifdef DEBUG
-		printf("Loading library #%d: %s\n", 1 + i, libfile);
-		#endif
+		if (ret == AO_SUCCESS)
+		{
+			ret = lib_callback(libnum, decomp_dat, decomp_length, c);
+		}
 
-		BREAK_ON_ERR(ao_get_lib(libfile, &lib_raw[i], &lib_raw_length));
-		BREAK_ON_ERR(corlett_decode_lib(1 + i, lib_raw[i], lib_raw_length, &lib_data[i], &lib_len, &lib_tags[i], NULL));
-		BREAK_ON_ERR(lib_callback(1 + i, lib_data[i], lib_len, &lib_tags[i]));
+		for (i = 0; i < 9; i++)
+		{
+			if (lib_data[i])
+			{
+				free(lib_data[i]);
+			}
+			if (lib_raw[i])
+			{
+				free(lib_raw[i]);
+			}
+			corlett_free(&lib_tags[i]);
+		}
 	}
-
-	if (ret == AO_SUCCESS)
+	else
 	{
 		ret = lib_callback(libnum, decomp_dat, decomp_length, c);
-	}
-
-	for (i = 0; i < 9; i++)
-	{
-		if (lib_data[i])
-		{
-			free(lib_data[i]);
-		}
-		if (lib_raw[i])
-		{
-			free(lib_raw[i]);
-		}
-		corlett_free(&lib_tags[i]);
 	}
 
 	return ret;
@@ -308,6 +310,10 @@ err_free:
 
 int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
 {
+	if (!lib_callback)
+	{
+		return AO_FAIL;
+	}
 	return corlett_decode_lib(0, input, input_len, output, size, c, lib_callback);
 }
 
