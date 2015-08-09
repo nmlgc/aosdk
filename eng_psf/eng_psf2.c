@@ -461,6 +461,11 @@ int psf2_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 	printf("Lib #%d FS section: size %x bytes\n", libnum, c->res_size);
 	#endif
 
+	if(libnum == 0 && size > 0)
+	{
+		printf("ERROR: PSF2 can't have a program section!  ps %08x\n", size);
+	}
+
 	num_fs = max(num_fs, libnum + 1);
 	filesys[libnum] = malloc(c->res_size);
 	if (!filesys[libnum])
@@ -475,9 +480,7 @@ int psf2_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 psf2_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file;
 	uint32 irx_len;
-	uint64 file_len;
 	uint8 *buf;
 	union cpuinfo mipsinfo;
 
@@ -488,12 +491,10 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 	memset(psx_ram, 0, 2*1024*1024);
 
 	// Decode the current PSF2
-	if (corlett_decode(buffer, length, &file, &file_len, &c, psf2_lib) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &c, psf2_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	if (file_len > 0) printf("ERROR: PSF2 can't have a program section!  ps %08x\n", file_len);
 
 	// dump all files
 	#ifdef DEBUG

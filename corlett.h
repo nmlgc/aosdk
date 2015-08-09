@@ -52,7 +52,7 @@ typedef struct
 // occurred and corlett_decode() should be aborted.
 typedef int corlett_lib_callback_t(int libnum, uint8 *lib, uint64 size, corlett_t *c);
 
-int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback);
+int corlett_decode(uint8 *input, uint32 input_len, corlett_t *c, corlett_lib_callback_t *lib_callback);
 void corlett_free(corlett_t *c);
 int corlett_tag_recognize(corlett_t *c, const char **target_value, int tag_num, const char *key);
 void corlett_length_set(uint32 length_ms, int32 fade_ms);

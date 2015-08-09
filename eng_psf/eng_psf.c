@@ -174,9 +174,7 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 psf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file;
 	uint32 lengthMS, fadeMS;
-	uint64 file_len;
 	union cpuinfo mipsinfo;
 
 	// clear PSX work RAM before we start scribbling in it
@@ -185,12 +183,10 @@ int32 psf_start(uint8 *buffer, uint32 length)
 //	printf("Length = %d\n", length);
 
 	// Decode the current GSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c, psf_lib) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &c, psf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	free(file);
 
 	mips_init();
 	mips_reset(NULL);

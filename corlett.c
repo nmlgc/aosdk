@@ -308,13 +308,21 @@ err_free:
 	return AO_FAIL;
 }
 
-int corlett_decode(uint8 *input, uint32 input_len, uint8 **output, uint64 *size, corlett_t *c, corlett_lib_callback_t *lib_callback)
+int corlett_decode(uint8 *input, uint32 input_len, corlett_t *c, corlett_lib_callback_t *lib_callback)
 {
-	if (!lib_callback)
+	int ret = AO_FAIL;
+	uint8 *output = NULL;
+	uint64 size;
+
+	if (lib_callback)
 	{
-		return AO_FAIL;
+		ret = corlett_decode_lib(0, input, input_len, &output, &size, c, lib_callback);
+		if(output)
+		{
+			free(output);
+		}
 	}
-	return corlett_decode_lib(0, input, input_len, output, size, c, lib_callback);
+	return ret;
 }
 
 void corlett_free(corlett_t *c)

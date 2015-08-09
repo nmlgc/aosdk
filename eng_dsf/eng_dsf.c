@@ -40,24 +40,16 @@ int dsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 dsf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file;
 	uint32 lengthMS, fadeMS;
-	uint64 file_len;
 
 	// clear Dreamcast work RAM before we start scribbling in it
 	memset(dc_ram, 0, 8*1024*1024);
 
 	// Decode the current SSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c, dsf_lib) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &c, dsf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	#ifdef DEBUG
-	printf("%d bytes decoded\n", file_len);
-	#endif
-
-	free(file);
 
 	#ifdef DEBUG
 	{

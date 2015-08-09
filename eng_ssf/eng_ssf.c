@@ -95,21 +95,17 @@ int ssf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 ssf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file;
 	uint32 lengthMS, fadeMS;
-	uint64 file_len;
 	int i;
 
 	// clear Saturn work RAM before we start scribbling in it
 	memset(sat_ram, 0, 512*1024);
 
 	// Decode the current SSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c, ssf_lib) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &c, ssf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	free(file);
 
 	#ifdef DEBUG
 	{

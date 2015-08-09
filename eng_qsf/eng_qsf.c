@@ -147,9 +147,6 @@ int qsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 qsf_start(uint8 *buffer, uint32 length)
 {
-	uint8 *file;
-	uint64 file_len;
-
 	z80_init();
 
 	Z80ROM = malloc(512*1024);
@@ -164,12 +161,10 @@ int32 qsf_start(uint8 *buffer, uint32 length)
 	memset(RAM2, 0, 0x1000);
 
 	// Decode the current QSF
-	if (corlett_decode(buffer, length, &file, &file_len, &c, qsf_lib) != AO_SUCCESS)
+	if (corlett_decode(buffer, length, &c, qsf_lib) != AO_SUCCESS)
 	{
 		return AO_FAIL;
 	}
-
-	free(file);
 
 	if ((skey1 != 0) && (skey2 != 0))
 	{
