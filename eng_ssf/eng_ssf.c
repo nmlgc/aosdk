@@ -95,7 +95,6 @@ int ssf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 ssf_start(uint8 *buffer, uint32 length)
 {
-	uint32 lengthMS, fadeMS;
 	int i;
 
 	// clear Saturn work RAM before we start scribbling in it
@@ -129,11 +128,6 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 
 	sat_hw_init();
 
-	// now figure out the time in samples for the length/fade
-	lengthMS = psfTimeToMS(c.inf_length);
-	fadeMS = psfTimeToMS(c.inf_fade);
-
-	corlett_length_set(lengthMS, fadeMS);
 	return AO_SUCCESS;
 }
 

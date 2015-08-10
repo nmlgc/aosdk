@@ -40,8 +40,6 @@ int dsf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 dsf_start(uint8 *buffer, uint32 length)
 {
-	uint32 lengthMS, fadeMS;
-
 	// clear Dreamcast work RAM before we start scribbling in it
 	memset(dc_ram, 0, 8*1024*1024);
 
@@ -69,11 +67,6 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	#endif
 	dc_hw_init();
 
-	// now figure out the time in samples for the length/fade
-	lengthMS = psfTimeToMS(c.inf_length);
-	fadeMS = psfTimeToMS(c.inf_fade);
-
-	corlett_length_set(lengthMS, fadeMS);
 	return AO_SUCCESS;
 }
 

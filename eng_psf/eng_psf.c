@@ -174,7 +174,6 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 int32 psf_start(uint8 *buffer, uint32 length)
 {
-	uint32 lengthMS, fadeMS;
 	union cpuinfo mipsinfo;
 
 	// clear PSX work RAM before we start scribbling in it
@@ -225,15 +224,6 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	psx_hw_init();
 	SPUinit();
 	SPUopen();
-
-	lengthMS = psfTimeToMS(c.inf_length);
-	fadeMS = psfTimeToMS(c.inf_fade);
-
-	#ifdef DEBUG
-	printf("length %d fade %d\n", lengthMS, fadeMS);
-	#endif
-
-	corlett_length_set(lengthMS, fadeMS);
 
 	// patch illegal Chocobo Dungeon 2 code - CaitSith2 put a jump in the delay slot from a BNE
 	// and rely on Highly Experimental's buggy-ass CPU to rescue them.  Verified on real hardware
@@ -288,7 +278,6 @@ int32 psf_stop(void)
 int32 psf_command(int32 command, int32 parameter)
 {
 	union cpuinfo mipsinfo;
-	uint32 lengthMS, fadeMS;
 
 	switch (command)
 	{
@@ -303,11 +292,6 @@ int32 psf_command(int32 command, int32 parameter)
 			psx_hw_init();
 			SPUinit();
 			SPUopen();
-
-			lengthMS = psfTimeToMS(c.inf_length);
-			fadeMS = psfTimeToMS(c.inf_fade);
-
-			corlett_length_set(lengthMS, fadeMS);
 
 			mipsinfo.i = initialPC;
 			mips_set_info(CPUINFO_INT_PC, &mipsinfo);

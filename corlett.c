@@ -282,6 +282,18 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 		{
 			ret = lib_callback(libnum, decomp_dat, decomp_length, c);
 		}
+		if (ret == AO_SUCCESS)
+		{
+			// now figure out the time in samples for the length/fade
+			uint32 lengthMS = psfTimeToMS(c->inf_length);
+			uint32 fadeMS = psfTimeToMS(c->inf_fade);
+
+			#ifdef DEBUG
+			printf("length %d fade %d\n", lengthMS, fadeMS);
+			#endif
+
+			corlett_length_set(lengthMS, fadeMS);
+		}
 
 		for (i = 0; i < 9; i++)
 		{

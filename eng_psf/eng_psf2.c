@@ -521,10 +521,6 @@ int32 psf2_start(uint8 *buffer, uint32 length)
 		return AO_FAIL;
 	}
 
-	lengthMS = psfTimeToMS(c.inf_length);
-	fadeMS = psfTimeToMS(c.inf_fade);
-	corlett_length_set(lengthMS, fadeMS);
-
 	mips_init();
 	mips_reset(NULL);
 
@@ -602,7 +598,6 @@ int32 psf2_stop(void)
 int32 psf2_command(int32 command, int32 parameter)
 {
 	union cpuinfo mipsinfo;
-	uint32 lengthMS, fadeMS;
 
 	switch (command)
 	{
@@ -636,10 +631,6 @@ int32 psf2_command(int32 command, int32 parameter)
 			mips_set_info(CPUINFO_INT_REGISTER + MIPS_R5, &mipsinfo);
 
 			psx_hw_init();
-
-			lengthMS = psfTimeToMS(c.inf_length);
-			fadeMS = psfTimeToMS(c.inf_fade);
-			corlett_length_set(lengthMS, fadeMS);
 
 			return AO_SUCCESS;
 
