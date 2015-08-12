@@ -403,57 +403,63 @@ void corlett_sample_fade(stereo_sample_t *sample)
 
 uint32 psfTimeToMS(const char *str)
 {
-	int x, c=0;
-	uint32 acc=0;
-	char s[100];
+	int x, c = 0;
+	uint32 part_val = 0, digit = 1;
+	uint32 acc = 0;
 
 	if (!str)
 	{
 		return(0);
 	}
 
-	strncpy(s,str,100);
-	s[99]=0;
-
-	for (x=strlen(s); x>=0; x--)
+	for (x = strlen(str); x >= 0; x--)
 	{
-		if (s[x]=='.' || s[x]==',')
+		if (str[x] >= '0' && str[x] <= '9')
 		{
-			acc=atoi(s+x+1);
-			s[x]=0;
+			part_val += (str[x] - '0') * digit;
+			digit *= 10;
 		}
-		else if (s[x]==':')
+		if (str[x]=='.' || str[x]==',')
+		{
+			acc = part_val;
+			part_val = 0;
+			digit = 1;
+		}
+		else if (str[x]==':')
 		{
 			if(c==0)
 			{
-				acc+=atoi(s+x+1)*10;
+				acc += part_val * 10;
 			}
 			else if(c==1)
 			{
-				acc+=atoi(s+x+(x?1:0))*10*60;
+				acc += part_val * 10 * 60;
 			}
 
 			c++;
-			s[x]=0;
+			part_val = 0;
+			digit = 1;
 		}
 		else if (x==0)
 		{
 			if(c==0)
 			{
-				acc+=atoi(s+x)*10;
+				acc += part_val * 10;
 			}
 			else if(c==1)
 			{
-				acc+=atoi(s+x)*10*60;
+				acc += part_val * 10 * 60;
 			}
 			else if(c==2)
 			{
-				acc+=atoi(s+x)*10*60*60;
+				acc += part_val * 10 * 60 * 60;
 			}
+			part_val = 0;
+			digit = 1;
 		}
 	}
 
-	acc*=100;
+	acc *= 100;
 	return(acc);
 }
 
