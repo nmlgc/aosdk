@@ -25,6 +25,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - The `ao_display_info` structure now uses char pointers instead of fixed-size
   char buffers.
 
+### Fixed
+- Corlett length and fade tags with more than three fractional digits are now
+  supported correctly.
+
 ## [1.4.8] - 2009-02-15
 ### Fixed
 - Guard against invalid data sometimes created by `makessf.py` (fixes crashing

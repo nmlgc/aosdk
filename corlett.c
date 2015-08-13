@@ -285,14 +285,14 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 		if (ret == AO_SUCCESS)
 		{
 			// now figure out the time in samples for the length/fade
-			uint32 lengthMS = psfTimeToMS(c->inf_length);
-			uint32 fadeMS = psfTimeToMS(c->inf_fade);
+			double length_seconds = psfTimeToSeconds(c->inf_length);
+			double fade_seconds = psfTimeToSeconds(c->inf_fade);
 
 			#ifdef DEBUG
-			printf("length %d fade %d\n", lengthMS, fadeMS);
+			printf("length %f fade %f\n", length_seconds, fade_seconds);
 			#endif
 
-			corlett_length_set(lengthMS, fadeMS);
+			corlett_length_set(length_seconds, fade_seconds);
 		}
 
 		for (i = 0; i < 9; i++)
@@ -358,20 +358,20 @@ int corlett_tag_recognize(corlett_t *c, const char **target_value, int tag_num, 
 	return 0;
 }
 
-void corlett_length_set(uint32 length_ms, int32 fade_ms)
+void corlett_length_set(double length_seconds, double fade_seconds)
 {
 	total_samples = 0;
-	if (length_ms == 0)
+	if (length_seconds == 0)
 	{
 		decaybegin = ~0;
 	}
 	else
 	{
-		length_ms = (length_ms * 441) / 10;
-		fade_ms = (fade_ms * 441) / 10;
+		uint32 length_samples = length_seconds * 44100;
+		uint32 fade_samples = fade_seconds * 44100;
 
-		decaybegin = length_ms;
-		decayend = length_ms + fade_ms;
+		decaybegin = length_samples;
+		decayend = length_samples + fade_samples;
 	}
 }
 
@@ -401,15 +401,15 @@ void corlett_sample_fade(stereo_sample_t *sample)
 	total_samples++;
 }
 
-uint32 psfTimeToMS(const char *str)
+double psfTimeToSeconds(const char *str)
 {
 	int x, c = 0;
 	uint32 part_val = 0, digit = 1;
-	uint32 acc = 0;
+	double acc = 0.0;
 
 	if (!str)
 	{
-		return(0);
+		return(0.0);
 	}
 
 	for (x = strlen(str); x >= 0; x--)
@@ -421,7 +421,7 @@ uint32 psfTimeToMS(const char *str)
 		}
 		if (str[x]=='.' || str[x]==',')
 		{
-			acc = part_val;
+			acc = (double)part_val / (double)digit;
 			part_val = 0;
 			digit = 1;
 		}
@@ -429,11 +429,11 @@ uint32 psfTimeToMS(const char *str)
 		{
 			if(c==0)
 			{
-				acc += part_val * 10;
+				acc += part_val;
 			}
 			else if(c==1)
 			{
-				acc += part_val * 10 * 60;
+				acc += part_val * 60;
 			}
 
 			c++;
@@ -444,22 +444,21 @@ uint32 psfTimeToMS(const char *str)
 		{
 			if(c==0)
 			{
-				acc += part_val * 10;
+				acc += part_val;
 			}
 			else if(c==1)
 			{
-				acc += part_val * 10 * 60;
+				acc += part_val * 60;
 			}
 			else if(c==2)
 			{
-				acc += part_val * 10 * 60 * 60;
+				acc += part_val * 60 * 60;
 			}
 			part_val = 0;
 			digit = 1;
 		}
 	}
 
-	acc *= 100;
 	return(acc);
 }
 
