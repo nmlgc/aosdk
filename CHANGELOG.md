@@ -19,9 +19,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - The README file now is formatted using Markdown syntax.
 - Moved the Ikaruga sample into the samples/ subdirectory.
-- Corlett tags are no longer limited to 255 bytes.  In return, though, all
-  `corlett_t` structures now need to be freed using `corlett_free()` in order
-  to not leak the memory used for the tags.
+- Corlett tags now are stored using an unlimited key→value hash table and are
+  no longer limited to 255 bytes.  In return, though, all `corlett_t`
+  structures now need to be freed using `corlett_free()` in order to not leak
+  the memory used for the tags.
 - The `ao_display_info` structure now uses char pointers instead of fixed-size
   char buffers.
 

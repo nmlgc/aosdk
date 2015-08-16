@@ -87,13 +87,16 @@ uint32 decayend;
 
 static int corlett_decode_tags(corlett_t *c, uint8 *input, uint32 input_len)
 {
+	hashtable_init(&c->tags, sizeof(const char**));
+
 	if (input_len < 5)
 		return AO_SUCCESS;
 
 	if ((input[0] == '[') && (input[1] == 'T') && (input[2] == 'A') && (input[3] == 'G') && (input[4] == ']'))
 	{
-		int num_tags, data;
+		int at_data;
 		char *p, *start;
+		const char *name = NULL, *data = NULL;
 
 		// Tags found!
 		input += 5;
@@ -110,65 +113,45 @@ static int corlett_decode_tags(corlett_t *c, uint8 *input, uint32 input_len)
 		c->tag_buffer[input_len] = 0;
 
 		input_len++;
-		data = false;
-		num_tags = 0;
+		at_data = false;
 		p = c->tag_buffer;
 		start = NULL;
-		while (input_len && (num_tags < MAX_UNKNOWN_TAGS))
+		while (input_len)
 		{
 			int set_condition;
 			const char **set_str;
 
-			if (!data)
+			if (!at_data)
 			{
 				set_condition = *p == '=';
-				set_str = &c->tag_name[num_tags];
+				set_str = &name;
 			}
 			else
 			{
 				set_condition = (*p == '\n') || (*p == '\0');
-				set_str = &c->tag_data[num_tags];
+				set_str = &data;
 			}
 
 			if (set_condition)
 			{
 				*p = '\0';
 				*set_str = start;
-				num_tags += data;
-				data = !data;
+				at_data = !at_data;
 				start = NULL;
 			}
 			else if (!start && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n')
 			{
 				start = p;
 			}
+			if(name && data) {
+				const char **tag_ptr = corlett_tag_get(c, name);
+				*tag_ptr = data;
+				name = NULL;
+				data = NULL;
+			}
 
 			p++;
 			input_len--;
-		}
-
-		// Now, recognize any tags we expect
-		for (num_tags = 0; num_tags < MAX_UNKNOWN_TAGS; num_tags++)
-		{
-			// See if tag belongs in one of the special fields we have
-			if (corlett_tag_recognize(c, &c->lib, num_tags, "_lib")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[0], num_tags, "_lib2")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[1], num_tags, "_lib3")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[2], num_tags, "_lib4")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[3], num_tags, "_lib5")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[4], num_tags, "_lib6")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[5], num_tags, "_lib7")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[6], num_tags, "_lib8")) {
-			} else if (corlett_tag_recognize(c, &c->libaux[7], num_tags, "_lib9")) {
-			} else if (corlett_tag_recognize(c, &c->inf_refresh, num_tags, "_refresh")) {
-			} else if (corlett_tag_recognize(c, &c->inf_title, num_tags, "title")) {
-			} else if (corlett_tag_recognize(c, &c->inf_copy, num_tags, "copyright")) {
-			} else if (corlett_tag_recognize(c, &c->inf_artist, num_tags, "artist")) {
-			} else if (corlett_tag_recognize(c, &c->inf_game, num_tags, "game")) {
-			} else if (corlett_tag_recognize(c, &c->inf_year, num_tags, "year")) {
-			} else if (corlett_tag_recognize(c, &c->inf_length, num_tags, "length")) {
-			} else if (corlett_tag_recognize(c, &c->inf_fade, num_tags, "fade")) {
-			}
 		}
 	}
 	return true;
@@ -251,6 +234,7 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 	if (libnum == 0)
 	{
 		int i;
+		char lib_tag_name[6] = "_lib";
 		uint8 *lib_raw[9] = {0};
 		uint8 *lib_data[9] = {0};
 		corlett_t lib_tags[9] = {{0}};
@@ -264,7 +248,12 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 
 			uint64 lib_len, lib_raw_length;
 
-			const char *libfile = i ? c->libaux[i - 1] : c->lib;
+			if (i >= 1 && i <= 8)
+			{
+				lib_tag_name[4] = '0' + i + 1;
+			}
+
+			const char *libfile = corlett_tag_lookup(c, lib_tag_name);
 			if(!libfile)
 			{
 				continue;
@@ -285,8 +274,8 @@ static int corlett_decode_lib(int libnum, uint8 *input, uint32 input_len, uint8 
 		if (ret == AO_SUCCESS)
 		{
 			// now figure out the time in samples for the length/fade
-			double length_seconds = psfTimeToSeconds(c->inf_length);
-			double fade_seconds = psfTimeToSeconds(c->inf_fade);
+			double length_seconds = psfTimeToSeconds(corlett_tag_lookup(c, "length"));
+			double fade_seconds = psfTimeToSeconds(corlett_tag_lookup(c, "fade"));
 
 			#ifdef DEBUG
 			printf("length %f fade %f\n", length_seconds, fade_seconds);
@@ -343,19 +332,26 @@ void corlett_free(corlett_t *c)
 	{
 		free(c->tag_buffer);
 	}
+	hashtable_free(&c->tags);
 	memset(c, 0, sizeof(corlett_t));
 }
 
-int corlett_tag_recognize(corlett_t *c, const char **target_value, int tag_num, const char *key)
+static const char** corlett_tag_hashtable_get(corlett_t *c, const char *tag, hashtable_flags_t flags)
 {
-	if (c->tag_name[tag_num] && !strcasecmp(c->tag_name[tag_num], key))
-	{
-		*target_value = c->tag_data[tag_num];
-		c->tag_data[tag_num] = NULL;
-		c->tag_name[tag_num] = NULL;
-		return 1;
-	}
-	return 0;
+	assert(c);
+	assert(tag);
+	return (const char**)hashtable_get(&c->tags, tag, strlen(tag) + 1, flags);
+}
+
+const char** corlett_tag_get(corlett_t *c, const char *tag)
+{
+	return corlett_tag_hashtable_get(c, tag, HT_CASE_INSENSITIVE | HT_CREATE);
+}
+
+const char *corlett_tag_lookup(corlett_t *c, const char *tag)
+{
+	const char **ret = corlett_tag_hashtable_get(c, tag, HT_CREATE);
+	return ret ? *ret : NULL;
 }
 
 void corlett_length_set(double length_seconds, double fade_seconds)

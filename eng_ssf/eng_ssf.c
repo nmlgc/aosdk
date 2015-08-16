@@ -164,25 +164,25 @@ int32 ssf_command(int32 command, int32 parameter)
 int32 ssf_fill_info(ao_display_info *info)
 {
 	info->title[1] = "Name: ";
-	info->info[1] = c.inf_title;
+	info->info[1] = corlett_tag_lookup(&c, "title");
 
 	info->title[2] = "Game: ";
-	info->info[2] = c.inf_game;
+	info->info[2] = corlett_tag_lookup(&c, "game");
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c.inf_artist;
+	info->info[3] = corlett_tag_lookup(&c, "artist");
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c.inf_copy;
+	info->info[4] = corlett_tag_lookup(&c, "copyright");
 
 	info->title[5] = "Year: ";
-	info->info[5] = c.inf_year;
+	info->info[5] = corlett_tag_lookup(&c, "year");
 
 	info->title[6] = "Length: ";
-	info->info[6] = c.inf_length;
+	info->info[6] = corlett_tag_lookup(&c, "length");
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c.inf_fade;
+	info->info[7] = corlett_tag_lookup(&c, "fade");
 
 	return AO_SUCCESS;
 }

@@ -7,28 +7,12 @@
 
 // corlett.h
 
-#define MAX_UNKNOWN_TAGS			32
+#include "utils.h"
 
 typedef struct
 {
+	hashtable_t tags;
 	char *tag_buffer;
-
-	// All tags are pointers into [tag_buffer].
-	const char *lib;
-	const char *libaux[8];
-
-	const char *inf_title;
-	const char *inf_copy;
-	const char *inf_artist;
-	const char *inf_game;
-	const char *inf_year;
-	const char *inf_length;
-	const char *inf_fade;
-
-	const char *inf_refresh;
-
-	const char *tag_name[MAX_UNKNOWN_TAGS];
-	const char *tag_data[MAX_UNKNOWN_TAGS];
 
 	uint32 *res_section;
 	uint32 res_size;
@@ -54,6 +38,14 @@ typedef int corlett_lib_callback_t(int libnum, uint8 *lib, uint64 size, corlett_
 
 int corlett_decode(uint8 *input, uint32 input_len, corlett_t *c, corlett_lib_callback_t *lib_callback);
 void corlett_free(corlett_t *c);
+
+// Returns a writable pointer to the tag data, which is created if it doesn't
+// exist yet.
+const char** corlett_tag_get(corlett_t *c, const char *tag);
+
+// Read-only tag lookup. Returns NULL if there is no data for [tag].
+const char* corlett_tag_lookup(corlett_t *c, const char *tag);
+
 int corlett_tag_recognize(corlett_t *c, const char **target_value, int tag_num, const char *key);
 void corlett_length_set(double length_seconds, double fade_seconds);
 uint32 corlett_sample_count(void);

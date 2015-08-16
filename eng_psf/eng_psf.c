@@ -61,15 +61,19 @@ extern void psx_hw_init(void);
 extern void psx_hw_slice(void);
 extern void psx_hw_frame(void);
 
-static void psf_lib_set_refresh(int libnum, const corlett_t *c)
+static void psf_lib_set_refresh(int libnum, corlett_t *c)
 {
-	if (c != NULL && psf_refresh == -1 && c->inf_refresh)
+	if (c != NULL && psf_refresh == -1)
 	{
-		if (c->inf_refresh[0] == '5')
+		const char *refresh = corlett_tag_lookup(c, "_refresh");
+		if(!refresh) {
+			return;
+		}
+		if (refresh[0] == '5')
 		{
 			psf_refresh = 50;
 		}
-		if (c->inf_refresh[0] == '6')
+		if (refresh[0] == '6')
 		{
 			psf_refresh = 60;
 		}
@@ -141,7 +145,7 @@ int psf_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 		offset = lib[0x1c] | lib[0x1d]<<8 | lib[0x1e]<<16 | lib[0x1f]<<24;
 		printf("Library #%d: Text section size: %x\n", libnum, offset);
 		printf("Library #%d: Region: [%s]\n", libnum, &lib[0x4c]);
-		printf("Library #%d: refresh: [%s]\n", libnum, c->inf_refresh);
+		printf("Library #%d: refresh: [%s]\n", libnum, corlett_tag_lookup(c, "_refresh"));
 	}
 	#endif
 
@@ -228,9 +232,9 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	// patch illegal Chocobo Dungeon 2 code - CaitSith2 put a jump in the delay slot from a BNE
 	// and rely on Highly Experimental's buggy-ass CPU to rescue them.  Verified on real hardware
 	// that the initial code is wrong.
-	if (c.inf_game)
 	{
-		if (!strcmp(c.inf_game, "Chocobo Dungeon 2"))
+		const char *game = corlett_tag_lookup(&c, "game");
+		if (game && !strcmp(game, "Chocobo Dungeon 2"))
 		{
 			if (psx_ram[0xbc090/4] == LE32(0x0802f040))
 			{
@@ -312,25 +316,25 @@ int32 psf_command(int32 command, int32 parameter)
 int32 psf_fill_info(ao_display_info *info)
 {
 	info->title[1] = "Name: ";
-	info->info[1] = c.inf_title;
+	info->info[1] = corlett_tag_lookup(&c, "title");
 
 	info->title[2] = "Game: ";
-	info->info[2] = c.inf_game;
+	info->info[2] = corlett_tag_lookup(&c, "game");
 
 	info->title[3] = "Artist: ";
-	info->info[3] = c.inf_artist;
+	info->info[3] = corlett_tag_lookup(&c, "artist");
 
 	info->title[4] = "Copyright: ";
-	info->info[4] = c.inf_copy;
+	info->info[4] = corlett_tag_lookup(&c, "copyright");
 
 	info->title[5] = "Year: ";
-	info->info[5] = c.inf_year;
+	info->info[5] = corlett_tag_lookup(&c, "year");
 
 	info->title[6] = "Length: ";
-	info->info[6] = c.inf_length;
+	info->info[6] = corlett_tag_lookup(&c, "length");
 
 	info->title[7] = "Fade: ";
-	info->info[7] = c.inf_fade;
+	info->info[7] = corlett_tag_lookup(&c, "fade");
 
 	return AO_SUCCESS;
 }
