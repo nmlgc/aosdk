@@ -17,6 +17,8 @@
 
 /// Hash table
 /// ----------
+#define BUCKETS 15
+
 // From http://www.cse.yorku.ca/~oz/hash.html
 static unsigned long hash(const char *key_buf, size_t key_len)
 {
@@ -54,26 +56,49 @@ static int bucket_match(const hashtable_bucket_t *bucket, const void *key_buf, s
 		: !memcmp(bucket->key_buf, key_buf, key_len);
 }
 
+static size_t bucket_size(const hashtable_t *table)
+{
+	assert(table);
+	assert(table->data_size);
+	return sizeof(hashtable_bucket_t) + table->data_size;
+}
+
+static hashtable_bucket_t* bucket_get(const hashtable_t *table, unsigned int i)
+{
+	size_t size = bucket_size(table);
+	return (hashtable_bucket_t*)((char*)(table->buckets) + i * size);
+}
+
+ao_bool hashtable_init(hashtable_t *table, size_t data_size)
+{
+	assert(table);
+	assert(data_size > 0);
+	if(table->buckets) {
+		return false;
+	}
+	table->data_size = data_size;
+	table->buckets = calloc(BUCKETS, sizeof(hashtable_bucket_t) + data_size);
+	return true;
+}
+
 void* hashtable_get(hashtable_t *table, const void *key_buf, size_t key_len, hashtable_flags_t flags)
 {
 	hashtable_bucket_t *bucket;
 	ao_bool create = flags & HT_CREATE;
 
-	assert(table);
-	assert(table->data_size > 0);
+	assert(table->buckets);
 	assert(key_buf);
 	assert(key_len);
 
-	bucket = &table->buckets[hash(key_buf, key_len) % BUCKETS];
+	bucket = bucket_get(table, hash(key_buf, key_len) % BUCKETS);
 
-	while(bucket->data && !bucket_match(bucket, key_buf, key_len, flags)) {
+	while(bucket->key_buf && !bucket_match(bucket, key_buf, key_len, flags)) {
 		if(!bucket->next && create) {
-			bucket->next = calloc(1, sizeof(hashtable_bucket_t));
+			bucket->next = calloc(1, bucket_size(table));
 		}
 		bucket = bucket->next;
 	}
-	if(!bucket->data && create) {
-		bucket->data = calloc(1, table->data_size);
+	if(!bucket->key_buf && create) {
 		bucket->key_len = key_len;
 		bucket->key_buf = malloc(key_len);
 		memcpy(bucket->key_buf, key_buf, key_len);
@@ -88,10 +113,10 @@ void* hashtable_iterate(hashtable_t *table, hashtable_iterator_t *iter)
 	assert(iter);
 	while(iter->i < BUCKETS) {
 		if(!iter->bucket) {
-			iter->bucket = &table->buckets[iter->i];
+			iter->bucket = bucket_get(table, iter->i);
 		}
-		if(iter->bucket->data) {
-			ret = iter->bucket->data;
+		if(iter->bucket->key_buf) {
+			ret = (void*)iter->bucket->data;
 		}
 		if(iter->bucket->next) {
 			iter->bucket = iter->bucket->next;
@@ -128,7 +153,7 @@ void hashtable_free(hashtable_t *table)
 		// We only have to free the key of the first entry in each
 		// bucket's list, as it was allocated as part of a single array
 		// in hashtable_init().
-		hashtable_bucket_t *bucket = &table->buckets[i];
+		hashtable_bucket_t *bucket = bucket_get(table, i);
 		if(bucket->key_buf) {
 			free(bucket->key_buf);
 		}
@@ -136,8 +161,7 @@ void hashtable_free(hashtable_t *table)
 		while(bucket) {
 			hashtable_bucket_t *bucket_cur = bucket;
 			bucket = bucket->next;
-			if(bucket_cur->data) {
-				free(bucket_cur->data);
+			if(bucket_cur->key_buf) {
 				free(bucket_cur->key_buf);
 			}
 			free(bucket_cur);
