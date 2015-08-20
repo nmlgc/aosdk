@@ -27,9 +27,9 @@
 # NOTE: this makefile will auto-detect Linux and MinGW and work appropriately.  Other OSes will likely
 #       need some help.
 
-CC   = gcc
-LD   = gcc
-CPP  = g++
+CC   ?= gcc
+LD   = $(CC)
+CPP  ?= g++
 CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1

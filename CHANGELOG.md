@@ -13,8 +13,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - The Makefile now comes with two build targets: a `release` target which
   compiles the code with optimizations, and a `debug` target that generates
   debugging information and disables optimizations.
-- Audio Overload's own `CFLAGS`, `LDFLAGS` and `LIBS` are now added to the
-  environment variables of the same names during the build.
+- Audio Overload's own `CC`, `CPP`, `CFLAGS`, `LDFLAGS` and `LIBS` are now
+  added to the environment variables of the same names during the build.
 
 ### Changed
 - The README file now is formatted using Markdown syntax.
