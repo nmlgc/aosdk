@@ -175,3 +175,11 @@ int ao_get_lib(const char *filename, uint8 **buffer, uint64 *length);
 #endif // AO_H
 
 extern volatile ao_bool ao_song_done;
+
+/// Portability functions defined in ao.c
+/// -------------------------------------
+// We don't care about permissions, even on Linux
+int ao_mkdir(const char *dirname);
+
+#define mkdir ERROR_Use_ao_mkdir_instead!
+/// -------------------------------------

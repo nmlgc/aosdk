@@ -377,7 +377,7 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 
 	printf("Dumping FS %d\n", fs);
 
-	mkdir("iopfiles", 0777);
+	ao_mkdir("iopfiles");
 	start = filesys[fs];
 	len = fssize[fs];
 
