@@ -53,7 +53,7 @@ int32 dsf_start(uint8 *buffer, uint32 length)
 	{
 		FILE *f;
 
-		f = fopen("dcram.bin", "wb");
+		f = ao_fopen("dcram.bin", "wb");
 		fwrite(dc_ram, 2*1024*1024, 1, f);
 		fclose(f);
 	}

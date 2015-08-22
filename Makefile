@@ -30,9 +30,10 @@
 CC   ?= gcc
 LD   = $(CC)
 CPP  ?= g++
-CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib
+CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib -fdata-sections -ffunction-sections
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
+LDFLAGS += -Wl,--gc-sections
 
 EXE  = aosdk
 LIBS += -lm
@@ -47,8 +48,12 @@ CFLAGS += -DLONG_IS_64BIT=1
 endif
 OBJS += oss.o
 else
-OBJS += dsnd.o
+CFLAGS += -DWIN32_UTF8_NO_API
+OBJS += dsnd.o win32_utf8/win32_utf8_build_static.o
 LIBS += -ldsound -ldxguid
+# Windows DLLs referenced by win32_utf8, which are hopefully eliminated by
+# -gc-sections one day…
+LIBS += -lcomdlg32 -lgdi32 -lole32 -lpsapi -lshlwapi -lversion -lwininet
 endif
 
 # DSF engine

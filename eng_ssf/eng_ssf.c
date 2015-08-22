@@ -110,7 +110,7 @@ int32 ssf_start(uint8 *buffer, uint32 length)
 	{
 		FILE *f;
 
-		f = fopen("satram.bin", "wb");
+		f = ao_fopen("satram.bin", "wb");
 		fwrite(sat_ram, 512*1024, 1, f);
 		fclose(f);
 	}

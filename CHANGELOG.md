@@ -27,8 +27,15 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   char buffers.
 
 ### Fixed
+- On Windows, Unicode filenames passed on the command line are now supported
+  correctly.
 - Corlett length and fade tags with more than three fractional digits are now
   supported correctly.
+
+### Removed
+- Due to the inclusion of [win32_utf8](https://github.com/thpatch/win32_utf8)
+  for transparent handling of Unicode file names on Windows, compilation on
+  Cygwin's GCC is no longer supported.
 
 ## [1.4.8] - 2009-02-15
 ### Fixed

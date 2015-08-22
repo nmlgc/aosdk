@@ -5,10 +5,16 @@
 //
 
 #ifdef WIN32
-#include <Windows.h>
+#include "win32_utf8/src/win32_utf8.h"
 #else
+#include <stdio.h>
 #include <sys/stat.h>
 #endif
+
+FILE* ao_fopen(const char *fn, const char *mode)
+{
+	return fopen(fn, mode);
+}
 
 int ao_mkdir(const char *dirname)
 {

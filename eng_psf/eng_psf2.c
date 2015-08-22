@@ -419,7 +419,7 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 			}
 
 			sprintf(tfn, "iopfiles/%s", cptr);
-			f = fopen(tfn, "wb");
+			f = ao_fopen(tfn, "wb");
 			if (f)
 			{
 				fwrite(buf, uncomp, 1, f);

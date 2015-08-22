@@ -3224,7 +3224,7 @@ void psx_iop_call(uint32 pc, uint32 callnum)
 				#ifdef DEBUG
 				{
 					FILE *f;
-					f = fopen("psxram.bin", "wb");
+					f = ao_fopen("psxram.bin", "wb");
 					fwrite(psx_ram, 2*1024*1024, 1, f);
 					fclose(f);
 				}

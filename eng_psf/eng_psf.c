@@ -219,7 +219,7 @@ int32 psf_start(uint8 *buffer, uint32 length)
 	{
 		FILE *f;
 
-		f = fopen("psxram.bin", "wb");
+		f = ao_fopen("psxram.bin", "wb");
 		fwrite(psx_ram, 2*1024*1024, 1, f);
 		fclose(f);
 	}

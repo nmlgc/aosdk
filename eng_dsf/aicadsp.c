@@ -86,7 +86,7 @@ void AICADSP_Step(struct _AICADSP *DSP)
 	int dump=0;
 	FILE *f=NULL;
 	if(dump)
-		f=fopen("dsp.txt","wt");
+		f=ao_fopen("dsp.txt","wt");
 	#endif
 	for(step=0; step</*128*/DSP->LastStep; ++step)
 	{

@@ -7,6 +7,8 @@
 #ifndef __AO_H
 #define __AO_H
 
+#include <stdio.h>
+
 #define AO_SUCCESS					1
 #define AO_FAIL						0
 #define AO_FAIL_DECOMPRESSION		-1
@@ -96,6 +98,8 @@ typedef unsigned long long	uint64;
 #endif
 
 #ifdef WIN32
+#include "win32_utf8/src/entry.h"
+
 #ifndef _BASETSD_H
 typedef signed int			INT32;
 typedef unsigned int		UINT32;
@@ -178,8 +182,11 @@ extern volatile ao_bool ao_song_done;
 
 /// Portability functions defined in ao.c
 /// -------------------------------------
+FILE* ao_fopen(const char *fn, const char *mode);
+
 // We don't care about permissions, even on Linux
 int ao_mkdir(const char *dirname);
 
+#define fopen ERROR_use_ao_fopen_instead!
 #define mkdir ERROR_Use_ao_mkdir_instead!
 /// -------------------------------------

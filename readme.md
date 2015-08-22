@@ -20,8 +20,16 @@ Make sure that you've pulled all Git submodules together with this repo:
 	git clone --recursive https://github.com/nmlgc/aosdk.git
 ```
 
-On Windows, either MinGW or Cygwin are required to build the code through the
-Makefile.
+On Windows, MinGW is required to build the code through the Makefile.
+Cygwin's own gcc is unsupported, so make sure to specify MinGW's gcc in the
+`CC` environment variable when building on Cygwin:
+
+```
+	# For 32-bit builds
+	CC=i686-w64-mingw32-gcc make
+	# For 64-bit builds
+	CC=x86_64-w64-mingw32-gcc make
+```
 
 On Linux, set the environment variable `OSTYPE` to `linux` before you run
 `make`:
