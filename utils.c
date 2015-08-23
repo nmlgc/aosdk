@@ -183,9 +183,9 @@ FILE* fopen_derivative(const char *fn, const char *suffix)
 
 	sprintf(full_fn, "%s%s", fn, suffix);
 	ret = ao_fopen(full_fn, "wb");
-	free(full_fn);
 	if(!ret) {
-		fprintf(stderr, "Error opening %s for writing: %s\n", fn, strerror(errno));
+		fprintf(stderr, "Error opening %s for writing: %s\n", full_fn, strerror(errno));
 	}
+	free(full_fn);
 	return ret;
 }
