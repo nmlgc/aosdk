@@ -104,6 +104,14 @@ struct _EG
 	UINT8 LPLINK;
 };
 
+struct _ADPCM_STATE
+{
+	UINT8 *base;
+	int cur_sample; //current ADPCM sample
+	int cur_quant; //current ADPCM step
+	int cur_step;
+};
+
 struct _SLOT
 {
 	union
@@ -122,11 +130,8 @@ struct _SLOT
 	struct _LFO PLFO;		//Phase LFO
 	struct _LFO ALFO;		//Amplitude LFO
 	int slot;
-	int cur_sample;       //current ADPCM sample
-	int cur_quant;        //current ADPCM step
-	int curstep;
-	int cur_lpquant, cur_lpsample, cur_lpstep;
-	UINT8 *adbase, *adlpbase;
+	struct _ADPCM_STATE adpcm;
+	struct _ADPCM_STATE adpcm_lp;
 	UINT8 lpend;
 };
 
@@ -390,20 +395,20 @@ static void Compute_LFO(struct _SLOT *slot)
 const int TableQuant[8]={ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(0.8984375),ADFIX(1.19921875),ADFIX(1.59765625),ADFIX(2.0),ADFIX(2.3984375)};
 const int quant_mul[16]= { 1, 3, 5, 7, 9, 11, 13, 15, -1, -3, -5, -7, -9, -11, -13, -15};
 
-void InitADPCM(int *PrevSignal, int *PrevQuant)
+void InitADPCM(struct _ADPCM_STATE *adpcm)
 {
-	*PrevSignal=0;
-	*PrevQuant=0x7f;
+	adpcm->cur_sample=0;
+	adpcm->cur_quant=0x7f;
 }
 
-INLINE signed short DecodeADPCM(int *PrevSignal, unsigned char Delta, int *PrevQuant)
+INLINE signed short DecodeADPCM(struct _ADPCM_STATE *adpcm, unsigned char Delta)
 {
-	int x = *PrevQuant * quant_mul [Delta & 15];
-	x = *PrevSignal + ((int)(x + ((UINT32)x >> 29)) >> 3);
-	*PrevSignal=ICLIP16(x);
-	*PrevQuant=(*PrevQuant*TableQuant[Delta&7])>>ADPCMSHIFT;
-	*PrevQuant=(*PrevQuant<0x7f)?0x7f:((*PrevQuant>0x6000)?0x6000:*PrevQuant);
-	return *PrevSignal;
+	int x = adpcm->cur_quant * quant_mul [Delta & 15];
+	x = adpcm->cur_sample + ((int)(x + ((UINT32)x >> 29)) >> 3);
+	adpcm->cur_sample=ICLIP16(x);
+	adpcm->cur_quant=(adpcm->cur_quant*TableQuant[Delta&7])>>ADPCMSHIFT;
+	adpcm->cur_quant=(adpcm->cur_quant<0x7f)?0x7f:((adpcm->cur_quant>0x6000)?0x6000:adpcm->cur_quant);
+	return adpcm->cur_sample;
 }
 
 static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
@@ -425,10 +430,10 @@ static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 
 	if (PCMS(slot) >= 2)
 	{
-		slot->curstep = 0;
-		slot->adbase = (unsigned char *) (AICA->AICARAM+((SA(slot))&0x7fffff));
-		InitADPCM(&(slot->cur_sample), &(slot->cur_quant));
-		InitADPCM(&(slot->cur_lpsample), &(slot->cur_lpquant));
+		slot->adpcm.cur_step = 0;
+		slot->adpcm.base = (unsigned char *) (AICA->AICARAM+((SA(slot))&0x7fffff));
+		InitADPCM(&slot->adpcm);
+		InitADPCM(&slot->adpcm_lp);
 
 		// on real hardware this creates undefined behavior.
 		if (LSA(slot) > LEA(slot))
@@ -1107,33 +1112,33 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 	}
 	else	// 4-bit ADPCM
 	{
-		UINT8 *base= slot->adbase;
-		UINT32 steps_to_go = addr2, curstep = slot->curstep;
+		UINT8 *base= slot->adpcm.base;
+		UINT32 steps_to_go = addr2, curstep = slot->adpcm.cur_step;
 
 		if (base)
 		{
-			cur_sample = slot->cur_sample; // may already contains current decoded sample
+			cur_sample = slot->adpcm.cur_sample; // may already contains current decoded sample
 
 			// seek to the interpolation sample
 			while (curstep < steps_to_go)
 			{
 				int shift1 = 4 & (curstep << 2);
 				unsigned char delta1 = (*base>>shift1)&0xf;
-				DecodeADPCM(&(slot->cur_sample),delta1,&(slot->cur_quant));
+				DecodeADPCM(&slot->adpcm,delta1);
 				if (!(++curstep & 1))
 					base++;
 				if (curstep == addr1)
-					cur_sample = slot->cur_sample;
+					cur_sample = slot->adpcm.cur_sample;
 				if (curstep == LSA(slot))
 				{
-					slot->cur_lpsample = slot->cur_sample;
-					slot->cur_lpquant = slot->cur_quant;
+					slot->adpcm_lp.cur_sample = slot->adpcm.cur_sample;
+					slot->adpcm_lp.cur_quant = slot->adpcm.cur_quant;
 				}
 			}
-			nxt_sample = slot->cur_sample;
+			nxt_sample = slot->adpcm.cur_sample;
 
-			slot->adbase = base;
-			slot->curstep = curstep;
+			slot->adpcm.base = base;
+			slot->adpcm.cur_step = curstep;
 		}
 		else
 		{
@@ -1181,14 +1186,14 @@ INLINE INT32 AICA_UpdateSlot(struct _AICA *AICA, struct _SLOT *slot)
 				if(PCMS(slot)>=2)
 				{
 					// restore the state @ LSA - the sampler will naturally walk to (LSA + remainder)
-					slot->adbase = &AICA->AICARAM[SA(slot)+(LSA(slot)/2)];
-					slot->curstep = LSA(slot);
+					slot->adpcm.base = &AICA->AICARAM[SA(slot)+(LSA(slot)/2)];
+					slot->adpcm.cur_step = LSA(slot);
 					if (PCMS(slot) == 2)
 					{
-						slot->cur_sample = slot->cur_lpsample;
-						slot->cur_quant = slot->cur_lpquant;
+						slot->adpcm.cur_sample = slot->adpcm_lp.cur_sample;
+						slot->adpcm.cur_quant = slot->adpcm_lp.cur_quant;
 					}
-//printf("Looping: slot_addr %x LSA %x LEA %x step %x base %x\n", slot->cur_addr>>SHIFT, LSA(slot), LEA(slot), slot->curstep, slot->adbase);
+//printf("Looping: slot_addr %x LSA %x LEA %x step %x base %x\n", slot->cur_addr>>SHIFT, LSA(slot), LEA(slot), slot->adpcm.cur_step, slot->adpcm.base);
 				}
 			}
 			break;
