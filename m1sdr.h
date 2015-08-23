@@ -20,6 +20,7 @@ ao_bool m1sdr_HwPresent(void);
 
 // Backend-specific
 INT16 m1sdr_Init(char *device, int sample_rate);
+void m1sdr_PrintDevices(void);
 void m1sdr_Exit(void);
 void m1sdr_PlayStart(void);
 void m1sdr_PlayStop(void);

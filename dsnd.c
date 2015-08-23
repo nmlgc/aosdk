@@ -52,7 +52,7 @@ unsigned char bDSoundPlaying=0;  // True if the Loop buffer is playing
 
 static int nDSoundNextSeg=0; // We have filled the sound in the loop up to the beginning of 'nNextSeg'
 
-// Yes, turning this into a Unicode callback would have been preferable, but 
+// Yes, turning these into Unicode callbacks would have been preferable, but
 // [lpContext] comes from the command line.
 BOOL CALLBACK DeviceCompareProc(
 	LPGUID lpGUID, LPCSTR lpszDesc, LPCSTR lpszDrvName, LPVOID lpContext
@@ -64,6 +64,14 @@ BOOL CALLBACK DeviceCompareProc(
 		DevicePlayback = device_requested;
 		return FALSE;
 	}
+	return TRUE;
+}
+
+BOOL CALLBACK DevicePrintProc(
+	LPGUID lpGUID, LPCSTR lpszDesc, LPCSTR lpszDrvName, LPVOID lpContext
+)
+{
+	printf("* %s\n", lpszDesc);
 	return TRUE;
 }
 
@@ -136,6 +144,13 @@ void m1sdr_TimeCheck(void)
 
 End:
 	return;
+}
+
+void m1sdr_PrintDevices(void)
+{
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	DirectSoundEnumerateU(DevicePrintProc, NULL);
+	CoUninitialize();
 }
 
 INT16 m1sdr_Init(char *device_requested, int sample_rate)

@@ -149,6 +149,7 @@ int main(int argc, const char *argv[])
 	uint8 *buffer;
 	uint32 size, filesig;
 	char *device = NULL;
+	int list_devices = false;
 	int noplay = false;
 	int nowave = false;
 
@@ -163,6 +164,7 @@ int main(int argc, const char *argv[])
 		OPT_HELP(),
 		#ifdef WIN32
 		OPT_STRING('d', "device", &device, "name of the playback device"),
+		OPT_BOOLEAN('\0', "list-devices", &list_devices, "list all available playback devices that can be passed to -d"),
 		#endif
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
 		OPT_BOOLEAN('w', "nowave", &nowave, "don't dump the song to a .wav file"),
@@ -179,6 +181,13 @@ int main(int argc, const char *argv[])
 	);
 
 	argc = argparse_parse(&argparse, argc, argv);
+
+	if (list_devices)
+	{
+		printf("Available output devices:\n");
+		m1sdr_PrintDevices();
+		return 0;
+	}
 
 	// check if an argument was given
 	if (argc < 1)
