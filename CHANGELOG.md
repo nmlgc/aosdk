@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 ### Added
+- On Windows, it is now possible to specify a custom playback device on the
+  command line using the new `-d/--device` option.
 - The program now terminates once the song has ended.  Useful for batch
   processing.
 

@@ -115,7 +115,7 @@ void m1sdr_TimeCheck(void)
 
 // m1sdr_Init - inits the output device and our global state
 
-INT16 m1sdr_Init(int sample_rate)
+INT16 m1sdr_Init(char *device, int sample_rate)
 {
 	int format, stereo, rate, fsize;
 

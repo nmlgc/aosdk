@@ -25,16 +25,15 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <stdio.h>
-#include <windows.h>
-#include <dsound.h>
-
 #include "cpuintrf.h"
 #include "m1sdr.h"
 #include "ao.h"
+#include "win32_utf8/src/win32_utf8.h"
 
 static stereo_sample_t samples[44100*2];	// make sure we reserve enough for worst-case scenario
 
+GUID DeviceGUID;
+char *DevicePlayback;
 LPDIRECTSOUND lpDS;			// DirectSound COM object
 LPDIRECTSOUNDBUFFER lpPDSB;	// Primary DirectSound buffer
 LPDIRECTSOUNDBUFFER lpSecB;	// Secondary DirectSound buffer
@@ -53,13 +52,28 @@ unsigned char bDSoundPlaying=0;  // True if the Loop buffer is playing
 
 static int nDSoundNextSeg=0; // We have filled the sound in the loop up to the beginning of 'nNextSeg'
 
+// Yes, turning this into a Unicode callback would have been preferable, but 
+// [lpContext] comes from the command line.
+BOOL CALLBACK DeviceCompareProc(
+	LPGUID lpGUID, LPCSTR lpszDesc, LPCSTR lpszDrvName, LPVOID lpContext
+)
+{
+	char *device_requested = (char*)lpContext;
+	if(!strcasecmp(device_requested, lpszDesc)) {
+		memcpy(&DeviceGUID, lpGUID, sizeof(GUID));
+		DevicePlayback = device_requested;
+		return FALSE;
+	}
+	return TRUE;
+}
+
 void m1sdr_SetSamplesPerTick(UINT32 spf)
 {
 	if (spf != (nDSoundFps/10))
 	{
 		m1sdr_Exit();
 		nDSoundFps = spf * 10;
-		m1sdr_Init(nDSoundSamRate);
+		m1sdr_Init(DevicePlayback, nDSoundSamRate);
 	}
 }
 
@@ -124,7 +138,7 @@ End:
 	return;
 }
 
-INT16 m1sdr_Init(int sample_rate)
+INT16 m1sdr_Init(char *device_requested, int sample_rate)
 {
 	DSBUFFERDESC	dsbuf;
 	WAVEFORMATEX	format;
@@ -140,9 +154,22 @@ INT16 m1sdr_Init(int sample_rate)
 	nDSoundSegLen=(nDSoundSamRate*10+(nDSoundFps>>1))/nDSoundFps;
 	cbLoopLen=(nDSoundSegLen*nDSoundSegCount)<<2;
 
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	if(device_requested)
+	{
+		DirectSoundEnumerateU(DeviceCompareProc, device_requested);
+		if(DevicePlayback == NULL && device_requested[0] != '\0')
+		{
+			printf(
+				"Could not find audio output device \"%s\", outputting on the primary device.\n",
+				device_requested
+			);
+		}
+	}
+
 	// create an IDirectSound COM object
 
-	if (DS_OK != DirectSoundCreate(NULL, &lpDS, NULL))
+	if (DS_OK != DirectSoundCreate(DevicePlayback ? &DeviceGUID : NULL, &lpDS, NULL))
 	{
 		printf("Unable to create DirectSound object!\n");
 		return(0);
@@ -244,6 +271,7 @@ void m1sdr_Exit(void)
 		IDirectSound_Release(lpDS);
 		lpDS = NULL;
 	}
+	CoUninitialize();
 }
 
 
