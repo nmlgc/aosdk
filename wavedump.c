@@ -43,12 +43,12 @@ typedef struct {
 } WAVEHEADER;
 
 static void wavedump_header_fill(
-	WAVEHEADER *h, uint32 data_size,
+	WAVEHEADER *h, uint32 data_size, uint32 file_size,
 	uint32 sample_rate, uint16 bits_per_sample, uint16 channels
 )
 {
 	h->cRIFF.FOURCC = LE32(*(uint32*)"RIFF");
-	h->cRIFF.Size = LE32(data_size + sizeof(WAVEHEADER) - sizeof(RIFFCHUNK));
+	h->cRIFF.Size = LE32(file_size - sizeof(RIFFCHUNK));
 	h->WAVE = LE32(*(uint32*)"WAVE");
 	h->cfmt.FOURCC = LE32(*(uint32*)"fmt ");
 	h->cfmt.Size = LE32(sizeof(h->Format));
@@ -98,8 +98,17 @@ void wavedump_finish(
 	assert(wave);
 	if(wave->file) {
 		WAVEHEADER h;
+		// RIFF chunks have to be word-aligned, so we have to pad out the
+		// data chunk if the number of samples happens to be odd.
+		if(wave->data_size & 1) {
+			uint8 pad = 0;
+			// fwrite() rather than wavedump_append(), as the chunk size
+			// obviously doesn't include the padding.
+			fwrite(&pad, sizeof(pad), 1, wave->file);
+		}
 		wavedump_header_fill(
-			&h, wave->data_size, sample_rate, bits_per_sample, channels
+			&h, wave->data_size, ftell(wave->file),
+			sample_rate, bits_per_sample, channels
 		);
 		fseek(wave->file, 0, SEEK_SET);
 		fwrite(&h, sizeof(h), 1, wave->file);
