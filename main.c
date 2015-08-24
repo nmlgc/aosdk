@@ -134,7 +134,7 @@ static void do_frame(unsigned long sample_count, stereo_sample_t *buffer)
 		(*types[type].sample)(p);
 		p++;
 	}
-	wavedump_stream_append(&song_dump, sample_count, buffer);
+	wavedump_append(&song_dump, sample_count * sizeof(stereo_sample_t), buffer);
 	(*types[type].frame)();
 }
 
@@ -257,7 +257,7 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	if(!nowave && wavedump_stream_open(&song_dump, argv[0]))
+	if(!nowave && wavedump_open(&song_dump, argv[0]))
 	{
 		printf("Dumping to %s%s.\n", argv[0], ".wav");
 	}
@@ -286,7 +286,7 @@ int main(int argc, const char *argv[])
 	}
 
 	signal(SIGINT, SIG_IGN);
-	wavedump_stream_finish(&song_dump, 44100);
+	wavedump_finish(&song_dump, 44100, 16, 2);
 
 	free(buffer);
 

@@ -64,7 +64,7 @@ static void wavedump_header_fill(
 	h->cdata.Size = LE32(data_size);
 }
 
-ao_bool wavedump_stream_open(wavedump_t *wave, const char *fn)
+ao_bool wavedump_open(wavedump_t *wave, const char *fn)
 {
 	uint32 temp = 0;
 	assert(wave);
@@ -79,23 +79,28 @@ ao_bool wavedump_stream_open(wavedump_t *wave, const char *fn)
 	return true;
 }
 
-void wavedump_stream_append(wavedump_t *wave, unsigned long sample_count, stereo_sample_t *buffer)
+void wavedump_append(wavedump_t *wave, uint32 len, void *buf)
 {
 	assert(wave);
 	if(wave->file) {
-		uint32 size = sample_count * sizeof(stereo_sample_t);
-		wave->data_size += size;
+		wave->data_size += len;
 		// XXX: Doesn't the data need to be swapped on big-endian platforms?
-		fwrite(buffer, size, 1, wave->file);
+		// That would mean that we need to know the target wave format on
+		// opening time.
+		fwrite(buf, len, 1, wave->file);
 	}
 }
 
-void wavedump_stream_finish(wavedump_t *wave, uint32 sample_rate)
+void wavedump_finish(
+	wavedump_t *wave, uint32 sample_rate, uint16 bits_per_sample, uint16 channels
+)
 {
 	assert(wave);
 	if(wave->file) {
 		WAVEHEADER h;
-		wavedump_header_fill(&h, wave->data_size, sample_rate, 16, 2);
+		wavedump_header_fill(
+			&h, wave->data_size, sample_rate, bits_per_sample, channels
+		);
 		fseek(wave->file, 0, SEEK_SET);
 		fwrite(&h, sizeof(h), 1, wave->file);
 		fclose(wave->file);
