@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - On Windows, it is now possible to specify a custom playback device on the
   command line using the new `-d/--device` option.  Additionally, all valid
   playback devices can be listed by passing `--list-devices`.
+- Instrument samples are now dumped to .wav files for the following engines:
+  * Dreamcast: low-level
 - The program now terminates once the song has ended.  Useful for batch
   processing.
 

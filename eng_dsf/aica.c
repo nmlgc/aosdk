@@ -411,6 +411,90 @@ INLINE signed short DecodeADPCM(struct _ADPCM_STATE *adpcm, unsigned char Delta)
 	return adpcm->cur_sample;
 }
 
+int AICA_DumpSample(const char *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS)
+{
+	wavedump_t wave;
+	struct _ADPCM_STATE adpcm;
+	char fn[18];
+	int byterate;	// 1 = 8-bit, 2 = 16-bit
+	UINT32 step = 0;
+	uint32 SA_real = (SA)&0x7fffff;
+	const UINT8* ram_sample = ram+SA_real;
+	int extradata = 0;	// size of cue chunk data
+
+	if (!sampledump_is_new(SA_real))
+	{
+		return 0;
+	}
+
+	sprintf(fn, "[0x%04x]_0x%06x", LEA, SA_real);
+	if (!wavedump_open(&wave, fn))
+	{
+		return 0;
+	}
+	wavedump_loop_set(&wave, LSA);
+
+	switch (PCMS)
+	{
+		case ST_PCM_16:
+			byterate = 2;
+			break;
+		case ST_PCM_8:
+			byterate = 1;
+			break;
+		default:
+			byterate = 2;
+			InitADPCM(&adpcm);
+	}
+
+	// just copy the sample if it's saved as raw PCM
+	if(PCMS < ST_ADPCM)
+	{
+		INT16 local_sample[0x10000];
+		UINT32 size = LEA * byterate;
+		memcpy(local_sample, ram_sample, size);
+		while(step < LEA)
+		{
+			switch (PCMS)
+			{
+				// 8-bit signed
+				case ST_PCM_8:
+					// RIFF WAVE only has an unsigned 8-bit mode,
+					// so we have to convert the sample data
+					*((INT8*)(local_sample) + step) += 0x80;
+					break;
+				// 16 bit signed
+				case ST_PCM_16:
+					// Do an endianness conversion here in case we
+					// happen to run under big-endian
+					local_sample[step] = LE16(local_sample[step]);
+					break;
+				}
+			step++;
+		}
+		wavedump_append(&wave, size, local_sample);
+	}
+	else
+	{
+		const UINT8* base = ram_sample;
+		// We're decoding 4 bits at a time
+		while (step < LEA)
+		{
+			int shift1 = 4*((step&1));
+			int delta1 = (*base>>shift1)&0xf;
+			DecodeADPCM(&adpcm,delta1);
+			step++;
+			if (!(step & 1))
+			{
+				base++;
+			}
+			wavedump_append(&wave, byterate, &adpcm.cur_sample);
+		}
+	}
+	wavedump_finish(&wave, 44100, byterate * 8, 1);
+	return 1;
+}
+
 static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 {
 	UINT64 start_offset;
@@ -427,6 +511,7 @@ static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 	slot->EG.state=ATTACK;
 	slot->EG.volume=0x17f<<EG_SHIFT;
 	Compute_LFO(slot);
+	AICA_DumpSample(AICA->AICARAM, SA(slot), LSA(slot), LEA(slot), PCMS(slot));
 
 	if (PCMS(slot) >= 2)
 	{

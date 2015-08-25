@@ -16,6 +16,15 @@ typedef int16 data16_t;
 typedef int32 data32_t;
 typedef int offs_t;
 
+// AICA sample types (value of PCMS)
+typedef enum
+{
+	ST_PCM_16 = 0,
+	ST_PCM_8 = 1,
+	ST_ADPCM = 2,
+	ST_ADPCM_LONG = 3
+} AICA_SAMPLE_TYPE;
+
 struct AICAinterface
 {
 	int num;
@@ -26,6 +35,7 @@ struct AICAinterface
 
 void *aica_start(const void *config);
 void AICA_Update(void *param, INT16 **inputs, stereo_sample_t *sample);
+int AICA_DumpSample(const char *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS);
 
 #define READ16_HANDLER(name)	data16_t name(offs_t offset, data16_t mem_mask)
 #define WRITE16_HANDLER(name)	void     name(offs_t offset, data16_t data, data16_t mem_mask)
