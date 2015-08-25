@@ -42,6 +42,20 @@ typedef struct {
 	RIFFCHUNK cdata;
 } WAVEHEADER;
 
+typedef struct {
+	RIFFCHUNK ccue;
+	uint32 points;	// number of cue points
+} CUEHEADER;
+
+typedef struct {
+	uint32 dwName; // unique identification value
+	uint32 dwPosition; // play order position
+	uint32 fccChunk; // RIFF ID of corresponding data chunk
+	uint32 dwChunkStart; // offset from [fccChunk] to the LIST chunk, or 0 if no such chunk is present
+	uint32 dwBlockStart; // offset from [fccChunk] to a (unspecified) "block" containing the sample
+	uint32 dwSampleOffset; // offset from [dwBlockStart] to the sample
+} CUEPOINT;
+
 static void wavedump_header_fill(
 	WAVEHEADER *h, uint32 data_size, uint32 file_size,
 	uint32 sample_rate, uint16 bits_per_sample, uint16 channels
@@ -70,6 +84,7 @@ ao_bool wavedump_open(wavedump_t *wave, const char *fn)
 	assert(wave);
 
 	wave->data_size = 0;
+	wave->loop_sample = 0;
 	wave->file = fopen_derivative(fn, ".wav");
 	if(!wave->file) {
 		return false;
@@ -77,6 +92,13 @@ ao_bool wavedump_open(wavedump_t *wave, const char *fn)
 	// Jump over header, we write that one later
 	fwrite(&temp, 1, sizeof(WAVEHEADER), wave->file);
 	return true;
+}
+
+void wavedump_loop_set(wavedump_t *wave, uint32 loop_sample)
+{
+	assert(wave);
+	assert(wave->file);
+	wave->loop_sample = loop_sample;
 }
 
 void wavedump_append(wavedump_t *wave, uint32 len, void *buf)
@@ -105,6 +127,22 @@ void wavedump_finish(
 			// fwrite() rather than wavedump_append(), as the chunk size
 			// obviously doesn't include the padding.
 			fwrite(&pad, sizeof(pad), 1, wave->file);
+		}
+		if(wave->loop_sample) {
+			// Write the "cue " chunk
+			CUEHEADER cue;
+			CUEPOINT point;
+			cue.ccue.FOURCC = LE32(*(uint32*)"cue ");
+			cue.ccue.Size = LE32(4 + 1 * sizeof(CUEPOINT));
+			cue.points = LE32(1);
+			point.dwName = LE32(0);
+			point.dwChunkStart = LE32(0);
+			point.dwBlockStart = LE32(0);
+			point.dwPosition = LE32(wave->loop_sample);
+			point.dwSampleOffset = LE32(wave->loop_sample);
+			point.fccChunk = LE32(*(uint32*)"data");
+			fwrite(&cue, sizeof(cue), 1, wave->file);
+			fwrite(&point, sizeof(point), 1, wave->file);
 		}
 		wavedump_header_fill(
 			&h, wave->data_size, ftell(wave->file),
