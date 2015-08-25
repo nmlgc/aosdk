@@ -151,6 +151,7 @@ int main(int argc, const char *argv[])
 	char *device = NULL;
 	int list_devices = false;
 	int noplay = false;
+	int nosamples = false;
 	int nowave = false;
 
 	const char *const usages[] =
@@ -167,6 +168,7 @@ int main(int argc, const char *argv[])
 		OPT_BOOLEAN('\0', "list-devices", &list_devices, "list all available playback devices that can be passed to -d"),
 		#endif
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
+		OPT_BOOLEAN('s', "nosamples", &nosamples, "don't dump any instrument samples"),
 		OPT_BOOLEAN('w', "nowave", &nowave, "don't dump the song to a .wav file"),
 		OPT_END()
 	};
@@ -202,6 +204,11 @@ int main(int argc, const char *argv[])
 	{
 		printf("ERROR: could not open file %s\n", argv[0]);
 		return -1;
+	}
+
+	if(!nosamples)
+	{
+		sampledump_init();
 	}
 
 	// get the length of the file by seeking to the end then reading the current position

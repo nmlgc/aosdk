@@ -6,6 +6,8 @@
  * Author: Nmlgc
  */
 
+#pragma once
+
 typedef struct {
 	FILE *file;
 	uint32 loop_sample;

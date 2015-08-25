@@ -190,3 +190,6 @@ int ao_mkdir(const char *dirname);
 #define fopen ERROR_use_ao_fopen_instead!
 #define mkdir ERROR_Use_ao_mkdir_instead!
 /// -------------------------------------
+
+#include "wavedump.h"
+#include "sampledump.h"
