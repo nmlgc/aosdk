@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include "ao.h"
 #include "utils.h"
 #include "wavedump.h"
@@ -55,6 +56,31 @@ typedef struct {
 	uint32 dwBlockStart; // offset from [fccChunk] to a (unspecified) "block" containing the sample
 	uint32 dwSampleOffset; // offset from [dwBlockStart] to the sample
 } CUEPOINT;
+
+static void wavedump_LIST_adtl_labl_write(
+	wavedump_t *wave, uint32 point_id, const char *label
+)
+{
+	RIFFCHUNK cLIST;
+	const uint32 adtl = LE32(*(uint32*)"adtl");
+	RIFFCHUNK clabl;
+	size_t label_len;
+
+	assert(wave);
+	assert(label);
+
+	label_len = strlen(label) + 1;
+	clabl.FOURCC = LE32(*(uint32*)"labl");
+	cLIST.FOURCC = LE32(*(uint32*)"LIST");
+	clabl.Size = sizeof(point_id) + label_len;
+	cLIST.Size = sizeof(adtl) + sizeof(clabl) + clabl.Size;
+
+	fwrite(&cLIST, sizeof(cLIST), 1, wave->file);
+	fwrite(&adtl, sizeof(adtl), 1, wave->file);
+	fwrite(&clabl, sizeof(clabl), 1, wave->file);
+	fwrite(&point_id, sizeof(point_id), 1, wave->file);
+	fwrite(label, label_len, 1, wave->file);
+}
 
 static void wavedump_header_fill(
 	WAVEHEADER *h, uint32 data_size, uint32 file_size,
@@ -129,9 +155,11 @@ void wavedump_finish(
 			fwrite(&pad, sizeof(pad), 1, wave->file);
 		}
 		if(wave->loop_sample) {
-			// Write the "cue " chunk
+			// Write the "cue " chunk, as well as an additional
+			// LIST-adtl-labl chunk for newer GoldWave versions
 			CUEHEADER cue;
 			CUEPOINT point;
+
 			cue.ccue.FOURCC = LE32(*(uint32*)"cue ");
 			cue.ccue.Size = LE32(4 + 1 * sizeof(CUEPOINT));
 			cue.points = LE32(1);
@@ -141,8 +169,10 @@ void wavedump_finish(
 			point.dwPosition = LE32(wave->loop_sample);
 			point.dwSampleOffset = LE32(wave->loop_sample);
 			point.fccChunk = LE32(*(uint32*)"data");
+
 			fwrite(&cue, sizeof(cue), 1, wave->file);
 			fwrite(&point, sizeof(point), 1, wave->file);
+			wavedump_LIST_adtl_labl_write(wave, 0, "Loop point");
 		}
 		wavedump_header_fill(
 			&h, wave->data_size, ftell(wave->file),
