@@ -182,8 +182,6 @@ struct _AICA
 	char Master;
 	void (*IntARMCB)(int irq);
 
-	INT32 *buffertmpl, *buffertmpr;
-
 	UINT32 IrqTimA;
 	UINT32 IrqTimBC;
 	UINT32 IrqMidi;
@@ -213,7 +211,7 @@ struct _AICA
 	struct _AICADSP DSP;
 };
 
-static struct _AICA *AllocedAICA;
+static struct _AICA AICA;
 
 static void aica_exec_dma(struct _AICA *aica);       /*state DMA transfer function*/
 
@@ -667,10 +665,6 @@ static void AICA_Init(struct _AICA *AICA, const struct AICAinterface *intf)
 	}
 
 	AICALFO_Init();
-	AICA->buffertmpl=(signed int*) malloc(44100*sizeof(signed int));
-	AICA->buffertmpr=(signed int*) malloc(44100*sizeof(signed int));
-	memset(AICA->buffertmpl,0,44100*sizeof(signed int));
-	memset(AICA->buffertmpr,0,44100*sizeof(signed int));
 
 	// no "pend"
 	AICA[0].udata.data[0xa0/2] = 0;
@@ -1436,56 +1430,36 @@ int AICA_IRQCB(void *param)
 
 void AICA_Update(void *param, INT16 **inputs, stereo_sample_t *sample)
 {
-	AICA_DoMasterSample(AllocedAICA, sample);
+	AICA_DoMasterSample(&AICA, sample);
 }
 
 void *aica_start(const void *config)
 {
-	const struct AICAinterface *intf;
+	const struct AICAinterface *intf = config;
 
-	struct _AICA *AICA;
-
-	AICA = malloc(sizeof(*AICA));
-	memset(AICA, 0, sizeof(*AICA));
-
-	intf = config;
+	memset(&AICA, 0, sizeof(struct _AICA));
 
 	// init the emulation
-	AICA_Init(AICA, intf);
+	AICA_Init(&AICA, intf);
 
 	// set up the IRQ callbacks
-	{
-		AICA->IntARMCB = intf->irq_callback[0];
+	AICA.IntARMCB = intf->irq_callback[0];
+	// AICA.stream = stream_create(0, 2, 44100, AICA, AICA_Update);
 
-//		AICA->stream = stream_create(0, 2, 44100, AICA, AICA_Update);
-	}
-
-	AllocedAICA = AICA;
-
-	return AICA;
-}
-
-void aica_stop(void)
-{
-	free(AllocedAICA);
+	return &AICA;
 }
 
 void AICA_set_ram_base(int which, void *base)
 {
-	struct _AICA *AICA = AllocedAICA;
-	if (AICA)
-	{
-		AICA->AICARAM = base;
-		AICA->RAM_MASK = AICA->AICARAM_LENGTH-1;
-		AICA->RAM_MASK16 = AICA->RAM_MASK & 0x7ffffe;
-		AICA->DSP.AICARAM = base;
-	}
+	AICA.AICARAM = base;
+	AICA.RAM_MASK = AICA.AICARAM_LENGTH-1;
+	AICA.RAM_MASK16 = AICA.RAM_MASK & 0x7ffffe;
+	AICA.DSP.AICARAM = base;
 }
 
 READ16_HANDLER( AICA_0_r )
 {
-	struct _AICA *AICA = AllocedAICA;
-	UINT16 res = AICA_r16(AICA, offset*2);
+	UINT16 res = AICA_r16(&AICA, offset*2);
 
 //	printf("Read AICA @ %x => %x (PC=%x, R5=%x)\n", offset*2, res, arm7_get_register(15), arm7_get_register(5));
 
@@ -1496,28 +1470,21 @@ extern UINT32* stv_scu;
 
 WRITE16_HANDLER( AICA_0_w )
 {
-	struct _AICA *AICA = AllocedAICA;
-	UINT16 tmp;
-
-	tmp = AICA_r16(AICA, offset*2);
+	UINT16 tmp = AICA_r16(&AICA, offset*2);
 	COMBINE_DATA(&tmp);
-	AICA_w16(AICA,offset*2, tmp);
+	AICA_w16(&AICA,offset*2, tmp);
 }
 
 WRITE16_HANDLER( AICA_MidiIn )
 {
-	struct _AICA *AICA = AllocedAICA;
-	AICA->MidiStack[AICA->MidiW++]=data;
-	AICA->MidiW &= 15;
+	AICA.MidiStack[AICA.MidiW++]=data;
+	AICA.MidiW &= 15;
 }
 
 READ16_HANDLER( AICA_MidiOutR )
 {
-	struct _AICA *AICA = AllocedAICA;
-	unsigned char val;
-
-	val=AICA->MidiStack[AICA->MidiR++];
-	AICA->MidiR&=7;
+	unsigned char val = AICA.MidiStack[AICA.MidiR++];
+	AICA.MidiR&=7;
 	return val;
 }
 
