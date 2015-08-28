@@ -20,6 +20,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   debugging information and disables optimizations.
 - Audio Overload's own `CC`, `CPP`, `CFLAGS`, `LDFLAGS` and `LIBS` are now
   added to the environment variables of the same names during the build.
+- Binaries are now suffixed with GCC's build machine identifier.
 
 ### Changed
 - The README file now is formatted using Markdown syntax.

@@ -35,7 +35,9 @@ CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_
 CFLAGS += -DLSB_FIRST=1
 LDFLAGS += -Wl,--gc-sections
 
-EXE  = aosdk
+MACHINE = $(shell $(CC) -dumpmachine)
+
+EXE  = aosdk-$(MACHINE)
 LIBS += -lm
 
 # main objects
@@ -79,7 +81,7 @@ OBJS += eng_psf/eng_spu.o
 OBJS += zlib/adler32.o zlib/compress.o zlib/crc32.o zlib/gzio.o zlib/uncompr.o zlib/deflate.o zlib/trees.o
 OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.o
 
-SRCS=$(OBJS:.o=.c)
+MACHINE_OBJS = $(OBJS:%.o=obj/$(MACHINE)/%.o)
 
 all: release
 .PHONY: debug release
@@ -90,18 +92,21 @@ debug: $(EXE)
 release: CFLAGS += -O3 -DNDEBUG
 release: $(EXE)
 
-%.o: %.c
+obj/$(MACHINE)/%.o: %.c
 	@echo Compiling $<...
+	@mkdir -p $(@D)
 	@$(CC) $(CFLAGS) $< -o $@
 
-%.o: %.cpp
+obj/$(MACHINE)/%.o: %.cpp
 	@echo Compiling $<...
+	@mkdir -p $(@D)
 	@$(CPP) $(CFLAGS) $< -o $@
 
-$(EXE): $(OBJS)
+$(EXE): $(MACHINE_OBJS)
 	@echo Linking $(EXE)...
-	@$(LD) $(LDFLAGS) -g -o $(EXE) $(OBJS) $(LIBS)
+	@$(LD) $(LDFLAGS) -g -o $(EXE) $(MACHINE_OBJS) $(LIBS)
 
 clean:
-	rm -f $(OBJS) $(EXE)
-
+	rm -f $(MACHINE_OBJS) $(EXE)
+	rm -r obj/$(MACHINE)
+	rm -d obj/ 2>/dev/null
