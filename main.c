@@ -33,6 +33,7 @@
 #include "ao.h"
 #include "eng_protos.h"
 #include "m1sdr.h"
+#include "mididump.h"
 #include "wavedump.h"
 
 /* file types */
@@ -150,6 +151,7 @@ int main(int argc, const char *argv[])
 	uint32 size, filesig;
 	char *device = NULL;
 	int list_devices = false;
+	// int nomidi = false; // declared as a global in mididump.c
 	int noplay = false;
 	int nosamples = false;
 	int nowave = false;
@@ -167,6 +169,7 @@ int main(int argc, const char *argv[])
 		OPT_STRING('d', "device", &device, "name of the playback device"),
 		OPT_BOOLEAN('\0', "list-devices", &list_devices, "list all available playback devices that can be passed to -d"),
 		#endif
+		OPT_BOOLEAN('m', "nomidi", &nomidi, "don't dump the song to a .mid file"),
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
 		OPT_BOOLEAN('s', "nosamples", &nosamples, "don't dump any instrument samples"),
 		OPT_BOOLEAN('w', "nowave", &nowave, "don't dump the song to a .wav file"),
@@ -297,6 +300,10 @@ int main(int argc, const char *argv[])
 
 	free(buffer);
 
+	if(!nomidi) {
+		printf("Writing MIDI data... ");
+		mididump_write(argv[0]);
+	}
 	return 1;
 }
 

@@ -41,7 +41,7 @@ EXE  = aosdk-$(MACHINE)
 LIBS += -lm
 
 # main objects
-OBJS = main.o ao.o corlett.o m1sdr.o utils.o sampledump.o wavedump.o argparse/argparse.o
+OBJS = main.o ao.o corlett.o m1sdr.o utils.o mididump.o sampledump.o wavedump.o argparse/argparse.o
 
 # port objects
 ifeq ($(OSTYPE),linux)
