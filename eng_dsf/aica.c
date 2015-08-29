@@ -8,6 +8,7 @@
     - Some minor other tweeks
 */
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
 #include "ao.h"
@@ -15,6 +16,7 @@
 #include "aica.h"
 #include "aicadsp.h"
 #include "dc_hw.h"
+#include "mididump.h"
 
 #define ICLIP16(x) (x<-32768)?-32768:((x>32767)?32767:x)
 
@@ -133,6 +135,7 @@ struct _SLOT
 	struct _ADPCM_STATE adpcm;
 	struct _ADPCM_STATE adpcm_lp;
 	UINT8 lpend;
+	char midi_note; // MIDI Note at the last Note On event
 };
 
 
@@ -210,6 +213,92 @@ struct _AICA
 
 	struct _AICADSP DSP;
 };
+
+/// MIDI dumping code
+/// -----------------
+static double AICA_MIDI_FNSToPitch(struct _SLOT *slot)
+{
+	double fn = FNS(slot);
+	fn /= 1024.0;
+	fn += 1;
+	fn = log(fn) / log(2.0);
+	fn *= 1200.0;
+	return fn;
+}
+
+static char AICA_MIDI_TLToVelocity(struct _SLOT *slot)
+{
+	/*
+	 * Following the General MIDI System Level 1 developer guidelines
+	 * (gmguide2.pdf), the preferred formula for mapping velocities to
+	 * decibels is
+	 *
+	 *	L(dB) = 40 log (V/127)
+	 */
+	double db = -(TL(slot) / 256.0);
+	db *= 96.0; // Dynamic range of TL[7:0]
+	return rint(pow(10.0, db / 40.0) * 127);
+}
+
+// Returns the MIDI note currently playing in the given slot
+static char AICA_MIDI_SlotNote(struct _SLOT *slot, double *bend)
+{
+	int octave = (OCT(slot) ^ 8) - 6;
+	double pitch = AICA_MIDI_FNSToPitch(slot);
+	char chromatic = pitch / 100;
+
+	assert(bend);
+
+	*bend = pitch - (chromatic * 100);
+	// Round up the nominal note value
+	if(*bend > 50.0)
+	{
+		chromatic++;
+		*bend = -(100.0 - *bend);
+		if(chromatic == 12)
+		{
+			octave++;
+			chromatic = 0;
+		}
+	}
+	return ((octave + 4) * 12) + chromatic;
+}
+
+static void AICA_MIDI_NoteOn(struct _SLOT *slot)
+{
+	if(!nomidi) {
+		double bend;
+		unsigned char velocity = AICA_MIDI_TLToVelocity(slot);
+		char midi_note = AICA_MIDI_SlotNote(slot, &bend);
+#ifdef DEBUG
+		// Can't move this to mididump.c as long as it doesn't cover pitch bends
+		static const char *PITCHES[12] =
+		{
+			"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+		};
+		int octave = midi_note / 12;
+		int chromatic = midi_note - (octave * 12);
+
+		printf(
+			"[MIDI] Note  On %04x %2s%d%+02.2f (V:%3d)\n",
+			SA(slot), PITCHES[chromatic], octave - 2, bend, velocity
+		);
+#endif
+		mididump_vchan_note_on(SA(slot), midi_note, velocity);
+		slot->midi_note = midi_note;
+	}
+}
+
+static void AICA_MIDI_NoteOff(struct _SLOT *slot)
+{
+	if(!nomidi && slot->midi_note != 0) {
+		mididump_vchan_note_off(
+			SA(slot), slot->midi_note, AICA_MIDI_TLToVelocity(slot)
+		);
+		slot->midi_note = 0;
+	}
+}
+/// -----------------
 
 static struct _AICA AICA;
 
@@ -510,6 +599,7 @@ static void AICA_StartSlot(struct _AICA *AICA, struct _SLOT *slot)
 	slot->EG.volume=0x17f<<EG_SHIFT;
 	Compute_LFO(slot);
 	AICA_DumpSample(AICA->AICARAM, SA(slot), LSA(slot), LEA(slot), PCMS(slot));
+	AICA_MIDI_NoteOn(slot);
 
 	if (PCMS(slot) >= 2)
 	{
@@ -537,6 +627,7 @@ static void AICA_StopSlot(struct _SLOT *slot,int keyoff)
 		slot->active=0;
 		slot->lpend = 1;
 	}
+	AICA_MIDI_NoteOff(slot);
 	slot->udata.data[0]&=~0x4000;
 
 }
