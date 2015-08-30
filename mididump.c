@@ -17,6 +17,9 @@
 
 ao_bool nomidi = false;
 
+#define MSB(ctl) ctl
+#define LSB(ctl) ctl+0x20
+
 /// MIDI events
 /// -----------
 typedef enum {
@@ -52,6 +55,7 @@ typedef struct event {
 /// ----------------
 typedef struct {
 	int id;
+	int8 cur_ctl_vals[128];
 	event_t *first;
 	event_t *last;
 } vchan_t;
@@ -75,6 +79,18 @@ static void vchan_event_push(
 	event_out->type = type;
 	event_out->param.word = param.word;
 	event_out->next = NULL;
+}
+
+static void vchan_ctl7_push(vchan_t *vchan, int8 ctl7, int8 val)
+{
+	assert(vchan);
+	assert(ctl7 >= 0 && ctl7 <= 127);
+	assert(val >= 0);
+	if(vchan->cur_ctl_vals[ctl7] != val) {
+		event_param_t param = {ctl7, val};
+		vchan_event_push(vchan, CONTROLLER, param);
+		vchan->cur_ctl_vals[ctl7] = val;
+	}
 }
 
 static void vchan_free(vchan_t *vchan)
@@ -103,7 +119,10 @@ vchan_t* vchans_get(int id)
 	vchan_t *ret;
 	hashtable_init(&vchans, sizeof(vchan_t));
 	ret = hashtable_get(&vchans, &id, sizeof(int), HT_CREATE);
-	ret->id = id;
+	if(ret->id == 0) {
+		memset(ret->cur_ctl_vals, 0xFF, sizeof(ret->cur_ctl_vals));
+		ret->id = id;
+	}
 	return (vchan_t*)ret;
 }
 
@@ -274,6 +293,22 @@ void mididump_vchan_note_off(int vchan_id, char note, char velocity)
 {
 	event_param_t param = {note, velocity};
 	vchan_event_push(vchans_get(vchan_id), NOTE_OFF, param);
+}
+
+void mididump_vchan_ctl7_set(int vchan_id, int8 ctl7, int8 val)
+{
+	vchan_ctl7_push(vchans_get(vchan_id), ctl7, val);
+}
+
+void mididump_vchan_ctl14_set(int vchan_id, int8 ctl14, int16 val)
+{
+	vchan_t *vchan = vchans_get(vchan_id);
+
+	assert(ctl14 >= 0 && ctl14 <= 0x1F);
+	assert(val >= 0 && val <= 0x3FFF);
+
+	vchan_ctl7_push(vchan, MSB(ctl14), (val >> 7) & 0x7F);
+	vchan_ctl7_push(vchan, LSB(ctl14), (val >> 0) & 0x7F);
 }
 
 ao_bool mididump_write(const char *fn)
