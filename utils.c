@@ -20,11 +20,12 @@
 #define BUCKETS 15
 
 // From http://www.cse.yorku.ca/~oz/hash.html
-static unsigned long hash(const char *key_buf, size_t key_len)
+static unsigned long hash(const blob_t *key)
 {
 	unsigned long hash = 5381;
+	const char *key_buf = (const char*)(key->buf);
 	int i;
-	for(i = 0; i < key_len; i++) {
+	for(i = 0; i < key->len; i++) {
 		hash = ((hash << 5) + hash) ^ key_buf[i]; // hash * 33 ^ c
 	}
 	return hash;
@@ -46,14 +47,14 @@ static int memcasecmp(const void *s1, const void *s2, size_t n)
 	return (int) (toupper(*sc1) - toupper(*sc2));
 }
 
-static int bucket_match(const hashtable_bucket_t *bucket, const void *key_buf, size_t key_len, hashtable_flags_t flags)
+static int bucket_match(const hashtable_bucket_t *bucket, const blob_t *key, hashtable_flags_t flags)
 {
-	if(bucket->key_len != key_len) {
+	if(bucket->key.len != key->len) {
 		return 0;
 	}
 	return flags & HT_CASE_INSENSITIVE
-		? !memcasecmp(bucket->key_buf, key_buf, key_len)
-		: !memcmp(bucket->key_buf, key_buf, key_len);
+		? !memcasecmp(bucket->key.buf, key->buf, key->len)
+		: !memcmp(bucket->key.buf, key->buf, key->len);
 }
 
 static size_t bucket_size(const hashtable_t *table)
@@ -81,27 +82,28 @@ ao_bool hashtable_init(hashtable_t *table, size_t data_size)
 	return true;
 }
 
-void* hashtable_get(hashtable_t *table, const void *key_buf, size_t key_len, hashtable_flags_t flags)
+void* hashtable_get(hashtable_t *table, const blob_t *key, hashtable_flags_t flags)
 {
 	hashtable_bucket_t *bucket;
 	ao_bool create = flags & HT_CREATE;
 
 	assert(table->buckets);
-	assert(key_buf);
-	assert(key_len);
+	assert(key);
+	assert(key->buf);
+	assert(key->len);
 
-	bucket = bucket_get(table, hash(key_buf, key_len) % BUCKETS);
+	bucket = bucket_get(table, hash(key) % BUCKETS);
 
-	while(bucket->key_buf && !bucket_match(bucket, key_buf, key_len, flags)) {
+	while(bucket->key.buf && !bucket_match(bucket, key, flags)) {
 		if(!bucket->next && create) {
 			bucket->next = calloc(1, bucket_size(table));
 		}
 		bucket = bucket->next;
 	}
-	if(!bucket->key_buf && create) {
-		bucket->key_len = key_len;
-		bucket->key_buf = malloc(key_len);
-		memcpy(bucket->key_buf, key_buf, key_len);
+	if(!bucket->key.buf && create) {
+		bucket->key.len = key->len;
+		bucket->key.buf = malloc(key->len);
+		memcpy(bucket->key.buf, key->buf, key->len);
 	}
 	return bucket->data;
 }
@@ -115,7 +117,7 @@ void* hashtable_iterate(hashtable_t *table, hashtable_iterator_t *iter)
 		if(!iter->bucket) {
 			iter->bucket = bucket_get(table, iter->i);
 		}
-		if(iter->bucket->key_buf) {
+		if(iter->bucket->key.buf) {
 			ret = (void*)iter->bucket->data;
 		}
 		if(iter->bucket->next) {
@@ -154,15 +156,15 @@ void hashtable_free(hashtable_t *table)
 		// bucket's list, as it was allocated as part of a single array
 		// in hashtable_init().
 		hashtable_bucket_t *bucket = bucket_get(table, i);
-		if(bucket->key_buf) {
-			free(bucket->key_buf);
+		if(bucket->key.buf) {
+			free(bucket->key.buf);
 		}
 		bucket = bucket->next;
 		while(bucket) {
 			hashtable_bucket_t *bucket_cur = bucket;
 			bucket = bucket->next;
-			if(bucket_cur->key_buf) {
-				free(bucket_cur->key_buf);
+			if(bucket_cur->key.buf) {
+				free(bucket_cur->key.buf);
 			}
 			free(bucket_cur);
 		}

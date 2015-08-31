@@ -23,12 +23,13 @@ ao_bool sampledump_is_new(int32 id)
 	// uniquely identify a sample? I can totally imagine different end
 	// addresses and different loop points between those… but whatever.
 	ao_bool *seen;
+	blob_t id_blob = {&id, sizeof(id)};
 
 	if(!samples_seen.buckets) {
 		return false;
 	}
 
-	seen = (ao_bool*)hashtable_get(&samples_seen, &id, sizeof(id), HT_CREATE);
+	seen = (ao_bool*)hashtable_get(&samples_seen, &id_blob, HT_CREATE);
 	if(!seen || *seen) {
 		return false;
 	}

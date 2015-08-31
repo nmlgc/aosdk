@@ -338,9 +338,12 @@ void corlett_free(corlett_t *c)
 
 static const char** corlett_tag_hashtable_get(corlett_t *c, const char *tag, hashtable_flags_t flags)
 {
+	blob_t tag_blob;
 	assert(c);
 	assert(tag);
-	return (const char**)hashtable_get(&c->tags, tag, strlen(tag) + 1, flags);
+	tag_blob.buf = tag;
+	tag_blob.len = strlen(tag) + 1;
+	return (const char**)hashtable_get(&c->tags, &tag_blob, flags);
 }
 
 const char** corlett_tag_get(corlett_t *c, const char *tag)

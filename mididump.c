@@ -117,8 +117,9 @@ hashtable_t vchans;
 vchan_t* vchans_get(int id)
 {
 	vchan_t *ret;
+	blob_t id_blob = {&id, sizeof(int)};
 	hashtable_init(&vchans, sizeof(vchan_t));
-	ret = hashtable_get(&vchans, &id, sizeof(int), HT_CREATE);
+	ret = hashtable_get(&vchans, &id_blob, HT_CREATE);
 	if(ret->id == 0) {
 		memset(ret->cur_ctl_vals, 0xFF, sizeof(ret->cur_ctl_vals));
 		ret->id = id;
