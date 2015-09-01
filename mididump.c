@@ -129,7 +129,7 @@ vchan_t* vchans_get(int id)
 
 vchan_t* vchans_iterate(hashtable_iterator_t *iter)
 {
-	return (vchan_t*)hashtable_iterate(&vchans, iter);
+	return (vchan_t*)hashtable_iterate(NULL, &vchans, iter);
 }
 
 static void vchans_free(void)

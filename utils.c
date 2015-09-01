@@ -108,7 +108,7 @@ void* hashtable_get(hashtable_t *table, const blob_t *key, hashtable_flags_t fla
 	return bucket->data;
 }
 
-void* hashtable_iterate(hashtable_t *table, hashtable_iterator_t *iter)
+void* hashtable_iterate(blob_t **key, hashtable_t *table, hashtable_iterator_t *iter)
 {
 	hashtable_t *ret = NULL;
 	assert(table);
@@ -119,6 +119,9 @@ void* hashtable_iterate(hashtable_t *table, hashtable_iterator_t *iter)
 		}
 		if(iter->bucket->key.buf) {
 			ret = (void*)iter->bucket->data;
+			if(key) {
+				*key = &iter->bucket->key;
+			}
 		}
 		if(iter->bucket->next) {
 			iter->bucket = iter->bucket->next;
@@ -138,7 +141,7 @@ unsigned int hashtable_length(hashtable_t *table)
 	unsigned int ret = 0;
 	hashtable_iterator_t iter = {0};
 	assert(table);
-	while(hashtable_iterate(table, &iter)) {
+	while(hashtable_iterate(NULL, table, &iter)) {
 		ret++;
 	}
 	return ret;

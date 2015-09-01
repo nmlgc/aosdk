@@ -341,7 +341,7 @@ static const char** corlett_tag_hashtable_get(corlett_t *c, const char *tag, has
 	blob_t tag_blob;
 	assert(c);
 	assert(tag);
-	tag_blob.buf = tag;
+	tag_blob.buf = (void*)tag;
 	tag_blob.len = strlen(tag) + 1;
 	return (const char**)hashtable_get(&c->tags, &tag_blob, flags);
 }

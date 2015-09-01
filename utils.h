@@ -52,8 +52,9 @@ void* hashtable_get(hashtable_t *table, const blob_t *key, hashtable_flags_t fla
 
 // Iterates over all entries in [table], using [iter] to store the iteration
 // state.  [iter] should be cleared to 0 before the first call. Returns the
-// current data entry, or NULL if the end of [table] has been reached.
-void* hashtable_iterate(hashtable_t *table, hashtable_iterator_t *iter);
+// current data entry as well as the [key] if that pointer is not NULL, or
+// NULL if the end of [table] has been reached.
+void* hashtable_iterate(blob_t **key, hashtable_t *table, hashtable_iterator_t *iter);
 
 // Returns the number of entries in [table].
 unsigned int hashtable_length(hashtable_t *table);
