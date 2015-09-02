@@ -94,16 +94,18 @@ void* hashtable_get(hashtable_t *table, const blob_t *key, hashtable_flags_t fla
 
 	bucket = bucket_get(table, hash(key) % BUCKETS);
 
-	while(bucket->key.buf && !bucket_match(bucket, key, flags)) {
+	while(bucket && bucket->key.buf && !bucket_match(bucket, key, flags)) {
 		if(!bucket->next && create) {
 			bucket->next = calloc(1, bucket_size(table));
 		}
 		bucket = bucket->next;
 	}
-	if(!bucket->key.buf && create) {
+	if(bucket && !bucket->key.buf && create) {
 		bucket->key.len = key->len;
 		bucket->key.buf = malloc(key->len);
 		memcpy(bucket->key.buf, key->buf, key->len);
+	} else if(!bucket && !create) {
+		return NULL;
 	}
 	return bucket->data;
 }
