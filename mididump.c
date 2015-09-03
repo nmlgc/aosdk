@@ -143,6 +143,70 @@ static void vchans_free(void)
 }
 /// --------------------------
 
+/// BPM recognition
+/// ---------------
+static double samples_to_bpm(double samples)
+{
+	return (60.0 / samples) * 44100.0;
+}
+
+#define bpm_to_samples(bpm) ((uint32)samples_to_bpm(bpm))
+
+// Analyzes all virtual channels and returns the most common note distance in
+// samples that would imply a tempo between 15 and 300 BPM.
+static uint32 mididump_beat_distance_find(void)
+{
+	const uint32 DISTANCE_MIN = bpm_to_samples(300); // = 8820
+	const uint32 DISTANCE_MAX = bpm_to_samples(15); // = 176400
+	uint32 occurrences[176400 - 8820] = {0}; // I hate C
+	uint32 max_occurrences = 0;
+	uint32 beat_distance = 0;
+	uint32 i = 0;
+	hashtable_iterator_t iter = {0};
+	vchan_t *vchan = vchans_iterate(&iter);
+
+	if(!vchan) {
+		return false;
+	}
+
+	do {
+		uint32 time_prev;
+		const event_t *event = vchan->first;
+
+		while(event && event->type != NOTE_ON) {
+			event = event->next;
+		}
+		if(!event) {
+			continue;
+		}
+		time_prev = event->time;
+		// Intentionally skip the first element
+		while(event = event->next) {
+			uint32 dist;
+
+			if(event->type != NOTE_ON) {
+				continue;
+			}
+			dist = event->time - time_prev;
+			if(dist > DISTANCE_MIN && dist < DISTANCE_MAX) {
+				occurrences[dist - DISTANCE_MIN]++;
+			}
+			time_prev = event->time;
+		}
+	} while(vchan = vchans_iterate(&iter));
+
+	memset(&iter, 0, sizeof(iter));
+	for(i = 0; i < DISTANCE_MAX - DISTANCE_MIN; i++) {
+		uint32 dist = i + DISTANCE_MIN;
+		if(occurrences[i] > max_occurrences) {
+			max_occurrences = occurrences[i];
+			beat_distance = dist;
+		}
+	}
+	return beat_distance;
+}
+/// ---------------
+
 /// MIDI output
 /// -----------
 static FILE* midi_open(const char *fn)
@@ -314,6 +378,7 @@ void mididump_vchan_ctl14_set(int vchan_id, int8 ctl14, int16 val)
 
 ao_bool mididump_write(const char *fn)
 {
+	uint32 beat_distance;
 	hashtable_iterator_t iter = {0};
 	vchan_t *vchan = vchans_iterate(&iter);
 	FILE *midi;
@@ -322,6 +387,10 @@ ao_bool mididump_write(const char *fn)
 	if(!vchan) {
 		return false;
 	}
+
+	printf("Analyzing BPM... ");
+	beat_distance = mididump_beat_distance_find();
+	printf("%f\n", samples_to_bpm(beat_distance));
 
 	midi = midi_open(fn);
 	midi_header_write(midi);
