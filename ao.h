@@ -140,6 +140,15 @@ static uint16 INLINE SWAP16(uint16 x)
 	);
 }
 
+static uint32 INLINE SWAP24(uint32 x)
+{
+	return (
+		((x & 0xFF0000) >> 16) |
+		((x & 0x00FF00) << 0) |
+		((x & 0x0000FF) << 16)
+	);
+}
+
 static uint32 INLINE SWAP32(uint32 x)
 {
 	return (
@@ -152,8 +161,10 @@ static uint32 INLINE SWAP32(uint32 x)
 
 #if LSB_FIRST
 #define BE16(x) (SWAP16(x))
+#define BE24(x) (SWAP24(x))
 #define BE32(x) (SWAP32(x))
 #define LE16(x) (x)
+#define LE24(x) (x)
 #define LE32(x) (x)
 
 #ifndef __ENDIAN__ /* Mac OS X Endian header has this function in it */
@@ -163,8 +174,10 @@ static uint32 INLINE SWAP32(uint32 x)
 #else
 
 #define BE16(x) (x)
+#define BE24(x) (x)
 #define BE32(x) (x)
 #define LE16(x) (SWAP16(x))
+#define LE24(x) (SWAP24(x))
 #define LE32(x) (SWAP32(x))
 
 #endif
