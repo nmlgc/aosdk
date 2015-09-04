@@ -75,7 +75,7 @@ static void vchan_event_push(
 		vchan->first = event_out;
 	}
 	vchan->last = event_out;
-	event_out->time = corlett_sample_count();
+	event_out->time = corlett_sample_count() / 2;
 	event_out->type = type;
 	event_out->param.word = param.word;
 	event_out->next = NULL;
@@ -147,7 +147,7 @@ static void vchans_free(void)
 /// ---------------
 static double samples_to_bpm(double samples)
 {
-	return (60.0 / samples) * 44100.0;
+	return (60.0 / samples) * 22050.0;
 }
 
 #define bpm_to_samples(bpm) ((uint32)samples_to_bpm(bpm))
@@ -283,7 +283,7 @@ static void midi_header_write(FILE *midi)
 	const uint32 chunk_size = BE32(6);
 	const uint16 format = BE16(1);
 	const uint16 track_count = BE16(hashtable_length(&vchans) + 1);
-	const uint16 time_division = BE16(0x7FFF);
+	const uint16 time_division = BE16(22050);
 
 	// Sequence name
 	// TODO: Should write all original song tags, somehow
