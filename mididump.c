@@ -154,14 +154,15 @@ static double samples_to_bpm(double samples)
 #define bpm_to_samples(bpm) ((uint32)samples_to_bpm(bpm))
 
 // Analyzes all virtual channels and returns the most common note distance in
-// samples that would imply a tempo between 15 and 300 BPM.
-static uint32 mididump_beat_distance_find(void)
+// samples that would imply a tempo between 40.37 and 300 BPM.
+static uint16 mididump_beat_distance_find(void)
 {
-	const uint32 DISTANCE_MIN = bpm_to_samples(300); // = 8820
-	const uint32 DISTANCE_MAX = bpm_to_samples(15); // = 176400
-	uint32 occurrences[176400 - 8820] = {0}; // I hate C
+	const uint16 DISTANCE_MIN = bpm_to_samples(300) + 2; // = 4412
+	const uint16 DISTANCE_MAX = 0x7FFF; // MIDI limitation
+	uint32 occurrences[(0x7FFF - 4412)] = {0}; // I hate C
+	double bpm = 0;
 	uint32 max_occurrences = 0;
-	uint32 beat_distance = 0;
+	uint16 beat_distance = 0;
 	uint32 i = 0;
 	hashtable_iterator_t iter = {0};
 	vchan_t *vchan = vchans_iterate(&iter);
@@ -278,13 +279,13 @@ static void midi_track_end(FILE* midi, long track_start)
 }
 // ------------
 
-static void midi_header_write(FILE *midi)
+static void midi_header_write(FILE *midi, uint16 beat_distance)
 {
 	const char *MThd = "MThd";
 	const uint32 chunk_size = BE32(6);
 	const uint16 format = BE16(1);
 	const uint16 track_count = BE16(hashtable_length(&vchans) + 1);
-	const uint16 time_division = BE16(22050);
+	const uint16 time_division = BE16(beat_distance);
 
 	// Sequence name
 	// TODO: Should write all original song tags, somehow
@@ -295,7 +296,7 @@ static void midi_header_write(FILE *midi)
 	// Tempo
 	const char tempo_type = META_TEMPO;
 	const char tempo_len = 3;
-	const uint32 tempo = SWAP24(60000000 / 60);
+	const uint32 tempo = SWAP24(60000000.0 / samples_to_bpm(beat_distance));
 
 	long track_start;
 
@@ -390,7 +391,7 @@ void mididump_vchan_ctl14_set(int vchan_id, int8 ctl14, int16 val)
 
 ao_bool mididump_write(const char *fn)
 {
-	uint32 beat_distance;
+	uint16 beat_distance;
 	hashtable_iterator_t iter = {0};
 	vchan_t *vchan = vchans_iterate(&iter);
 	FILE *midi;
@@ -402,10 +403,18 @@ ao_bool mididump_write(const char *fn)
 
 	printf("Analyzing BPM... ");
 	beat_distance = mididump_beat_distance_find();
-	printf("%f\n", samples_to_bpm(beat_distance));
+	if(beat_distance == 0) {
+		beat_distance = 22050;
+		printf(
+			"(piece too slow, falling back to %.2f BPM)\n",
+			samples_to_bpm(beat_distance)
+		);
+	} else {
+		printf("%.2f\n", samples_to_bpm(beat_distance));
+	}
 
 	midi = midi_open(fn);
-	midi_header_write(midi);
+	midi_header_write(midi, beat_distance);
 	do {
 		midi_track_write(midi, vchan, midi_channel++);
 		// Mistakenly allocating a melody track to the drum channel is
