@@ -61,6 +61,8 @@ typedef struct {
 	event_t *last;
 } vchan_t;
 
+int64 first_note_distance = -1;
+
 static void vchan_event_push(
 	vchan_t *vchan, event_type_t type, event_param_t param
 )
@@ -76,7 +78,14 @@ static void vchan_event_push(
 		vchan->first = event_out;
 	}
 	vchan->last = event_out;
-	event_out->time = corlett_sample_count() / 2;
+	if(first_note_distance == -1) {
+		event_out->time = 0;
+		if(type == NOTE_ON) {
+			first_note_distance = corlett_sample_count() / 2;
+		}
+	} else {
+		event_out->time = (corlett_sample_count() / 2) - first_note_distance;
+	}
 	event_out->type = type;
 	event_out->param.word = param.word;
 	event_out->next = NULL;
