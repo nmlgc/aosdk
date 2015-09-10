@@ -301,7 +301,6 @@ int main(int argc, const char *argv[])
 	free(buffer);
 
 	if(!nomidi) {
-		printf("Writing MIDI data... ");
 		mididump_write(argv[0]);
 	}
 	return 1;

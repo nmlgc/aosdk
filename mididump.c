@@ -410,6 +410,8 @@ ao_bool mididump_write(const char *fn)
 		return false;
 	}
 
+	printf("Writing MIDI data... ");
+
 	printf("Analyzing BPM... ");
 	beat_distance = mididump_beat_distance_find();
 	if(beat_distance == 0) {

@@ -87,10 +87,13 @@ void* hashtable_get(hashtable_t *table, const blob_t *key, hashtable_flags_t fla
 	hashtable_bucket_t *bucket;
 	ao_bool create = flags & HT_CREATE;
 
-	assert(table->buckets);
 	assert(key);
 	assert(key->buf);
 	assert(key->len);
+
+	if(!table->buckets) {
+		return NULL;
+	}
 
 	bucket = bucket_get(table, hash(key) % BUCKETS);
 
@@ -115,6 +118,9 @@ void* hashtable_iterate(blob_t **key, hashtable_t *table, hashtable_iterator_t *
 	hashtable_t *ret = NULL;
 	assert(table);
 	assert(iter);
+	if(!table->buckets) {
+		return NULL;
+	}
 	while(iter->i < BUCKETS) {
 		if(!iter->bucket) {
 			iter->bucket = bucket_get(table, iter->i);
