@@ -620,7 +620,7 @@ static void ps2_dma4(uint32 madr, uint32 bcr, uint32 chcr)
 		#if DEBUG_HLE_IOP
 		printf("DMA4: RAM %08x to SPU2\n", madr);
 		#endif
-		bcr = (bcr>>16) * (bcr & 0xffff) * 4;
+		bcr = (bcr>>16) * (bcr & 0xffff) * 2;
 		SPU2writeDMA4Mem(madr&0x1fffff, bcr);
 	}
 	else
@@ -628,7 +628,7 @@ static void ps2_dma4(uint32 madr, uint32 bcr, uint32 chcr)
 		#if DEBUG_HLE_IOP
 		printf("DMA4: SPU2 to RAM %08x\n", madr);
 		#endif
-		bcr = (bcr>>16) * (bcr & 0xffff) * 4;
+		bcr = (bcr>>16) * (bcr & 0xffff) * 2;
 		SPU2readDMA4Mem(madr&0x1fffff, bcr);
 	}
 
@@ -642,7 +642,7 @@ static void ps2_dma7(uint32 madr, uint32 bcr, uint32 chcr)
 		#if DEBUG_HLE_IOP
 		printf("DMA7: RAM %08x to SPU2\n", madr);
 		#endif
-		bcr = (bcr>>16) * (bcr & 0xffff) * 4;
+		bcr = (bcr>>16) * (bcr & 0xffff) * 2;
 		SPU2writeDMA7Mem(madr&0x1fffff, bcr);
 	}
 	else
@@ -650,7 +650,7 @@ static void ps2_dma7(uint32 madr, uint32 bcr, uint32 chcr)
 		#if DEBUG_HLE_IOP
 		printf("DMA7: SPU2 to RAM %08x\n", madr);
 		#endif
-		bcr = (bcr>>16) * (bcr & 0xffff) * 4;
+		bcr = (bcr>>16) * (bcr & 0xffff) * 2;
 //		SPU2readDMA7Mem(madr&0x1fffff, bcr);
 	}
 
