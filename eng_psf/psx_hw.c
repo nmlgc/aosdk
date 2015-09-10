@@ -831,17 +831,17 @@ void psx_hw_write(offs_t offset, uint32 data, uint32 mem_mask)
 		dma7_madr = data;
 		return;
 	}
-	else if (offset == 0xbf801504)
+	else if (offset == 0xbf801504 || offset == 0xbf801506)
 	{
-		dma7_chcr = data;
-		ps2_dma7(dma7_madr, dma7_bcr, dma7_chcr);
+		dma7_bcr &= mem_mask;
+		dma7_bcr |= data;
 		return;
 	}
 
 	if (offset == 0xbf801508 || offset == 0xbf80150a)
 	{
-		dma7_bcr &= mem_mask;
-		dma7_bcr |= data;
+		dma7_chcr = data;
+		ps2_dma7(dma7_madr, dma7_bcr, dma7_chcr);
 		return;
 	}
 

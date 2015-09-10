@@ -121,6 +121,7 @@ EXPORT_GCC void CALLBACK SPU2writeDMA7Mem(u32 usPSXMem,int iSize)
 
 	for(i=0; i<iSize; i++) {
 		spuMem[spuAddr2[1]] = ram16[usPSXMem>>1]; // spu addr 1 got by writeregister
+		usPSXMem+=2;
 		spuAddr2[1]++; // inc spu addr
 		if(spuAddr2[1]>0xfffff) {
 			spuAddr2[1]=0;    // wrap

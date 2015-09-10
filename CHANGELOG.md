@@ -35,6 +35,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   char buffers.
 
 ### Fixed
+- PSF2 DMA4 and DMA7 implementations have been fixed; both the Final Fantasy IV
+  rip by CaitSith2 and the Final Fantasy X rip by nenolod now play correctly.
+  Thanks to kode54 for the tip.
 - On Windows, Unicode filenames passed on the command line are now supported
   correctly.
 - Corlett length and fade tags with more than three fractional digits are now
