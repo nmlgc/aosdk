@@ -46,12 +46,12 @@ typedef uint32 u32;
 typedef uint64 u64;
 
 #if LSB_FIRST
-static INLINE u16 BFLIP16(u16 x)
+INLINE u16 BFLIP16(u16 x)
 {
 	return x;
 }
 #else
-static INLINE u16 BFLIP16(u16 x)
+INLINE u16 BFLIP16(u16 x)
 {
 	return( ((x>>8)&0xFF)| ((x&0xFF)<<8) );
 }

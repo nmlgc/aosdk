@@ -545,7 +545,7 @@ typedef struct
 #define Z80_VECTOR(device,state) (((device)<<8)|(state))
 
 #ifndef INLINE
-#define INLINE 		inline
+#define INLINE 		static inline
 #endif
 
 #include <string.h>

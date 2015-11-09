@@ -153,7 +153,7 @@ s16 * pS;
 // START SOUND... called by main thread to setup a new sound on a channel
 ////////////////////////////////////////////////////////////////////////
 
-static INLINE void StartSound(int ch)
+INLINE void StartSound(int ch)
 {
 	StartADSR(ch);
 

@@ -52,7 +52,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 // get_buffer content helper: takes care about wraps
-static INLINE s64 g_buffer(int iOff)
+INLINE s64 g_buffer(int iOff)
 {
 	s16 * p=(s16 *)spuMem;
 	iOff=(iOff*4)+rvb.CurrAddr;
@@ -68,7 +68,7 @@ static INLINE s64 g_buffer(int iOff)
 ////////////////////////////////////////////////////////////////////////
 
 // set_buffer content helper: takes care about wraps and clipping
-static INLINE void s_buffer(int iOff,int iVal)
+INLINE void s_buffer(int iOff,int iVal)
 {
 	s16 * p=(s16 *)spuMem;
 	iOff=(iOff*4)+rvb.CurrAddr;
@@ -90,7 +90,7 @@ static INLINE void s_buffer(int iOff,int iVal)
 ////////////////////////////////////////////////////////////////////////
 
 // set_buffer (+1 sample) content helper: takes care about wraps and clipping
-static INLINE void s_buffer1(int iOff,int iVal)
+INLINE void s_buffer1(int iOff,int iVal)
 {
 	s16 * p=(s16 *)spuMem;
 	iOff=(iOff*4)+rvb.CurrAddr+1;
@@ -109,7 +109,7 @@ static INLINE void s_buffer1(int iOff,int iVal)
 	*(p+iOff)=(s16)BFLIP16((s16)iVal);
 }
 
-static INLINE void MixREVERBLeftRight(s32 *oleft, s32 *oright, s32 inleft, s32 inright)
+INLINE void MixREVERBLeftRight(s32 *oleft, s32 *oright, s32 inleft, s32 inright)
 {
 	static s32 downbuf[2][8];
 	static s32 upbuf[2][8];

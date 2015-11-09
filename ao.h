@@ -120,19 +120,19 @@ typedef unsigned long long	UINT64;
 
 #ifndef INLINE
 #if defined(_MSC_VER)
-#define INLINE __forceinline
+#define INLINE static __forceinline
 #elif defined(__GNUC__)
-#define INLINE __inline__
+#define INLINE static __inline__
 #elif defined(_MWERKS_)
-#define INLINE inline
+#define INLINE static inline
 #elif defined(__powerc)
-#define INLINE inline
+#define INLINE static inline
 #else
 #define INLINE
 #endif
 #endif
 
-static uint16 INLINE SWAP16(uint16 x)
+INLINE uint16 SWAP16(uint16 x)
 {
 	return (
 		((x & 0xFF00) >> 8) |
@@ -140,7 +140,7 @@ static uint16 INLINE SWAP16(uint16 x)
 	);
 }
 
-static uint32 INLINE SWAP24(uint32 x)
+INLINE uint32 SWAP24(uint32 x)
 {
 	return (
 		((x & 0xFF0000) >> 16) |
@@ -149,7 +149,7 @@ static uint32 INLINE SWAP24(uint32 x)
 	);
 }
 
-static uint32 INLINE SWAP32(uint32 x)
+INLINE uint32 SWAP32(uint32 x)
 {
 	return (
 		((x & 0xFF000000) >> 24) |

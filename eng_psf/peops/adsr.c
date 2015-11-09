@@ -72,7 +72,7 @@ static void InitADSR(void)
 ////////////////////////////////////////////////////////////////////////
 
 // MIX ADSR
-static INLINE void StartADSR(int ch)
+INLINE void StartADSR(int ch)
 {
 	// and init some adsr vars
 	s_chan[ch].ADSRX.lVolume=1;
@@ -83,7 +83,7 @@ static INLINE void StartADSR(int ch)
 ////////////////////////////////////////////////////////////////////////
 
 // MIX ADSR
-static INLINE int MixADSR(int ch)
+INLINE int MixADSR(int ch)
 {
 	static const int sexytable[8]=
 	{0,4,6,8,9,10,11,12};

@@ -2,25 +2,25 @@
 
 #include "dc_hw.h"
 
-static INLINE void arm7_write_32(UINT32 addr, UINT32 data )
+INLINE void arm7_write_32(UINT32 addr, UINT32 data )
 {
 	addr &= ~3;
 	dc_write32(addr,data);
 }
 
 
-static INLINE void arm7_write_16(UINT32 addr, UINT16 data)
+INLINE void arm7_write_16(UINT32 addr, UINT16 data)
 {
 	addr &= ~1;
 	dc_write16(addr,data);
 }
 
-static INLINE void arm7_write_8(UINT32 addr, UINT8 data)
+INLINE void arm7_write_8(UINT32 addr, UINT8 data)
 {
 	dc_write8(addr,data);
 }
 
-static INLINE UINT32 arm7_read_32(UINT32 addr)
+INLINE UINT32 arm7_read_32(UINT32 addr)
 {
 	UINT32 result;
 	int k = (addr & 3) << 3;
@@ -37,7 +37,7 @@ static INLINE UINT32 arm7_read_32(UINT32 addr)
 	return result;
 }
 
-static INLINE UINT16 arm7_read_16(UINT32 addr)
+INLINE UINT16 arm7_read_16(UINT32 addr)
 {
 	UINT16 result;
 
@@ -51,7 +51,7 @@ static INLINE UINT16 arm7_read_16(UINT32 addr)
 	return result;
 }
 
-static INLINE UINT8 arm7_read_8(UINT32 addr)
+INLINE UINT8 arm7_read_8(UINT32 addr)
 {
 	return dc_read8(addr);
 }
