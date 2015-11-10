@@ -338,7 +338,7 @@ static uint32 load_file_ex(uint8 *top, uint8 *start, uint32 len, char *file, uin
 				uerr = uncompress(&buf[uofs], &dlength, &top[cofs], usize);
 				if (uerr != Z_OK)
 				{
-					printf("Decompress fail: %x %d!\n", dlength, uerr);
+					printf("Decompress fail: %lx %d!\n", dlength, uerr);
 					return 0xffffffff;
 				}
 
@@ -362,7 +362,7 @@ static uint32 load_file(int fs, char *file, uint8 *buf, uint32 buflen)
 	return load_file_ex(filesys[fs], filesys[fs], fssize[fs], file, buf, buflen);
 }
 
-static dump_files(int fs, uint8 *buf, uint32 buflen)
+static int dump_files(int fs, uint8 *buf, uint32 buflen)
 {
 	int32 numfiles, i, j;
 	uint8 *cptr;
@@ -410,7 +410,7 @@ static dump_files(int fs, uint8 *buf, uint32 buflen)
 				uerr = uncompress(&buf[uofs], &dlength, &start[cofs], usize);
 				if (uerr != Z_OK)
 				{
-					printf("Decompress fail: %x %d!\n", dlength, uerr);
+					printf("Decompress fail: %lx %d!\n", dlength, uerr);
 					return 0xffffffff;
 				}
 
@@ -463,7 +463,7 @@ int psf2_lib(int libnum, uint8 *lib, uint64 size, corlett_t *c)
 
 	if(libnum == 0 && size > 0)
 	{
-		printf("ERROR: PSF2 can't have a program section!  ps %08x\n", size);
+		printf("ERROR: PSF2 can't have a program section!  ps %08lx\n", size);
 	}
 
 	num_fs = max(num_fs, libnum + 1);

@@ -35,7 +35,7 @@ struct AICAinterface
 
 void *aica_start(const void *config);
 void AICA_Update(void *param, INT16 **inputs, stereo_sample_t *sample);
-int AICA_DumpSample(const char *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS);
+int AICA_DumpSample(const UINT8 *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS);
 
 #define READ16_HANDLER(name)	data16_t name(offs_t offset, data16_t mem_mask)
 #define WRITE16_HANDLER(name)	void     name(offs_t offset, data16_t data, data16_t mem_mask)

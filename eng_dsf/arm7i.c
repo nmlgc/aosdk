@@ -270,9 +270,9 @@ int R_WLS ()
 int R_WGE ()
   {
   // "N equals V"
-  return (ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N) &&\
- (ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V) || !(ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N) &&\
- !(ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V);
+  INT32 n = ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N;
+  INT32 v = ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V;
+  return (n && v) || (!n && !v);
   }
   //--------------------------------------------------------------------------
 
@@ -281,9 +281,9 @@ int R_WGE ()
 int R_WLT ()
   {
   // "N not equal to V"
-  return !(ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N) &&\
- (ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V) || (ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N) &&\
- !(ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V);
+  INT32 n = ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_N;
+  INT32 v = ARM7.Rx [ARM7_CPSR] & ARM7_CPSR_V;
+  return (!n && v) || (n && !v);
   }
   //--------------------------------------------------------------------------
 
@@ -951,10 +951,12 @@ void R_SDT (void)
   else
     adres = ARM7.Rx [ARM7_PC] & ~3;
   if (!BIT_L)
+    {
     if (Rd != ARM7_PC)
       w = ARM7.Rx [Rd];
     else
       w = (ARM7.Rx [ARM7_PC] & ~3) + 12 + PC_ADJUSTMENT;
+    }
 
   if (BIT_I)
     // calculate value in barrel shifter

@@ -146,7 +146,7 @@ static void vchans_free(void)
 {
 	hashtable_iterator_t iter = {0};
 	vchan_t *vchan = NULL;
-	while(vchan = vchans_iterate(&iter)) {
+	while((vchan = vchans_iterate(&iter))) {
 		vchan_free(vchan);
 	}
 	hashtable_free(&vchans);
@@ -192,7 +192,7 @@ static uint16 mididump_beat_distance_find(void)
 		}
 		time_prev = event->time;
 		// Intentionally skip the first element
-		while(event = event->next) {
+		while((event = event->next)) {
 			uint32 dist;
 
 			if(event->type != NOTE_ON) {
@@ -204,7 +204,7 @@ static uint16 mididump_beat_distance_find(void)
 			}
 			time_prev = event->time;
 		}
-	} while(vchan = vchans_iterate(&iter));
+	} while((vchan = vchans_iterate(&iter)));
 
 	memset(&iter, 0, sizeof(iter));
 	for(i = 0; i < DISTANCE_MAX - DISTANCE_MIN; i++) {
@@ -434,7 +434,7 @@ ao_bool mididump_write(const char *fn)
 		if((midi_channel & 0xF) == 9) {
 			midi_channel++;
 		}
-	} while(vchan = vchans_iterate(&iter));
+	} while((vchan = vchans_iterate(&iter)));
 	fclose(midi);
 	return true;
 }

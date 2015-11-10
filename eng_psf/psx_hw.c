@@ -2035,7 +2035,7 @@ void program_write_dword_32le(offs_t address, uint32 data)
 }
 
 // sprintf replacement
-static iop_sprintf(char *out, char *fmt, uint32 pstart)
+static void iop_sprintf(char *out, char *fmt, uint32 pstart)
 {
 	char temp[64], tfmt[64];
 	char *cf, *pstr;

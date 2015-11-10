@@ -498,7 +498,7 @@ INLINE signed short DecodeADPCM(struct _ADPCM_STATE *adpcm, unsigned char Delta)
 	return adpcm->cur_sample;
 }
 
-int AICA_DumpSample(const char *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS)
+int AICA_DumpSample(const UINT8 *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SAMPLE_TYPE PCMS)
 {
 	wavedump_t wave;
 	struct _ADPCM_STATE adpcm;
