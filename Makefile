@@ -29,7 +29,6 @@
 
 CC   ?= gcc
 LD   = $(CC)
-CPP  ?= g++
 CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib -fdata-sections -ffunction-sections
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
@@ -81,6 +80,33 @@ OBJS += eng_psf/eng_spu.o
 OBJS += zlib/adler32.o zlib/compress.o zlib/crc32.o zlib/gzio.o zlib/uncompr.o zlib/deflate.o zlib/trees.o
 OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.o
 
+# ImGui
+ifndef NOGUI
+PKG_CONFIG = $(shell which pkg-config 2>/dev/null)
+ifeq ($(PKG_CONFIG),)
+$(error pkg-config not found)
+endif
+
+GLFW3_LIBS = $(shell $(PKG_CONFIG) --static --libs-only-l glfw3 2>/dev/null)
+
+ifeq ($(GLFW3_LIBS),)
+$(warning GLFW3 development files not installed, debug GUI can not be built.)
+$(error To build without the debug GUI, set NOGUI=1 before calling make)
+endif
+
+CFLAGS += -Iimgui/
+LIBS += $(GLFW3_LIBS) -lstdc++
+
+OBJS += imgui/imgui.o imgui/imgui_draw.o imgui/imgui_demo.o imgui/examples/opengl_example/imgui_impl_glfw.o
+OBJS += debug.o
+
+ifneq ($(OSTYPE),linux)
+LIBS += -limm32
+endif
+else
+CFLAGS += -DNOGUI
+endif
+
 MACHINE_OBJS = $(OBJS:%.o=obj/$(MACHINE)/%.o)
 
 all: release
@@ -100,7 +126,7 @@ obj/$(MACHINE)/%.o: %.c
 obj/$(MACHINE)/%.o: %.cpp
 	@echo Compiling $<...
 	@mkdir -p $(@D)
-	@$(CPP) $(CFLAGS) $< -o $@
+	@$(CC) $(CFLAGS) $< -o $@
 
 $(EXE): $(MACHINE_OBJS)
 	@echo Linking $(EXE)...

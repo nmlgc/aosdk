@@ -14,6 +14,20 @@ Audio Overload project.
 You may use this code to play the formats on systems we don't support or
 inside of applications other than AO.
 
+##### Prerequisites
+pkg-config and [GLFW 3](http://www.glfw.org) are required to compile the debug
+GUI. Depending on your distribution, they can be installed as follows:
+
+* On Arch: `sudo pacman -S glfw`
+* On Debian: `sudo apt-get install libglfw3-dev`
+* On MinGW/MSYS2 (64-bit): `pacman -S pkg-config mingw-w64-x86_64-glfw`
+
+Alternatively, you can compile Audio Overload without the GUI by setting the
+environment variable `NOGUI` before you run `make`:
+```
+	NOGUI=1 make
+```
+
 ##### Compilation
 Make sure that you've pulled all Git submodules together with this repo:
 ```
@@ -22,7 +36,7 @@ Make sure that you've pulled all Git submodules together with this repo:
 
 On Windows, MinGW is required to build the code through the Makefile.
 Cygwin's own gcc is unsupported, so make sure to specify MinGW's gcc in the
-`CC` environment variable when building on Cygwin:
+`CC` environment variable when building on Cygwin or MSYS2:
 
 ```
 	# For 32-bit builds

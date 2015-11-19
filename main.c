@@ -31,6 +31,7 @@
 
 #include "argparse/argparse.h"
 #include "ao.h"
+#include "debug.h"
 #include "eng_protos.h"
 #include "m1sdr.h"
 #include "mididump.h"
@@ -151,6 +152,7 @@ int main(int argc, const char *argv[])
 	uint32 size, filesig;
 	char *device = NULL;
 	int list_devices = false;
+	int nogui = false;
 	// int nomidi = false; // declared as a global in mididump.c
 	int noplay = false;
 	int nosamples = false;
@@ -168,6 +170,9 @@ int main(int argc, const char *argv[])
 		#ifdef WIN32
 		OPT_STRING('d', "device", &device, "name of the playback device"),
 		OPT_BOOLEAN('\0', "list-devices", &list_devices, "list all available playback devices that can be passed to -d"),
+		#endif
+		#ifndef NOGUI
+		OPT_BOOLEAN('g', "nogui", &nogui, "don't show the debugging GUI"),
 		#endif
 		OPT_BOOLEAN('m', "nomidi", &nomidi, "don't dump the song to a .mid file"),
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
@@ -260,6 +265,15 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
+	#ifndef NOGUI
+	if(!nogui)
+	{
+		nogui = !debug_start();
+	}
+	#else
+	nogui = true;
+	#endif
+
 	if ((*types[type].start)(buffer, size) != AO_SUCCESS)
 	{
 		free(buffer);
@@ -280,7 +294,10 @@ int main(int argc, const char *argv[])
 		m1sdr_PlayStart();
 		printf("Playing.  ");
 	}
-	printf("Press CTRL-C to stop.\n");
+	printf(
+		"Press CTRL-C %sto stop.\n",
+		nogui ? "" : "or close the debug window "
+	);
 
 	while (!ao_song_done)
 	{
@@ -293,6 +310,12 @@ int main(int argc, const char *argv[])
 			stereo_sample_t buffer[44100 / 60];
 			do_frame(sizeof(buffer) / sizeof(stereo_sample_t), buffer);
 		}
+		#ifndef NOGUI
+		if(!nogui)
+		{
+			ao_song_done |= debug_frame();
+		}
+		#endif
 	}
 
 	signal(SIGINT, SIG_IGN);
@@ -303,6 +326,11 @@ int main(int argc, const char *argv[])
 	if(!nomidi) {
 		mididump_write(argv[0]);
 	}
+	#ifndef NOGUI
+	if(!nogui) {
+		debug_stop();
+	}
+	#endif
 	return 1;
 }
 
