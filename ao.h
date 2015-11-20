@@ -200,6 +200,8 @@ FILE* ao_fopen(const char *fn, const char *mode);
 // We don't care about permissions, even on Linux
 int ao_mkdir(const char *dirname);
 
+void ao_sleep(unsigned int seconds);
+
 #define fopen ERROR_use_ao_fopen_instead!
 #define mkdir ERROR_Use_ao_mkdir_instead!
 /// -------------------------------------

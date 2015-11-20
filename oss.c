@@ -74,7 +74,7 @@ void m1sdr_Update(void)
 }
 // checks the play position to see if we should trigger another update
 
-void m1sdr_TimeCheck(void)
+m1sdr_ret_t m1sdr_TimeCheck(void)
 {
 	#if VALGRIND
 	m1sdr_Update();
@@ -109,8 +109,8 @@ void m1sdr_TimeCheck(void)
 		}
 	}
 
-	usleep(50);
 	#endif
+	return M1SDR_WAIT;
 }
 
 void m1sdr_PrintDevices(void)

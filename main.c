@@ -301,9 +301,10 @@ int main(int argc, const char *argv[])
 
 	while (!ao_song_done)
 	{
+		m1sdr_ret_t ret = M1SDR_OK;
 		if(!noplay)
 		{
-			m1sdr_TimeCheck();
+			ret = m1sdr_TimeCheck();
 		}
 		else
 		{
@@ -315,7 +316,12 @@ int main(int argc, const char *argv[])
 		{
 			ao_song_done |= debug_frame();
 		}
+		else
 		#endif
+		if(ret == M1SDR_WAIT)
+		{
+			ao_sleep(50);
+		}
 	}
 
 	signal(SIGINT, SIG_IGN);

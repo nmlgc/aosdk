@@ -85,13 +85,13 @@ void m1sdr_SetSamplesPerTick(UINT32 spf)
 	}
 }
 
-void m1sdr_TimeCheck(void)
+m1sdr_ret_t m1sdr_TimeCheck(void)
 {
 	int nPlaySeg=0, nFollowingSeg=0;
 	DWORD nPlay=0, nWrite=0;
 	int nRet=0;
 
-	if (!lpDS) return;
+	if (!lpDS) return M1SDR_ERROR;
 
 	// We should do nothing until nPlay has left nDSoundNextSeg
 	IDirectSoundBuffer_GetCurrentPosition(lpSecB, &nPlay, &nWrite);
@@ -103,8 +103,8 @@ void m1sdr_TimeCheck(void)
 
 	if (nDSoundNextSeg == nPlaySeg)
 	{
-		Sleep(200); // Don't need to do anything for a bit
-		goto End;
+		// Don't need to do anything for a bit
+		return M1SDR_WAIT;
 	}
 
 	// work out which seg we will fill next
@@ -142,8 +142,7 @@ void m1sdr_TimeCheck(void)
 		WRAP_INC(nFollowingSeg)
 	}
 
-End:
-	return;
+	return M1SDR_OK;
 }
 
 void m1sdr_PrintDevices(void)

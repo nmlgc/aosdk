@@ -7,6 +7,12 @@
 #ifndef M1SDR_H
 #define M1SDR_H
 
+typedef enum {
+	M1SDR_OK,
+	M1SDR_ERROR,
+	M1SDR_WAIT
+} m1sdr_ret_t;
+
 typedef void m1sdr_callback_t(
 	unsigned long sample_count, stereo_sample_t *buffer
 );
@@ -24,7 +30,7 @@ void m1sdr_PrintDevices(void);
 void m1sdr_Exit(void);
 void m1sdr_PlayStart(void);
 void m1sdr_PlayStop(void);
-void m1sdr_TimeCheck(void);
+m1sdr_ret_t m1sdr_TimeCheck(void);
 void m1sdr_SetSamplesPerTick(UINT32 spf);
 void m1sdr_FlushAudio(void);
 void m1sdr_Pause(int);

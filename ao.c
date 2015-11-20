@@ -9,6 +9,7 @@
 #else
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 FILE* ao_fopen(const char *fn, const char *mode)
@@ -24,5 +25,14 @@ int ao_mkdir(const char *dirname)
 	return CreateDirectoryA(dirname, NULL);
 #else
 	return mkdir(dirname, 0777);
+#endif
+}
+
+void ao_sleep(unsigned int msecs)
+{
+#ifdef WIN32
+	Sleep(msecs);
+#else
+	usleep((useconds_t)(msecs) * 1000);
 #endif
 }
