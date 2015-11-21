@@ -33,6 +33,7 @@ ao_bool debug_start(void)
  
 	window = glfwCreateWindow(1280, 720, "ImGui OpenGL2 example", NULL, NULL);
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 
 	// Setup ImGui binding
 	ImGui_ImplGlfw_Init(window, true);
