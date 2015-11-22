@@ -126,7 +126,7 @@ obj/$(MACHINE)/%.o: %.c
 obj/$(MACHINE)/%.o: %.cpp
 	@echo Compiling $<...
 	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) $< -o $@
+	@$(CC) -std=c++1y $(CFLAGS) $< -o $@
 
 $(EXE): $(MACHINE_OBJS)
 	@echo Linking $(EXE)...
