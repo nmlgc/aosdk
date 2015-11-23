@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <GLFW/glfw3.h>
 #include "ao.h"
+#include "corlett.h"
 #include "debug.h"
 
 GLFWwindow *window;
@@ -93,10 +94,27 @@ ao_bool debug_frame(void)
 		| ImGuiWindowFlags_NoInputs
 		| ImGuiWindowFlags_NoFocusOnAppearing;
 	auto status_bar_pos = ImVec2(0.0f, io.DisplaySize.y - ImGui::GetWindowContentRegionMin().y);
+	auto progress = (double)corlett_sample_count() / (double)corlett_sample_total();
+	auto progress_x = progress * io.DisplaySize.x;
+
+	// ... Well, creating a second window just for the progress bar seems
+	// to be the cleanest way to work around the window padding. -.-
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::SetNextWindowPos(ImVec2(0, status_bar_pos.y));
+		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.0f));
+		ImGui::Begin("Progress Bar", NULL, status_bar_flags);
+			ImGui::GetWindowDrawList()->AddRectFilled(
+				status_bar_pos,
+				ImVec2(progress_x, status_bar_pos.y + ImGui::GetWindowSize().y),
+				ImColor(style.Colors[ImGuiCol_TitleBg])
+			);
+		ImGui::End();
+	ImGui::PopStyleVar();
 
 	char fps[32];
 	sprintf(fps, "%.1f FPS", io.Framerate);
 
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4());
 	ImGui::SetNextWindowPos(status_bar_pos);
 	ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.0f));
 	ImGui::Begin("Status Bar", NULL, status_bar_flags);
@@ -108,6 +126,7 @@ ao_bool debug_frame(void)
 			ImGui::PopItemWidth();
 		ImGui::Columns(1);
 	ImGui::End();
+	ImGui::PopStyleColor();
 
 	// Rendering
 	int display_w, display_h;

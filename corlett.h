@@ -9,6 +9,10 @@
 
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
 	hashtable_t tags;
@@ -49,5 +53,10 @@ const char* corlett_tag_lookup(corlett_t *c, const char *tag);
 int corlett_tag_recognize(corlett_t *c, const char **target_value, int tag_num, const char *key);
 void corlett_length_set(double length_seconds, double fade_seconds);
 uint32 corlett_sample_count(void);
+uint32 corlett_sample_total(void);
 void corlett_sample_fade(stereo_sample_t *sample);
 double psfTimeToSeconds(const char *str);
+
+#ifdef __cplusplus
+}
+#endif

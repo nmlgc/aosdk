@@ -379,6 +379,11 @@ uint32 corlett_sample_count(void)
 	return total_samples;
 }
 
+uint32 corlett_sample_total(void)
+{
+	return decayend;
+}
+
 void corlett_sample_fade(stereo_sample_t *sample)
 {
 	if(total_samples >= decaybegin)
