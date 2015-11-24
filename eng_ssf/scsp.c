@@ -26,7 +26,6 @@
 #include "ao.h"
 #include "cpuintrf.h"
 #include "scsp.h"
-#include "scspdsp.h"
 #include "sat_hw.h"
 
 #define ICLIP16(x) (x<-32768)?-32768:((x>32767)?32767:x)
@@ -41,61 +40,6 @@
 // include the LFO handling code
 #include "scsplfo.c"
 
-/*
-    SCSP features 32 programmable slots
-    that can generate FM and PCM (from ROM/RAM) sound
-*/
-
-//SLOT PARAMETERS
-#define KEYONEX(slot)		((slot->udata.data[0x0]>>0x0)&0x1000)
-#define KEYONB(slot)		((slot->udata.data[0x0]>>0x0)&0x0800)
-#define SBCTL(slot)		((slot->udata.data[0x0]>>0x9)&0x0003)
-#define SSCTL(slot)		((slot->udata.data[0x0]>>0x7)&0x0003)
-#define LPCTL(slot)		((slot->udata.data[0x0]>>0x5)&0x0003)
-#define PCM8B(slot)		((slot->udata.data[0x0]>>0x0)&0x0010)
-
-#define SA(slot)		(((slot->udata.data[0x0]&0xF)<<16)|(slot->udata.data[0x1]))
-
-#define LSA(slot)		(slot->udata.data[0x2])
-
-#define LEA(slot)		(slot->udata.data[0x3])
-
-#define D2R(slot)		((slot->udata.data[0x4]>>0xB)&0x001F)
-#define D1R(slot)		((slot->udata.data[0x4]>>0x6)&0x001F)
-#define EGHOLD(slot)		((slot->udata.data[0x4]>>0x0)&0x0020)
-#define AR(slot)		((slot->udata.data[0x4]>>0x0)&0x001F)
-
-#define LPSLNK(slot)		((slot->udata.data[0x5]>>0x0)&0x4000)
-#define KRS(slot)		((slot->udata.data[0x5]>>0xA)&0x000F)
-#define DL(slot)		((slot->udata.data[0x5]>>0x5)&0x001F)
-#define RR(slot)		((slot->udata.data[0x5]>>0x0)&0x001F)
-
-#define STWINH(slot)		((slot->udata.data[0x6]>>0x0)&0x0200)
-#define SDIR(slot)		((slot->udata.data[0x6]>>0x0)&0x0100)
-#define TL(slot)		((slot->udata.data[0x6]>>0x0)&0x00FF)
-
-#define MDL(slot)		((slot->udata.data[0x7]>>0xC)&0x000F)
-#define MDXSL(slot)		((slot->udata.data[0x7]>>0x6)&0x003F)
-#define MDYSL(slot)		((slot->udata.data[0x7]>>0x0)&0x003F)
-
-#define OCT(slot)		((slot->udata.data[0x8]>>0xB)&0x000F)
-#define FNS(slot)		((slot->udata.data[0x8]>>0x0)&0x03FF)
-
-#define LFORE(slot)		((slot->udata.data[0x9]>>0x0)&0x8000)
-#define LFOF(slot)		((slot->udata.data[0x9]>>0xA)&0x001F)
-#define PLFOWS(slot)		((slot->udata.data[0x9]>>0x8)&0x0003)
-#define PLFOS(slot)		((slot->udata.data[0x9]>>0x5)&0x0007)
-#define ALFOWS(slot)		((slot->udata.data[0x9]>>0x3)&0x0003)
-#define ALFOS(slot)		((slot->udata.data[0x9]>>0x0)&0x0007)
-
-#define ISEL(slot)		((slot->udata.data[0xA]>>0x3)&0x000F)
-#define IMXL(slot)		((slot->udata.data[0xA]>>0x0)&0x0007)
-
-#define DISDL(slot)		((slot->udata.data[0xB]>>0xD)&0x0007)
-#define DIPAN(slot)		((slot->udata.data[0xB]>>0x8)&0x001F)
-#define EFSDL(slot)		((slot->udata.data[0xB]>>0x5)&0x0007)
-#define EFPAN(slot)		((slot->udata.data[0xB]>>0x0)&0x001F)
-
 //Envelope times in ms
 static const double ARTimes[64]={100000/*infinity*/,100000/*infinity*/,8100.0,6900.0,6000.0,4800.0,4000.0,3400.0,3000.0,2400.0,2000.0,1700.0,1500.0,
 					1200.0,1000.0,860.0,760.0,600.0,500.0,430.0,380.0,300.0,250.0,220.0,190.0,150.0,130.0,110.0,95.0,
@@ -105,117 +49,10 @@ static const double DRTimes[64]={100000/*infinity*/,100000/*infinity*/,118200.0,
 					14800.0,12700.0,11100.0,8900.0,7400.0,6300.0,5500.0,4400.0,3700.0,3200.0,2800.0,2200.0,1800.0,1600.0,1400.0,1100.0,
 					920.0,790.0,690.0,550.0,460.0,390.0,340.0,270.0,230.0,200.0,170.0,140.0,110.0,98.0,85.0,68.0,57.0,49.0,43.0,34.0,
 					28.0,25.0,22.0,18.0,14.0,12.0,11.0,8.5,7.1,6.1,5.4,4.3,3.6,3.1};
-static UINT32 FNS_Table[0x400];
-static INT32 EG_TABLE[0x400];
-
-typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
-struct _EG
-{
-	int volume;	//
-	_STATE state;
-	int step;
-	//step vals
-	int AR;		//Attack
-	int D1R;	//Decay1
-	int D2R;	//Decay2
-	int RR;		//Release
-
-	int DL;		//Decay level
-	UINT8 EGHOLD;
-	UINT8 LPLINK;
-};
-
-struct _SLOT
-{
-	union
-	{
-		UINT16 data[0x10];	//only 0x1a bytes used
-		UINT8 datab[0x20];
-	} udata;
-	UINT8 active;	//this slot is currently playing
-	UINT8 *base;		//samples base address
-	UINT32 cur_addr;	//current play address (24.8)
-	UINT32 nxt_addr;	//next play address
-	UINT32 step;		//pitch step (24.8)
-	UINT8 Backwards;	//the wave is playing backwards
-	struct _EG EG;			//Envelope
-	struct _LFO PLFO;		//Phase LFO
-	struct _LFO ALFO;		//Amplitude LFO
-	int slot;
-	signed short Prev;	//Previous sample (for interpolation)
-};
-
-
-#define MEM4B(scsp)		((scsp->udata.data[0]>>0x0)&0x0200)
-#define DAC18B(scsp)		((scsp->udata.data[0]>>0x0)&0x0100)
-#define MVOL(scsp)		((scsp->udata.data[0]>>0x0)&0x000F)
-#define RBL(scsp)		((scsp->udata.data[1]>>0x7)&0x0003)
-#define RBP(scsp)		((scsp->udata.data[1]>>0x0)&0x003F)
-#define MOFULL(scsp)   		((scsp->udata.data[2]>>0x0)&0x1000)
-#define MOEMPTY(scsp)		((scsp->udata.data[2]>>0x0)&0x0800)
-#define MIOVF(scsp)		((scsp->udata.data[2]>>0x0)&0x0400)
-#define MIFULL(scsp)		((scsp->udata.data[2]>>0x0)&0x0200)
-#define MIEMPTY(scsp)		((scsp->udata.data[2]>>0x0)&0x0100)
-
-#define SCILV0(scsp)    	((scsp->udata.data[0x24/2]>>0x0)&0xff)
-#define SCILV1(scsp)    	((scsp->udata.data[0x26/2]>>0x0)&0xff)
-#define SCILV2(scsp)    	((scsp->udata.data[0x28/2]>>0x0)&0xff)
-
-#define SCIEX0	0
-#define SCIEX1	1
-#define SCIEX2	2
-#define SCIMID	3
-#define SCIDMA	4
-#define SCIIRQ	5
-#define SCITMA	6
-#define SCITMB	7
 
 #define USEDSP
 
-struct _SCSP
-{
-	union
-	{
-		UINT16 data[0x30/2];
-		UINT8 datab[0x30];
-	} udata;
-	struct _SLOT Slots[32];
-	signed short RINGBUF[64];
-	unsigned char BUFPTR;
-	#if FM_DELAY
-	signed short DELAYBUF[FM_DELAY];
-	unsigned char DELAYPTR;
-	#endif
-	unsigned char *SCSPRAM;
-	UINT32 SCSPRAM_LENGTH;
-	char Master;
-	void (*Int68kCB)(int irq);
-
-	UINT32 IrqTimA;
-	UINT32 IrqTimBC;
-	UINT32 IrqMidi;
-
-	UINT8 MidiOutW,MidiOutR;
-	UINT8 MidiStack[16];
-	UINT8 MidiW,MidiR;
-
-	int LPANTABLE[0x10000];
-	int RPANTABLE[0x10000];
-
-	int TimPris[3];
-	int TimCnt[3];
-
-	// DMA stuff
-	UINT32 scsp_dmea;
-	UINT16 scsp_drga;
-	UINT16 scsp_dtlg;
-
-	int ARTABLE[64], DRTABLE[64];
-
-	struct _SCSPDSP DSP;
-};
-
-static struct _SCSP SCSP;
+struct _SCSP SCSP;
 
 static void dma_scsp(struct _SCSP *SCSP); 		/*SCSP DMA transfer function*/
 #define	scsp_dgate		scsp_regs[0x16/2] & 0x4000

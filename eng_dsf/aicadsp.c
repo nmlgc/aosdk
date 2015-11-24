@@ -3,7 +3,6 @@
 #include "ao.h"
 #include "cpuintrf.h"
 #include "aica.h"
-#include "aicadsp.h"
 
 static UINT16 PACK(INT32 val)
 {

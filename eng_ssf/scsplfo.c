@@ -10,14 +10,6 @@
 
 #define LFO_SHIFT 	8
 
-struct _LFO
-{
-	unsigned short phase;
-	UINT32 phase_step;
-	int *table;
-	int *scale;
-};
-
 #define LFIX(v)	((unsigned int) ((float) (1<<LFO_SHIFT)*(v)))
 
 //Convert DB to multiply amplitude

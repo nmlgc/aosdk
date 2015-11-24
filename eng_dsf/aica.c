@@ -14,7 +14,6 @@
 #include "ao.h"
 #include "cpuintrf.h"
 #include "aica.h"
-#include "aicadsp.h"
 #include "dc_hw.h"
 #include "mididump.h"
 
@@ -31,54 +30,6 @@
 // include the LFO handling code
 #include "aicalfo.c"
 
-/*
-    AICA features 64 programmable slots
-    that can generate PCM and ADPCM (from ROM/RAM) sound
-*/
-
-//SLOT PARAMETERS
-#define KEYONEX(slot)		((slot->udata.data[0x0]>>0x0)&0x8000)
-#define KEYONB(slot)		((slot->udata.data[0x0]>>0x0)&0x4000)
-#define SSCTL(slot)		((slot->udata.data[0x0]>>0xA)&0x0001)
-#define LPCTL(slot)		((slot->udata.data[0x0]>>0x9)&0x0001)
-#define PCMS(slot)		((slot->udata.data[0x0]>>0x7)&0x0003)
-
-#define SA(slot)		(((slot->udata.data[0x0]&0x7F)<<16)|(slot->udata.data[0x4/2]))
-
-#define LSA(slot)		(slot->udata.data[0x8/2])
-
-#define LEA(slot)		(slot->udata.data[0xc/2])
-
-#define D2R(slot)		((slot->udata.data[0x10/2]>>0xB)&0x001F)
-#define D1R(slot)		((slot->udata.data[0x10/2]>>0x6)&0x001F)
-#define AR(slot)		((slot->udata.data[0x10/2]>>0x0)&0x001F)
-
-#define LPSLNK(slot)		((slot->udata.data[0x14/2]>>0x0)&0x4000)
-#define KRS(slot)		((slot->udata.data[0x14/2]>>0xA)&0x000F)
-#define DL(slot)		((slot->udata.data[0x14/2]>>0x5)&0x001F)
-#define RR(slot)		((slot->udata.data[0x14/2]>>0x0)&0x001F)
-
-#define TL(slot)		((slot->udata.data[0x28/2]>>0x8)&0x00FF)
-
-#define OCT(slot)		((slot->udata.data[0x18/2]>>0xB)&0x000F)
-#define FNS(slot)		((slot->udata.data[0x18/2]>>0x0)&0x03FF)
-
-#define LFORE(slot)		((slot->udata.data[0x1c/2]>>0x0)&0x8000)
-#define LFOF(slot)		((slot->udata.data[0x1c/2]>>0xA)&0x001F)
-#define PLFOWS(slot)		((slot->udata.data[0x1c/2]>>0x8)&0x0003)
-#define PLFOS(slot)		((slot->udata.data[0x1c/2]>>0x5)&0x0007)
-#define ALFOWS(slot)		((slot->udata.data[0x1c/2]>>0x3)&0x0003)
-#define ALFOS(slot)		((slot->udata.data[0x1c/2]>>0x0)&0x0007)
-
-#define ISEL(slot)		((slot->udata.data[0x20/2]>>0x0)&0x000F)
-#define IMXL(slot)		((slot->udata.data[0x20/2]>>0x4)&0x000F)
-
-#define DISDL(slot)		((slot->udata.data[0x24/2]>>0x8)&0x000F)
-#define DIPAN(slot)		((slot->udata.data[0x24/2]>>0x0)&0x001F)
-
-#define EFSDL(slot)		((AICA->EFSPAN[slot*4]>>8)&0x000f)
-#define EFPAN(slot)		((AICA->EFSPAN[slot*4]>>0)&0x001f)
-
 //Envelope times in ms
 static const double ARTimes[64]={100000/*infinity*/,100000/*infinity*/,8100.0,6900.0,6000.0,4800.0,4000.0,3400.0,3000.0,2400.0,2000.0,1700.0,1500.0,
 					1200.0,1000.0,860.0,760.0,600.0,500.0,430.0,380.0,300.0,250.0,220.0,190.0,150.0,130.0,110.0,95.0,
@@ -88,131 +39,6 @@ static const double DRTimes[64]={100000/*infinity*/,100000/*infinity*/,118200.0,
 					14800.0,12700.0,11100.0,8900.0,7400.0,6300.0,5500.0,4400.0,3700.0,3200.0,2800.0,2200.0,1800.0,1600.0,1400.0,1100.0,
 					920.0,790.0,690.0,550.0,460.0,390.0,340.0,270.0,230.0,200.0,170.0,140.0,110.0,98.0,85.0,68.0,57.0,49.0,43.0,34.0,
 					28.0,25.0,22.0,18.0,14.0,12.0,11.0,8.5,7.1,6.1,5.4,4.3,3.6,3.1};
-static INT32 EG_TABLE[0x400];
-
-typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
-struct _EG
-{
-	int volume;	//
-	_STATE state;
-	int step;
-	//step vals
-	int AR;		//Attack
-	int D1R;	//Decay1
-	int D2R;	//Decay2
-	int RR;		//Release
-
-	int DL;		//Decay level
-	UINT8 LPLINK;
-};
-
-struct _ADPCM_STATE
-{
-	UINT8 *base;
-	int cur_sample; //current ADPCM sample
-	int cur_quant; //current ADPCM step
-	int cur_step;
-};
-
-struct _SLOT
-{
-	union
-	{
-		UINT16 data[0x40];	//only 0x1a bytes used
-		UINT8 datab[0x80];
-	} udata;
-	UINT8 active;	//this slot is currently playing
-	UINT8 *base;		//samples base address
-	UINT32 prv_addr;    // previous play address (for ADPCM)
-	UINT32 cur_addr;	//current play address (24.8)
-	UINT32 nxt_addr;	//next play address
-	UINT32 step;		//pitch step (24.8)
-	UINT8 Backwards;	//the wave is playing backwards
-	struct _EG EG;			//Envelope
-	struct _LFO PLFO;		//Phase LFO
-	struct _LFO ALFO;		//Amplitude LFO
-	int slot;
-	struct _ADPCM_STATE adpcm;
-	struct _ADPCM_STATE adpcm_lp;
-	UINT8 lpend;
-	char midi_note; // MIDI Note at the last Note On event
-};
-
-
-#define MEM4B(aica)		((aica->udata.data[0]>>0x0)&0x0200)
-#define DAC18B(aica)		((aica->udata.data[0]>>0x0)&0x0100)
-#define MVOL(aica)		((aica->udata.data[0]>>0x0)&0x000F)
-#define RBL(aica)		((aica->udata.data[2]>>0xD)&0x0003)
-#define RBP(aica)		((aica->udata.data[2]>>0x0)&0x0fff)
-#define MOFULL(aica)   		((aica->udata.data[4]>>0x0)&0x1000)
-#define MOEMPTY(aica)		((aica->udata.data[4]>>0x0)&0x0800)
-#define MIOVF(aica)		((aica->udata.data[4]>>0x0)&0x0400)
-#define MIFULL(aica)		((aica->udata.data[4]>>0x0)&0x0200)
-#define MIEMPTY(aica)		((aica->udata.data[4]>>0x0)&0x0100)
-
-#define AFSEL(aica)		((aica->udata.data[0xc/2]>>0x0)&0x4000)
-#define MSLC(aica)		((aica->udata.data[0xc/2]>>0x8)&0x3F)
-
-#define SCILV0(aica)    	((aica->udata.data[0xa8/2]>>0x0)&0xff)
-#define SCILV1(aica)    	((aica->udata.data[0xac/2]>>0x0)&0xff)
-#define SCILV2(aica)    	((aica->udata.data[0xb0/2]>>0x0)&0xff)
-
-#define MCIEB(aica)    	((aica->udata.data[0xb4/2]>>0x0)&0xff)
-#define MCIPD(aica)    	((aica->udata.data[0xb8/2]>>0x0)&0xff)
-#define MCIRE(aica)    	((aica->udata.data[0xbc/2]>>0x0)&0xff)
-
-#define SCIEX0	0
-#define SCIEX1	1
-#define SCIEX2	2
-#define SCIMID	3
-#define SCIDMA	4
-#define SCIIRQ	5
-#define SCITMA	6
-#define SCITMB	7
-
-struct _AICA
-{
-	union
-	{
-		UINT16 data[0xc0/2];
-		UINT8 datab[0xc0];
-	} udata;
-	UINT16 IRQL, IRQR;
-	UINT16 EFSPAN[0x48];
-	struct _SLOT Slots[64];
-	unsigned char *AICARAM;
-	UINT32 AICARAM_LENGTH, RAM_MASK, RAM_MASK16;
-	char Master;
-	void (*IntARMCB)(int irq);
-
-	UINT32 IrqTimA;
-	UINT32 IrqTimBC;
-	UINT32 IrqMidi;
-
-	UINT8 MidiOutW,MidiOutR;
-	UINT8 MidiStack[16];
-	UINT8 MidiW,MidiR;
-
-	int LPANTABLE[0x20000];
-	int RPANTABLE[0x20000];
-
-	int TimPris[3];
-	int TimCnt[3];
-
-	// DMA stuff
-	struct
-	{
-		UINT32 dmea;
-		UINT16 drga;
-		UINT16 dlg;
-		UINT8 dgate;
-		UINT8 ddir;
-	} dma;
-
-	int ARTABLE[64], DRTABLE[64];
-
-	struct _AICADSP DSP;
-};
 
 /// MIDI dumping code
 /// -----------------
@@ -300,7 +126,7 @@ static void AICA_MIDI_NoteOff(struct _SLOT *slot)
 }
 /// -----------------
 
-static struct _AICA AICA;
+struct _AICA AICA;
 
 static void aica_exec_dma(struct _AICA *aica);       /*state DMA transfer function*/
 
