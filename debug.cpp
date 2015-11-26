@@ -19,6 +19,114 @@ bool show_test_window = true;
 bool show_another_window = false;
 ImVec4 clear_color = ImColor(114, 144, 154);
 
+/// Widgets
+/// -------
+void debug_memory(const char *view_id, DebugMemoryState *state, uint8 *mem_buf, int32 mem_size)
+{
+	const int ROWS_MAX = 64;
+	IM_ASSERT(view_id);
+	IM_ASSERT(state);
+
+	auto& io = ImGui::GetIO();
+	auto& style = ImGui::GetStyle();
+	int byte_width = (int)ImGui::CalcTextSize("00").x;
+	auto& x_spacing = style.ItemSpacing.x;
+	auto item_spacing_half = ImVec2(style.ItemSpacing.x / 2, style.ItemSpacing.y);
+
+	enum ByteColors : uint8 {
+		Normal,
+		Control,
+		MAX
+	};
+
+	const ImVec4 BYTE_COLORS[MAX] {
+		style.Colors[ImGuiCol_Text],
+		style.Colors[ImGuiCol_TextDisabled],
+	};
+
+	ImGui::PushID(state);
+	ImGui::PushItemWidth(ROWS_MAX * 2);
+	ImGui::DragInt("##rows", &state->rows, 0.2f, 1, ROWS_MAX, "%.0f bytes per line");
+	if(state->offset < 0) {
+		state->offset = 0;
+	} else if(state->offset > state->rows - 1) {
+		state->offset = state->rows - 1;
+	}
+	if(state->rows > 1) {
+		ImGui::SameLine();
+		ImGui::DragInt("##offset", &state->offset, 0.2f, 0, state->rows - 1, "Offset: %.0f");
+	}
+	ImGui::PopItemWidth();
+
+	ImGui::BeginChild(view_id);
+	auto mem_lines = (mem_size + state->offset + (state->rows - 1)) / state->rows;
+	ImGuiListClipper clipper(mem_lines, ImGui::GetTextLineHeightWithSpacing());
+	int32 byte = -state->offset + (clipper.DisplayStart * state->rows);
+	auto line = clipper.DisplayStart;
+
+	float vline_x[2];
+	while(line < clipper.DisplayEnd && byte < mem_size) {
+		ByteColors ascii_colors[ROWS_MAX + 1];
+		char ascii[ROWS_MAX + 1];
+
+		ImGui::Text("%08x", byte < 0 ? 0 : byte);
+		ImGui::SameLine();
+
+		vline_x[0] = ImGui::GetCursorScreenPos().x;
+			
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + x_spacing);
+		for(int column = 0; column < state->rows; byte++, column++) {
+			ascii_colors[column] = Normal;
+			if(byte < 0 || byte >= mem_size) {
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + byte_width + x_spacing);
+				ascii[column] = ' ';
+			} else {
+				auto b = mem_buf[byte];
+				if(b == 0) {
+					ascii_colors[column] = Control;
+					ascii[column] = '.';
+				} else if(b < ' ') {
+					ascii_colors[column] = Control;
+					ascii[column] = '_';
+				} else if(b > 127) {
+					ascii_colors[column] = Control;
+					ascii[column] = '?';
+				} else {
+					ascii[column] = b;
+				}
+				ImGui::Text("%02x", b);
+				ImGui::SameLine();
+			}
+		}
+		vline_x[1] = ImGui::GetCursorScreenPos().x;
+
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + x_spacing);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, item_spacing_half);
+		for(int column = 0; column < state->rows; column++) {
+			auto color = BYTE_COLORS[ascii_colors[column]];
+			ImGui::PushStyleColor(ImGuiCol_Text, color);
+			ImGui::TextUnformatted(&ascii[column], &ascii[column + 1]);
+			if(column != state->rows - 1) {
+				ImGui::SameLine();
+			}
+			ImGui::PopStyleColor();
+		}
+		ImGui::PopStyleVar();
+		line++;
+	}
+	clipper.End();
+	auto vline_y_end = ImGui::GetCursorScreenPos().y;
+	for(int i = 0; i < countof(vline_x); i++) {
+		ImGui::GetWindowDrawList()->AddLine(
+			ImVec2(vline_x[i], 0.0f), ImVec2(vline_x[i], vline_y_end),
+			ImColor(style.Colors[ImGuiCol_Column])
+		);
+	}
+	ImGui::EndChild();
+	ImGui::PopID();
+}
+/// -------
+
 static void error_callback(int error, const char* description)
 {
 	fprintf(stderr, "Error %d: %s\n", error, description);

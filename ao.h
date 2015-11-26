@@ -69,6 +69,8 @@ typedef unsigned char ao_bool;
 
 #endif
 
+#define countof(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #ifndef PATH_MAX
 #define PATH_MAX	2048
 #endif
