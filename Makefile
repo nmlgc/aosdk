@@ -98,6 +98,7 @@ CFLAGS += -Iimgui/
 LIBS += $(GLFW3_LIBS) -lstdc++
 
 OBJS += imgui/imgui.o imgui/imgui_draw.o imgui/imgui_demo.o imgui/examples/opengl_example/imgui_impl_glfw.o
+OBJS += eng_dsf/dc_debug.o
 OBJS += debug.o
 
 ifneq ($(OSTYPE),linux)

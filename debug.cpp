@@ -153,7 +153,7 @@ ao_bool debug_start(void)
 	return true;
 }
 
-ao_bool debug_frame(void)
+ao_bool debug_frame(debug_hw_t *hw)
 {
 	auto& io = ImGui::GetIO();
 	auto& style = ImGui::GetStyle();
@@ -188,6 +188,10 @@ ao_bool debug_frame(void)
 	if(show_test_window) {
 		ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
 		ImGui::ShowTestWindow(&show_test_window);
+	}
+
+	if(hw) {
+		hw();
 	}
 
 	// Status bar

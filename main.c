@@ -65,6 +65,17 @@ static struct
 	{ 0xffffffff, "", NULL, NULL, NULL, NULL, NULL, 0, NULL }
 };
 
+#ifndef NOGUI
+static debug_hw_t *debug[] = {
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	dc_debug
+};
+#endif
+
 /* redirect stubs to interface the Z80 core to the QSF engine */
 uint8 memory_read(uint16 addr)
 {
@@ -314,7 +325,7 @@ int main(int argc, const char *argv[])
 		#ifndef NOGUI
 		if(!nogui)
 		{
-			ao_song_done |= debug_frame();
+			ao_song_done |= debug_frame(debug[type]);
 		}
 		else
 		#endif

@@ -9,6 +9,10 @@
 // eng_protos.h
 //
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int32 psf_start(uint8 *, uint32 length);
 int32 psf_sample(stereo_sample_t *);
 int32 psf_frame(void);
@@ -57,3 +61,8 @@ int32 dsf_stop(void);
 int32 dsf_command(int32, int32);
 int32 dsf_fill_info(ao_display_info *);
 
+void dc_debug(void);
+
+#ifdef __cplusplus
+}
+#endif
