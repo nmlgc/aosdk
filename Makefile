@@ -94,7 +94,7 @@ $(warning GLFW3 development files not installed, debug GUI can not be built.)
 $(error To build without the debug GUI, set NOGUI=1 before calling make)
 endif
 
-CFLAGS += -Iimgui/
+CFLAGS += -Iimgui/ -DIMGUI_INCLUDE_IMGUI_USER_H -DIMGUI_INCLUDE_IMGUI_USER_INL
 LIBS += $(GLFW3_LIBS) -lstdc++
 
 OBJS += imgui/imgui.o imgui/imgui_draw.o imgui/imgui_demo.o imgui/examples/opengl_example/imgui_impl_glfw.o

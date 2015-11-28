@@ -46,15 +46,13 @@ void debug_memory(const char *view_id, DebugMemoryState *state, uint8 *mem_buf, 
 
 	ImGui::PushID(state);
 	ImGui::PushItemWidth(ROWS_MAX * 2);
-	ImGui::DragInt("##rows", &state->rows, 0.2f, 1, ROWS_MAX, "%.0f bytes per line");
-	if(state->offset < 0) {
-		state->offset = 0;
-	} else if(state->offset > state->rows - 1) {
+	ImGui::DragIntClamp("##rows", &state->rows, 0.2f, 1, ROWS_MAX, "%.0f bytes per line");
+	if(state->offset > state->rows - 1) {
 		state->offset = state->rows - 1;
 	}
 	if(state->rows > 1) {
 		ImGui::SameLine();
-		ImGui::DragInt("##offset", &state->offset, 0.2f, 0, state->rows - 1, "Offset: %.0f");
+		ImGui::DragIntClamp("##offset", &state->offset, 0.2f, 0, state->rows - 1, "Offset: %.0f");
 	}
 	ImGui::PopItemWidth();
 
