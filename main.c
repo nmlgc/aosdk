@@ -156,6 +156,19 @@ static void intr_handler(int sig)
 	ao_song_done = 1;
 }
 
+#if defined(WIN32) && !defined(NOGUI)
+unsigned long __stdcall debug_thread(void *param)
+{
+	debug_hw_t *hw = (debug_hw_t*)param;
+	if(debug_start()) {
+		while(!ao_song_done) {
+			ao_song_done |= debug_frame(hw);
+		}
+	}
+	return 0;
+}
+#endif
+
 int main(int argc, const char *argv[])
 {
 	FILE *file;
@@ -276,15 +289,6 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	#ifndef NOGUI
-	if(!nogui)
-	{
-		nogui = !debug_start();
-	}
-	#else
-	nogui = true;
-	#endif
-
 	if ((*types[type].start)(buffer, size) != AO_SUCCESS)
 	{
 		free(buffer);
@@ -298,6 +302,29 @@ int main(int argc, const char *argv[])
 	}
 
 	signal(SIGINT, intr_handler);
+
+	#ifndef NOGUI
+	if(!nogui)
+	{
+		#ifdef WIN32
+		// Who needs Windows.h, anyway?
+		void* __stdcall CreateThread(
+			void* lpThreadAttributes,
+			size_t dwStackSize,
+			unsigned long (__stdcall *lpStartAddress)(void*),
+			void* lpParameter,
+			unsigned long dwCreationFlags,
+			unsigned long* lpThreadId
+		);
+		CreateThread(NULL, 0, debug_thread, debug[type], 0, NULL);
+		#else
+		nogui = !debug_start();
+		#endif
+	}
+	#else
+	nogui = true;
+	#endif
+
 	if(!noplay)
 	{
 		m1sdr_Init(device, 44100);
@@ -322,7 +349,7 @@ int main(int argc, const char *argv[])
 			stereo_sample_t buffer[44100 / 60];
 			do_frame(sizeof(buffer) / sizeof(stereo_sample_t), buffer);
 		}
-		#ifndef NOGUI
+		#if !defined(NOGUI) && !defined(WIN32)
 		if(!nogui)
 		{
 			ao_song_done |= debug_frame(debug[type]);
