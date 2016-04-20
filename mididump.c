@@ -103,6 +103,11 @@ static void vchan_ctl7_push(vchan_t *vchan, int8 ctl7, int8 val)
 	}
 }
 
+static int vchan_compare(const vchan_t **a, const vchan_t **b)
+{
+	return (*a)->id - (*b)->id;
+}
+
 static void vchan_free(vchan_t *vchan)
 {
 	event_t *e;
@@ -405,12 +410,26 @@ ao_bool mididump_write(const char *fn)
 	vchan_t *vchan = vchans_iterate(&iter);
 	FILE *midi;
 	char midi_channel = 0;
+	int i = 0;
+	int vchans_len = hashtable_length(&vchans);
+	vchan_t **vchans_sorted = NULL;
 
 	if(!vchan) {
 		return false;
 	}
 
 	printf("Writing MIDI data... ");
+
+	vchans_sorted = malloc(vchans_len * sizeof(*vchans_sorted));
+
+	do {
+		vchans_sorted[i++] = vchan;
+	} while(vchan = vchans_iterate(&iter));
+
+	qsort(
+		vchans_sorted, i, sizeof(*vchans_sorted),
+		(int (*)(const void *, const void *))vchan_compare
+	);
 
 	printf("Analyzing BPM... ");
 	beat_distance = mididump_beat_distance_find();
@@ -426,16 +445,17 @@ ao_bool mididump_write(const char *fn)
 
 	midi = midi_open(fn);
 	midi_header_write(midi, beat_distance);
-	do {
-		midi_track_write(midi, vchan, midi_channel++);
+	for(i = 0; i < vchans_len; i++) {
+		midi_track_write(midi, vchans_sorted[i], midi_channel++);
 		// Mistakenly allocating a melody track to the drum channel is
 		// way more more annoying than mistakely playing back percussion
 		// with the Grand Piano, so...
 		if((midi_channel & 0xF) == 9) {
 			midi_channel++;
 		}
-	} while((vchan = vchans_iterate(&iter)));
+	}
 	fclose(midi);
+	free(vchans_sorted);
 	return true;
 }
 
