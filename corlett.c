@@ -353,7 +353,7 @@ const char** corlett_tag_get(corlett_t *c, const char *tag)
 
 const char *corlett_tag_lookup(corlett_t *c, const char *tag)
 {
-	const char **ret = corlett_tag_hashtable_get(c, tag, HT_CREATE);
+	const char **ret = corlett_tag_hashtable_get(c, tag, HT_CASE_INSENSITIVE | HT_CREATE);
 	return ret ? *ret : NULL;
 }
 
