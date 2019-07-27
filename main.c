@@ -178,7 +178,9 @@ int main(int argc, const char *argv[])
 	int list_devices = false;
 	int nogui = false;
 	// int nomidi = false; // declared as a global in mididump.c
+#ifndef NOPLAY
 	int noplay = false;
+#endif
 	int nosamples = false;
 	int nowave = false;
 
@@ -193,13 +195,17 @@ int main(int argc, const char *argv[])
 		OPT_HELP(),
 		#ifdef WIN32
 		OPT_STRING('d', "device", &device, "name of the playback device"),
+			#ifndef NOPLAY
 		OPT_BOOLEAN('\0', "list-devices", &list_devices, "list all available playback devices that can be passed to -d"),
+			#endif
 		#endif
 		#ifndef NOGUI
 		OPT_BOOLEAN('g', "nogui", &nogui, "don't show the debugging GUI"),
 		#endif
 		OPT_BOOLEAN('m', "nomidi", &nomidi, "don't dump the song to a .mid file"),
+		#ifndef NOPLAY
 		OPT_BOOLEAN('p', "noplay", &noplay, "don't play back the song"),
+		#endif
 		OPT_BOOLEAN('s', "nosamples", &nosamples, "don't dump any instrument samples"),
 		OPT_BOOLEAN('w', "nowave", &nowave, "don't dump the song to a .wav file"),
 		OPT_END()
@@ -216,12 +222,14 @@ int main(int argc, const char *argv[])
 
 	argc = argparse_parse(&argparse, argc, argv);
 
+#ifndef NOPLAY
 	if (list_devices)
 	{
 		printf("Available output devices:\n");
 		m1sdr_PrintDevices();
 		return 0;
 	}
+#endif
 
 	// check if an argument was given
 	if (argc < 1)
@@ -325,6 +333,7 @@ int main(int argc, const char *argv[])
 	nogui = true;
 	#endif
 
+#ifndef NOPLAY
 	if(!noplay)
 	{
 		m1sdr_Init(device, 44100);
@@ -332,6 +341,7 @@ int main(int argc, const char *argv[])
 		m1sdr_PlayStart();
 		printf("Playing.  ");
 	}
+#endif
 	printf(
 		"Press CTRL-C %sto stop.\n",
 		nogui ? "" : "or close the debug window "
@@ -340,11 +350,13 @@ int main(int argc, const char *argv[])
 	while (!ao_song_done)
 	{
 		m1sdr_ret_t ret = M1SDR_OK;
+#ifndef NOPLAY
 		if(!noplay)
 		{
 			ret = m1sdr_TimeCheck();
 		}
 		else
+#endif
 		{
 			stereo_sample_t buffer[44100 / 60];
 			do_frame(sizeof(buffer) / sizeof(stereo_sample_t), buffer);

@@ -47,7 +47,13 @@ ifeq ($(OSTYPE),linux)
 ifeq ($(shell uname -m),x86_64)
 CFLAGS += -DLONG_IS_64BIT=1
 endif
-OBJS += oss.o
+ifneq (,$(wildcard /dev/dsp))
+    $(info Using OSS via /dev/dsp for playback.)
+    OBJS += oss.o
+else
+    $(info /dev/dsp not found. Playback will be unavailable.)
+    CFLAGS += -DNOPLAY
+endif
 else
 CFLAGS += -DWIN32_UTF8_NO_API
 OBJS += dsnd.o win32_utf8/win32_utf8_build_static.o
