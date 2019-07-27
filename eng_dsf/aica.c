@@ -368,21 +368,20 @@ int AICA_DumpSample(const UINT8 *ram, uint32 SA, uint16 LSA, uint16 LEA, AICA_SA
 		memcpy(local_sample, ram_sample, size);
 		while(step < LEA)
 		{
-			switch (PCMS)
+			if (PCMS == ST_PCM_8)
 			{
-				// 8-bit signed
-				case ST_PCM_8:
-					// RIFF WAVE only has an unsigned 8-bit mode,
-					// so we have to convert the sample data
-					*((INT8*)(local_sample) + step) += 0x80;
-					break;
-				// 16 bit signed
-				case ST_PCM_16:
-					// Do an endianness conversion here in case we
-					// happen to run under big-endian
-					local_sample[step] = LE16(local_sample[step]);
-					break;
-				}
+				// 8-bit signed.
+				// RIFF WAVE only has an unsigned 8-bit mode,
+				// so we have to convert the sample data
+				*((INT8*)(local_sample) + step) += 0x80;
+			}
+			else if(PCMS == ST_PCM_16)
+			{
+				// 16 bit signed.
+				// Do an endianness conversion here in case we
+				// happen to run under big-endian
+				local_sample[step] = LE16(local_sample[step]);
+			}
 			step++;
 		}
 		wavedump_append(&wave, size, local_sample);
