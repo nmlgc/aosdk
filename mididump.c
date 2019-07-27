@@ -424,7 +424,7 @@ ao_bool mididump_write(const char *fn)
 
 	do {
 		vchans_sorted[i++] = vchan;
-	} while(vchan = vchans_iterate(&iter));
+	} while( (vchan = vchans_iterate(&iter)) );
 
 	qsort(
 		vchans_sorted, i, sizeof(*vchans_sorted),
