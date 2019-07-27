@@ -381,4 +381,5 @@ int main(int argc, const char *argv[])
 // stub for MAME stuff
 int change_pc(int foo)
 {
+	return 0;
 }

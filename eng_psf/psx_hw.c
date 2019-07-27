@@ -1969,21 +1969,8 @@ void SPUirq(void)
 
 uint8 program_read_byte_32le(offs_t address)
 {
-	switch (address & 0x3)
-	{
-		case 0:
-			return psx_hw_read(address, 0xffffff00);
-			break;
-		case 1:
-			return psx_hw_read(address, 0xffff00ff)>>8;
-			break;
-		case 2:
-			return psx_hw_read(address, 0xff00ffff)>>16;
-			break;
-		case 3:
-			return psx_hw_read(address, 0x00ffffff)>>24;
-			break;
-	}
+	uint8 addr_shift = (address & 0x3) * 8;
+	return psx_hw_read(address, ~(0xff << addr_shift)) >> addr_shift;
 }
 
 uint16 program_read_word_32le(offs_t address)
@@ -2001,21 +1988,8 @@ uint32 program_read_dword_32le(offs_t address)
 
 void program_write_byte_32le(offs_t address, uint8 data)
 {
-	switch (address & 0x3)
-	{
-		case 0:
-			psx_hw_write(address, data, 0xffffff00);
-			break;
-		case 1:
-			psx_hw_write(address, data<<8, 0xffff00ff);
-			break;
-		case 2:
-			psx_hw_write(address, data<<16, 0xff00ffff);
-			break;
-		case 3:
-			psx_hw_write(address, data<<24, 0x00ffffff);
-			break;
-	}
+	uint8 addr_shift = (address & 0x3) * 8;
+	psx_hw_write(address, data << addr_shift, ~(0xff << addr_shift));
 }
 
 void program_write_word_32le(offs_t address, uint16 data)
