@@ -318,7 +318,7 @@ INLINE signed short DecodeADPCM(struct _ADPCM_STATE *adpcm, unsigned char Delta)
 {
 	int x = adpcm->cur_quant * quant_mul [Delta & 15];
 	x = adpcm->cur_sample + ((int)(x + ((UINT32)x >> 29)) >> 3);
-	adpcm->cur_sample=ICLIP16(x);
+	adpcm->cur_sample=ICLIP16(x) * 254 / 256;
 	adpcm->cur_quant=(adpcm->cur_quant*TableQuant[Delta&7])>>ADPCMSHIFT;
 	adpcm->cur_quant=(adpcm->cur_quant<0x7f)?0x7f:((adpcm->cur_quant>0x6000)?0x6000:adpcm->cur_quant);
 	return adpcm->cur_sample;
