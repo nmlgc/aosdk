@@ -84,6 +84,7 @@
 #include "../peops/regs.h"
 #include "../peops/registers.h"
 #include "../peops/spu.h"
+#include "../../corlett.h"
 
 void SPUirq(void) ;
 

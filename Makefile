@@ -32,7 +32,20 @@ LD   = $(CC)
 CFLAGS += -c -DPATH_MAX=1024 -DHAS_PSXCPU=1 -I. -I.. -Ieng_ssf -Ieng_qsf  -Ieng_dsf -Izlib -fdata-sections -ffunction-sections
 # set for little-endian, make "0" for big-endian
 CFLAGS += -DLSB_FIRST=1
-LDFLAGS += -Wl,--gc-sections
+
+ifeq ($(OS),Windows_NT)
+	#Windows
+	LDFLAGS += -Wl,--gc-sections
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+		#macOS
+        LDFLAGS += -Wl,-dead_strip
+	else
+		#Linux
+		LDFLAGS += -Wl,--gc-sections
+    endif
+endif
 
 MACHINE = $(shell $(CC) -dumpmachine)
 

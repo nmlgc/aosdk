@@ -102,6 +102,7 @@
 #include "../peops2/externals.h"
 #include "../peops2/regs.h"
 #include "../peops2/dma.h"
+#include "../../corlett.h"
 
 ////////////////////////////////////////////////////////////////////////
 // globals
