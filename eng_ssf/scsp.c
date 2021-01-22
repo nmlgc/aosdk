@@ -33,6 +33,8 @@
 #define SHIFT	12
 #define FIX(v)	((UINT32) ((float) (1<<SHIFT)*(v)))
 
+static INT32 EG_TABLE[0x400];
+static UINT32 FNS_Table[0x400];
 
 #define EG_SHIFT	16
 #define FM_DELAY    0   // delay in number of slots processed before samples are written to the FM ring buffer

@@ -71,9 +71,6 @@ typedef int offs_t;
 #define EFSDL(slot)		((slot->udata.data[0xB]>>0x5)&0x0007)
 #define EFPAN(slot)		((slot->udata.data[0xB]>>0x0)&0x001F)
 
-UINT32 FNS_Table[0x400];
-INT32 EG_TABLE[0x400];
-
 typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
 struct _EG
 {

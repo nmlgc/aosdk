@@ -64,8 +64,6 @@ typedef int offs_t;
 #define EFSDL(slot)		((AICA->EFSPAN[slot*4]>>8)&0x000f)
 #define EFPAN(slot)		((AICA->EFSPAN[slot*4]>>0)&0x001f)
 
-INT32 EG_TABLE[0x400];
-
 typedef enum {ATTACK,DECAY1,DECAY2,RELEASE} _STATE;
 struct _EG
 {
