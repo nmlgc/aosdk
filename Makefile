@@ -74,6 +74,10 @@ LIBS += -ldsound -ldxguid
 # Windows DLLs referenced by win32_utf8, which are hopefully eliminated by
 # -gc-sections one day…
 LIBS += -lcomdlg32 -lgdi32 -lole32 -lpsapi -lshlwapi -lversion -lwininet
+ifndef NOGUI
+# Windows OpenGL DLL, referenced by ImGui
+LIBS += -lopengl32
+endif
 endif
 
 # DSF engine
