@@ -23,6 +23,8 @@
 #define FIX(v)	((UINT32) ((float) (1<<SHIFT)*(v)))
 
 
+static INT32 EG_TABLE[0x400];
+
 #define EG_SHIFT	16
 
 #define USEDSP
