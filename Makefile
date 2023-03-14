@@ -69,7 +69,7 @@ else
 endif
 else
 CFLAGS += -DWIN32_UTF8_NO_API
-OBJS += dsnd.o win32_utf8/win32_utf8_build_static.o
+OBJS += dsnd.o win32_utf8/win32_utf8_build_static.o win32_utf8/entry_main.o
 LIBS += -ldsound -ldxguid
 # Windows DLLs referenced by win32_utf8, which are hopefully eliminated by
 # -gc-sections one day…

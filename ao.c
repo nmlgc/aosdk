@@ -5,7 +5,7 @@
 //
 
 #ifdef WIN32
-#include "win32_utf8/src/win32_utf8.h"
+#include "win32_utf8/win32_utf8.h"
 #else
 #include <stdio.h>
 #include <sys/stat.h>

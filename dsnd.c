@@ -28,7 +28,7 @@
 #include "cpuintrf.h"
 #include "m1sdr.h"
 #include "ao.h"
-#include "win32_utf8/src/win32_utf8.h"
+#include "win32_utf8/win32_utf8.h"
 
 static stereo_sample_t samples[44100*2];	// make sure we reserve enough for worst-case scenario
 
